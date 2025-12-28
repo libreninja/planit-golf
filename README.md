@@ -1,6 +1,6 @@
-# Trip HQ
+# planit.golf
 
-A cloud-hosted, invite-only Trip HQ web app for managing golf trips. Built with Next.js 14, Supabase, and deployed on Vercel.
+A cloud-hosted, invite-only golf trip planning web app. Built with React + Vite, Supabase, and deployed on Vercel.
 
 ## Features
 
