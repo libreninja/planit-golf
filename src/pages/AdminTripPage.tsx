@@ -228,10 +228,10 @@ export default function AdminTripPage() {
         updateData.full_cost_cents = Math.round(dollars * 100)
       }
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase
         .from('trips')
-        .update(updateData as any)
-        .eq('id', id)
+        .update(updateData as any) as any)
+        .eq('id', id as string)
         .eq('created_by', session.user.id)
         .select()
 
@@ -245,10 +245,10 @@ export default function AdminTripPage() {
           // Remove the problematic fields and retry
           const { full_cost_cents, prize_fund_cents, ...safeUpdateData } = updateData
           if (!id) throw new Error('Trip ID is required')
-          const { error: retryError } = await supabase
+          const { error: retryError } = await (supabase
             .from('trips')
-            .update(safeUpdateData as any)
-            .eq('id', id)
+            .update(safeUpdateData as any) as any)
+            .eq('id', id as string)
             .eq('created_by', session.user.id)
             .select()
           
