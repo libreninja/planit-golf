@@ -239,6 +239,7 @@ export default function TripDetailPage() {
                       {tripData.location_name && <span className="mx-1">•</span>}
                       <span className="mr-1">📅</span>
                       {formatDate(tripData.start_date)}
+                      {tripData.end_date && ` - ${formatDate(tripData.end_date)}`}
                     </span>
                   )}
                 </div>
@@ -386,9 +387,9 @@ export default function TripDetailPage() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                         />
                       </div>
-                      {trip.deposit_due_date && (
+                      {tripData.deposit_due_date && (
                         <p className="text-xs text-gray-500">
-                          Deposit due: {formatDate(trip.deposit_due_date)}
+                          Deposit due: {formatDate(tripData.deposit_due_date)}
                         </p>
                       )}
                     </div>
