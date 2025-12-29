@@ -9,7 +9,7 @@ const supabase = getSupabaseClient()
 export default function AdminTripPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [trip, setTrip] = useState<any>(null) // trip is used in the JSX below
+  const [_trip, setTrip] = useState<any>(null) // trip is set but we use tripData in JSX
   const [loading, setLoading] = useState(true)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['overview']))
   const [saving, setSaving] = useState(false)
