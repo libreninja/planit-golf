@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { getSupabaseClient } from './lib/supabase'
 import LoginPage from './pages/LoginPage'
 import TripsPage from './pages/TripsPage'
