@@ -228,9 +228,10 @@ export default function AdminTripPage() {
         updateData.full_cost_cents = Math.round(dollars * 100)
       }
 
-      const { error: updateError } = await (supabase
+      const updateQuery = supabase
         .from('trips')
-        .update(updateData as any) as any)
+        .update(updateData as any) as any
+      const { error: updateError } = await updateQuery
         .eq('id', id as string)
         .eq('created_by', session.user.id)
         .select()
@@ -245,9 +246,10 @@ export default function AdminTripPage() {
           // Remove the problematic fields and retry
           const { full_cost_cents, prize_fund_cents, ...safeUpdateData } = updateData
           if (!id) throw new Error('Trip ID is required')
-          const { error: retryError } = await (supabase
+          const retryQuery = supabase
             .from('trips')
-            .update(safeUpdateData as any) as any)
+            .update(safeUpdateData as any) as any
+          const { error: retryError } = await retryQuery
             .eq('id', id as string)
             .eq('created_by', session.user.id)
             .select()
@@ -354,9 +356,10 @@ export default function AdminTripPage() {
     // Ensure we're sending valid JSON - Supabase jsonb expects proper JSON format
     const itineraryValue = gamesToSave.length > 0 ? gamesToSave : null
     
-    const { error: updateError } = await (supabase
+    const updateQuery = supabase
       .from('trips')
-      .update({ itinerary: itineraryValue } as any) as any)
+      .update({ itinerary: itineraryValue } as any) as any
+    const { error: updateError } = await updateQuery
       .eq('id', id as string)
       .eq('created_by', session.user.id)
 
