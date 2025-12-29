@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Pencil } from 'lucide-react'
+import { Pencil, LogOut } from 'lucide-react'
 import { getSupabaseClient } from '../lib/supabase'
 
 const supabase = getSupabaseClient()
@@ -107,12 +107,25 @@ export default function TripsPage() {
             <h1 className="text-3xl font-bold">My Trips</h1>
             <p className="text-gray-600 mt-1">Trips you've been invited to</p>
           </div>
-          <button
-            onClick={() => navigate('/admin/trips/new')}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Create Trip
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/admin/trips/new')}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            >
+              Create Trip
+            </button>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut()
+                navigate('/login')
+              }}
+              className="px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
         </div>
 
         {trips.length === 0 ? (

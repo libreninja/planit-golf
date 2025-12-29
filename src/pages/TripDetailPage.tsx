@@ -213,7 +213,7 @@ export default function TripDetailPage() {
         <div className="bg-white p-4 sm:p-6">
           {/* Back arrow and header */}
           <div className="mb-4 sm:mb-6">
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-start">
               <button
                 onClick={() => navigate('/trips')}
                 className="text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 self-center"
