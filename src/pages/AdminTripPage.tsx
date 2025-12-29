@@ -354,10 +354,10 @@ export default function AdminTripPage() {
     // Ensure we're sending valid JSON - Supabase jsonb expects proper JSON format
     const itineraryValue = gamesToSave.length > 0 ? gamesToSave : null
     
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase
       .from('trips')
-      .update({ itinerary: itineraryValue } as any)
-      .eq('id', id)
+      .update({ itinerary: itineraryValue } as any) as any)
+      .eq('id', id as string)
       .eq('created_by', session.user.id)
 
     if (updateError) {
