@@ -200,7 +200,8 @@ export default function TripDetailPage() {
     calculated_deposit: depositAmount
   })
   const fullCostAmount = tripData.full_cost_cents || depositAmount * 3 // Use full_cost_cents if available, otherwise 3x deposit
-  const maxPaymentAmount = fullCostAmount
+  // Maximum payment is total cost PLUS accumulated prize funds
+  const maxPaymentAmount = fullCostAmount + prizeFundCents
   const venmoHandle = tripData.venmo_handle
   const paymentNote = `Payment for ${tripData.title}`
   const venmoUrl = venmoHandle && paymentAmount > 0 ? getVenmoUrl(venmoHandle, paymentAmount, paymentNote) : ''
