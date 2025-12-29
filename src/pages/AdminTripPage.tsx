@@ -96,29 +96,30 @@ export default function AdminTripPage() {
         return
       }
 
-      setTrip(data)
+      const tripData = data as any
+      setTrip(tripData)
       setFormData({
-        title: data.title || '',
-        slug: data.slug || '',
-        location_name: data.location_name || '',
-        start_date: data.start_date ? data.start_date.split('T')[0] : '',
-        end_date: data.end_date ? data.end_date.split('T')[0] : '',
-        overview: data.overview || '',
-        deposit_amount_cents: data.deposit_amount_cents ? (data.deposit_amount_cents / 100).toString() : '',
-        full_cost_cents: data.full_cost_cents ? (data.full_cost_cents / 100).toFixed(2) : (data.deposit_amount_cents ? ((data.deposit_amount_cents * 3) / 100).toFixed(2) : ''),
-        deposit_due_date: data.deposit_due_date ? data.deposit_due_date.split('T')[0] : '',
-        venmo_handle: data.venmo_handle || '',
-        zelle_recipient: data.zelle_recipient || '',
+        title: tripData.title || '',
+        slug: tripData.slug || '',
+        location_name: tripData.location_name || '',
+        start_date: tripData.start_date ? tripData.start_date.split('T')[0] : '',
+        end_date: tripData.end_date ? tripData.end_date.split('T')[0] : '',
+        overview: tripData.overview || '',
+        deposit_amount_cents: tripData.deposit_amount_cents ? (tripData.deposit_amount_cents / 100).toString() : '',
+        full_cost_cents: tripData.full_cost_cents ? (tripData.full_cost_cents / 100).toFixed(2) : (tripData.deposit_amount_cents ? ((tripData.deposit_amount_cents * 3) / 100).toFixed(2) : ''),
+        deposit_due_date: tripData.deposit_due_date ? tripData.deposit_due_date.split('T')[0] : '',
+        venmo_handle: tripData.venmo_handle || '',
+        zelle_recipient: tripData.zelle_recipient || '',
       })
 
       // Load members
       if (!cancelled) {
-        await loadMembers(data.id, session.user.id)
+        await loadMembers(tripData.id, session.user.id)
         
         // Load games from itinerary
-        if (data.itinerary) {
+        if (tripData.itinerary) {
           try {
-            const itinerary = Array.isArray(data.itinerary) ? data.itinerary : JSON.parse(data.itinerary as string)
+            const itinerary = Array.isArray(tripData.itinerary) ? tripData.itinerary : JSON.parse(tripData.itinerary as string)
             setGames(Array.isArray(itinerary) ? itinerary : [])
           } catch (e) {
             console.error('Error parsing itinerary:', e)
@@ -227,9 +228,9 @@ export default function AdminTripPage() {
         updateData.full_cost_cents = Math.round(dollars * 100)
       }
 
-      const { error: updateError, data: updateResult } = await supabase
+      const { error: updateError } = await supabase
         .from('trips')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', id)
         .eq('created_by', session.user.id)
         .select()
