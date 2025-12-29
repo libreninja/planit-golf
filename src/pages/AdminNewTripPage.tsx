@@ -67,7 +67,7 @@ export default function AdminNewTripPage() {
 
       const { data, error: insertError } = await supabase
         .from('trips')
-        .insert(tripData)
+        .insert(tripData as any)
         .select()
         .single()
 
@@ -77,15 +77,16 @@ export default function AdminNewTripPage() {
 
       // If option is checked, add creator as a member
       if (formData.add_creator_as_member && data) {
+        const tripDataResult = data as any
         const { error: membershipError } = await supabase
           .from('memberships')
           .insert({
-            trip_id: data.id,
+            trip_id: tripDataResult.id,
             user_id: session.user.id,
             invited_email: session.user.email,
             status: 'accepted',
             accepted_at: new Date().toISOString(),
-          })
+          } as any)
 
         if (membershipError) {
           console.error('Error adding creator as member:', membershipError)
@@ -93,7 +94,8 @@ export default function AdminNewTripPage() {
         }
       }
 
-      navigate(`/admin/trips/${data.id}`)
+      const tripDataResult = data as any
+      navigate(`/admin/trips/${tripDataResult.id}`)
     } catch (err: any) {
       setError(err.message || 'Failed to create trip')
       setLoading(false)
