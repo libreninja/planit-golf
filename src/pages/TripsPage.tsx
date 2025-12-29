@@ -21,7 +21,20 @@ export default function TripsPage() {
 
       setUserId(session.user.id)
 
-      // Get trips where user has membership
+      // First, update any memberships where invited_email matches but user_id is null
+      // This links the membership to the user when they first sign in
+      await supabase
+        .from('memberships')
+        .update({ 
+          user_id: session.user.id,
+          status: 'accepted',
+          accepted_at: new Date().toISOString()
+        })
+        .eq('invited_email', session.user.email?.toLowerCase() || '')
+        .is('user_id', null)
+        .in('status', ['invited'])
+
+      // Get trips where user has membership (by user_id OR by email match)
       const { data: memberships, error: membershipError } = await supabase
         .from('memberships')
         .select(`
@@ -36,7 +49,7 @@ export default function TripsPage() {
             created_by
           )
         `)
-        .eq('user_id', session.user.id)
+        .or(`user_id.eq.${session.user.id},and(invited_email.eq.${session.user.email?.toLowerCase() || ''},user_id.is.null)`)
         .in('status', ['invited', 'accepted'])
 
       // Get trips created by this user
