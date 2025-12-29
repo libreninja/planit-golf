@@ -40,11 +40,14 @@ export default function LoginPage() {
     setMessage(null)
 
     try {
+      // Use production URL for magic links, fallback to current origin for local dev
+      const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: `${redirectUrl}/login`,
         },
       })
 
