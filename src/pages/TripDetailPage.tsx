@@ -349,6 +349,11 @@ export default function TripDetailPage() {
                   <span className="font-semibold text-sm sm:text-base">Deposit / Payments</span>
                 </div>
                 <div className="px-4 pb-4 pt-4 space-y-4">
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <p className="text-sm text-gray-700">
+                        <strong>Paying the prize fund amount reserves your spot.</strong> Pay up to the maximum to cover your room and prize fund contribution.
+                      </p>
+                    </div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm text-gray-600">Payment Amount</p>
