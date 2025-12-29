@@ -23,13 +23,13 @@ export default function TripsPage() {
 
       // First, update any memberships where invited_email matches but user_id is null
       // This links the membership to the user when they first sign in
-      await supabase
-        .from('memberships')
+      await (supabase
+        .from('memberships') as any)
         .update({ 
           user_id: session.user.id,
           status: 'accepted',
           accepted_at: new Date().toISOString()
-        })
+        } as any)
         .eq('invited_email', session.user.email?.toLowerCase() || '')
         .is('user_id', null)
         .in('status', ['invited'])
