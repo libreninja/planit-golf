@@ -243,9 +243,10 @@ export default function AdminTripPage() {
             updateError.message.includes("Could not find the 'prize_fund_cents'")) {
           // Remove the problematic fields and retry
           const { full_cost_cents, prize_fund_cents, ...safeUpdateData } = updateData
+          if (!id) throw new Error('Trip ID is required')
           const { error: retryError } = await supabase
             .from('trips')
-            .update(safeUpdateData)
+            .update(safeUpdateData as any)
             .eq('id', id)
             .eq('created_by', session.user.id)
             .select()
@@ -301,6 +302,12 @@ export default function AdminTripPage() {
         emailsToAdd.push(newEmail.trim().toLowerCase())
       }
 
+      if (!id) {
+        setError('Trip ID is required')
+        setAddingMember(false)
+        return
+      }
+
       // Create memberships for each email
       const memberships = emailsToAdd.map(email => ({
         trip_id: id,
@@ -313,7 +320,7 @@ export default function AdminTripPage() {
 
       const { error: insertError } = await supabase
         .from('memberships')
-        .insert(memberships)
+        .insert(memberships as any)
 
       if (insertError) {
         throw insertError
@@ -338,12 +345,17 @@ export default function AdminTripPage() {
       return
     }
 
+    if (!id) {
+      console.error('Trip ID is required')
+      return
+    }
+
     // Ensure we're sending valid JSON - Supabase jsonb expects proper JSON format
     const itineraryValue = gamesToSave.length > 0 ? gamesToSave : null
     
     const { error: updateError } = await supabase
       .from('trips')
-      .update({ itinerary: itineraryValue })
+      .update({ itinerary: itineraryValue } as any)
       .eq('id', id)
       .eq('created_by', session.user.id)
 

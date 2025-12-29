@@ -24,6 +24,11 @@ export default function TripDetailPage() {
         return
       }
 
+      if (!slug) {
+        navigate('/trips')
+        return
+      }
+
       const { data, error } = await supabase
         .from('trips')
         .select('*')
@@ -36,13 +41,14 @@ export default function TripDetailPage() {
         return
       }
 
-      setTrip(data)
+      setTrip(data as any)
       
       // Parse games to calculate prize fund
       let initialGames: any[] = []
-      if (data.itinerary && typeof data.itinerary === 'object') {
+      const tripData = data as any
+      if (tripData.itinerary && typeof tripData.itinerary === 'object') {
         try {
-          const itinerary = Array.isArray(data.itinerary) ? data.itinerary : JSON.parse(data.itinerary as string)
+          const itinerary = Array.isArray(tripData.itinerary) ? tripData.itinerary : JSON.parse(tripData.itinerary as string)
           initialGames = Array.isArray(itinerary) ? itinerary : []
         } catch (e) {
           console.error('Error parsing itinerary:', e)
@@ -56,14 +62,14 @@ export default function TripDetailPage() {
       
       // Set initial payment amount to prize fund (minimum deposit)
       // Use calculated prize fund from games, or fallback to trip.prize_fund_cents, or deposit_amount_cents
-      const prizeFundCents = calculatedPrizeFund > 0 ? calculatedPrizeFund : (data.prize_fund_cents ?? null)
-      const minDeposit = (prizeFundCents !== null && prizeFundCents > 0) ? prizeFundCents : (data.deposit_amount_cents || 0)
+      const prizeFundCents = calculatedPrizeFund > 0 ? calculatedPrizeFund : (tripData.prize_fund_cents ?? null)
+      const minDeposit = (prizeFundCents !== null && prizeFundCents > 0) ? prizeFundCents : (tripData.deposit_amount_cents || 0)
       
       // Debug logging
       console.log('Trip data loaded:', {
         games_prize_fund_sum: calculatedPrizeFund,
-        trip_prize_fund_cents: data.prize_fund_cents,
-        deposit_amount_cents: data.deposit_amount_cents,
+        trip_prize_fund_cents: tripData.prize_fund_cents,
+        deposit_amount_cents: tripData.deposit_amount_cents,
         calculated_min_deposit: minDeposit
       })
       
@@ -73,7 +79,7 @@ export default function TripDetailPage() {
       const { data: membersData, error: membersError } = await supabase
         .from('memberships')
         .select('*')
-        .eq('trip_id', data.id)
+        .eq('trip_id', tripData.id)
         .order('invited_at', { ascending: false })
 
       if (!membersError && membersData) {
@@ -163,11 +169,13 @@ export default function TripDetailPage() {
 
   if (!trip) return null
 
+  const tripData = trip as any
+
   // Parse itinerary for games
   let games: any[] = []
-  if (trip.itinerary && typeof trip.itinerary === 'object') {
+  if (tripData.itinerary && typeof tripData.itinerary === 'object') {
     try {
-      const itinerary = Array.isArray(trip.itinerary) ? trip.itinerary : JSON.parse(trip.itinerary as string)
+      const itinerary = Array.isArray(tripData.itinerary) ? tripData.itinerary : JSON.parse(tripData.itinerary as string)
       games = Array.isArray(itinerary) ? itinerary : []
     } catch (e) {
       console.error('Error parsing itinerary:', e)
@@ -181,20 +189,20 @@ export default function TripDetailPage() {
 
   // Minimum deposit is the prize fund (paying the prize fund reserves your spot)
   // Use calculated prize fund from games, or fallback to trip.prize_fund_cents (for backwards compatibility), or deposit_amount_cents
-  const prizeFundCents = calculatedPrizeFundCents > 0 ? calculatedPrizeFundCents : (trip.prize_fund_cents ?? null)
-  const depositAmount = (prizeFundCents !== null && prizeFundCents > 0) ? prizeFundCents : (trip.deposit_amount_cents || 0)
+  const prizeFundCents = calculatedPrizeFundCents > 0 ? calculatedPrizeFundCents : (tripData.prize_fund_cents ?? null)
+  const depositAmount = (prizeFundCents !== null && prizeFundCents > 0) ? prizeFundCents : (tripData.deposit_amount_cents || 0)
   
   // Debug logging
   console.log('Calculating deposit amount:', {
     games_prize_fund_sum: calculatedPrizeFundCents,
-    trip_prize_fund_cents: trip.prize_fund_cents,
-    deposit_amount_cents: trip.deposit_amount_cents,
+    trip_prize_fund_cents: tripData.prize_fund_cents,
+    deposit_amount_cents: tripData.deposit_amount_cents,
     calculated_deposit: depositAmount
   })
-  const fullCostAmount = trip.full_cost_cents || depositAmount * 3 // Use full_cost_cents if available, otherwise 3x deposit
+  const fullCostAmount = tripData.full_cost_cents || depositAmount * 3 // Use full_cost_cents if available, otherwise 3x deposit
   const maxPaymentAmount = fullCostAmount
-  const venmoHandle = trip.venmo_handle
-  const paymentNote = `Payment for ${trip.title}`
+  const venmoHandle = tripData.venmo_handle
+  const paymentNote = `Payment for ${tripData.title}`
   const venmoUrl = venmoHandle && paymentAmount > 0 ? getVenmoUrl(venmoHandle, paymentAmount, paymentNote) : ''
   const venmoWebUrl = venmoHandle && paymentAmount > 0 ? getVenmoWebUrl(venmoHandle, paymentAmount, paymentNote) : ''
 
@@ -214,23 +222,23 @@ export default function TripDetailPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div className="flex-1 min-w-0">
-                {/* Trip title */}
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words mb-1">
-                  {trip.title}
-                </h1>
+            {/* Trip title */}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words mb-1">
+              {tripData.title}
+            </h1>
                 {/* Condensed location and date - centered below headline */}
                 <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-gray-500">
-                  {trip.location_name && (
+                  {tripData.location_name && (
                     <span className="flex items-center whitespace-nowrap">
                       <span className="mr-1">📍</span>
-                      {trip.location_name}
+                      {tripData.location_name}
                     </span>
                   )}
-                  {(trip.start_date || trip.end_date) && (
+                  {(tripData.start_date || tripData.end_date) && (
                     <span className="flex items-center whitespace-nowrap">
-                      {trip.location_name && <span className="mx-1">•</span>}
+                      {tripData.location_name && <span className="mx-1">•</span>}
                       <span className="mr-1">📅</span>
-                      {formatDate(trip.start_date)}
+                      {formatDate(tripData.start_date)}
                     </span>
                   )}
                 </div>
@@ -241,7 +249,7 @@ export default function TripDetailPage() {
           {/* Expandable Sections */}
           <div className="space-y-2">
             {/* Overview Section */}
-            {trip.overview && (
+            {tripData.overview && (
               <div className="border border-gray-200 rounded-lg">
                 <button
                   onClick={() => toggleSection('overview')}
@@ -254,7 +262,7 @@ export default function TripDetailPage() {
                 </button>
                     {expandedSections.has('overview') && (
                       <div className="px-4 pb-4 pt-2 border-t border-gray-200" data-color-mode="light">
-                        <MDEditor.Markdown source={trip.overview || ''} />
+                        <MDEditor.Markdown source={tripData.overview || ''} />
                       </div>
                     )}
               </div>
@@ -443,12 +451,12 @@ export default function TripDetailPage() {
                       </div>
                     )}
 
-                    {trip.zelle_recipient && (
-                      <div className="pt-4 border-t">
-                        <p className="text-sm text-gray-600 mb-1">Zelle</p>
-                        <p className="text-base font-medium text-gray-900">{trip.zelle_recipient}</p>
-                      </div>
-                    )}
+                      {tripData.zelle_recipient && (
+                        <div className="pt-4 border-t">
+                          <p className="text-sm text-gray-600 mb-1">Zelle</p>
+                          <p className="text-base font-medium text-gray-900">{tripData.zelle_recipient}</p>
+                        </div>
+                      )}
                 </div>
               </div>
             )}
