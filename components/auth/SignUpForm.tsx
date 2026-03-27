@@ -101,7 +101,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
