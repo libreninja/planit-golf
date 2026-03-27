@@ -1,0 +1,150 @@
+'use server'
+
+import { randomUUID } from 'crypto'
+import { revalidatePath } from 'next/cache'
+import { getProfileRoles } from '@/lib/auth'
+import { isConfiguredSystemAdminEmail } from '@/lib/system-admin'
+import { createClient } from '@/lib/supabase/server'
+
+export async function validateInviteForSignUp(email: string, inviteToken: string) {
+  if (await isConfiguredSystemAdminEmail(email)) {
+    return { valid: true }
+  }
+
+  if (!email || !inviteToken) {
+    return { valid: false }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('validate_invite_token', {
+    signup_email: email,
+    signup_token: inviteToken,
+  })
+
+  return {
+    valid: !error && data === true,
+  }
+}
+
+export async function saveDefaultPreferences(teeTimePreferences: string[]) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase.from('default_preferences').upsert(
+    {
+      user_id: user.id,
+      tee_time_preferences: teeTimePreferences,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  )
+
+  if (error) throw error
+  revalidatePath('/')
+}
+
+export async function saveEventPreference(eventId: string, teeTimePreferences: string[]) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase.from('event_preferences').upsert(
+    {
+      user_id: user.id,
+      event_id: eventId,
+      tee_time_preferences: teeTimePreferences,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,event_id' },
+  )
+
+  if (error) throw error
+  revalidatePath('/')
+}
+
+export async function deleteEventPreference(eventId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('event_preferences')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('event_id', eventId)
+
+  if (error) throw error
+  revalidatePath('/')
+}
+
+export async function signOut() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  revalidatePath('/')
+}
+
+async function requireAdmin() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const roles = await getProfileRoles(user.id)
+
+  if (!roles.is_admin && !roles.is_system_admin) {
+    throw new Error('Admin access required')
+  }
+
+  return supabase
+}
+
+export async function createInvite(memberId: string) {
+  const supabase = await requireAdmin()
+  const token = randomUUID()
+
+  const { error } = await supabase.from('invites').upsert(
+    {
+      member_id: memberId,
+      invite_token: token,
+      status: 'pending',
+      claimed_by_user_id: null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'member_id' },
+  )
+
+  if (error) throw error
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/invites')
+  return token
+}
+
+export async function revokeInvite(inviteId: string) {
+  const supabase = await requireAdmin()
+
+  const { error } = await supabase
+    .from('invites')
+    .update({
+      status: 'revoked',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', inviteId)
+
+  if (error) throw error
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/invites')
+}

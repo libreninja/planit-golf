@@ -1,145 +1,160 @@
-import { createClient } from '@/lib/supabase/server'
-import { requireAuth } from '@/lib/auth'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { format } from 'date-fns'
+import { createClient } from '@/lib/supabase/server'
+import { signOut } from '@/app/actions'
+import { InviteAdmin } from '@/components/invite-admin'
+import { UpcomingRunAdmin } from '@/components/upcoming-run-admin'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { requireAdmin } from '@/lib/auth'
 
 export default async function AdminPage() {
-  const user = await requireAuth()
+  await requireAdmin()
   const supabase = await createClient()
 
-  // Get all trips created by this user
-  const { data: trips, error } = await supabase
-    .from('trips')
-    .select('*')
-    .eq('created_by', user.id)
-    .order('created_at', { ascending: false })
+  const { data: members } = await supabase
+    .from('members')
+    .select(`
+      id,
+      display_name,
+      email,
+      phone,
+      golf_member_name,
+      golf_member_id,
+      active,
+      invites (
+        id,
+        status,
+        invite_token
+      ),
+      profiles (
+        id,
+        email
+      )
+    `)
+    .eq('active', true)
+    .order('display_name', { ascending: true })
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Error</CardTitle>
-            <CardDescription>Failed to load trips</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
+  const { data: events } = await supabase
+    .from('events')
+    .select(`
+      id,
+      event_date,
+      course_name,
+      registration_opens_at,
+      status,
+      event_time_slots (
+        time_slot,
+        display_order
+      )
+    `)
+    .eq('status', 'upcoming')
+    .order('event_date', { ascending: true })
+    .limit(1)
 
-  // Get stats for each trip
-  const tripsWithStats = await Promise.all(
-    (trips || []).map(async (trip) => {
-      // Count members
-      const { count: memberCount } = await supabase
-        .from('memberships')
-        .select('*', { count: 'exact', head: true })
-        .eq('trip_id', trip.id)
+  const nextEvent = events?.[0] || null
+  const profileIds = (members || []).flatMap((member) => (member.profiles || []).map((profileRow) => profileRow.id))
 
-      // Count RSVPs
-      const { count: rsvpCount } = await supabase
-        .from('rsvps')
-        .select('*', { count: 'exact', head: true })
-        .eq('trip_id', trip.id)
-        .eq('status', 'yes')
+  const { data: defaultPreferences } =
+    profileIds.length > 0
+      ? await supabase
+          .from('default_preferences')
+          .select('user_id, tee_time_preferences')
+          .in('user_id', profileIds)
+      : { data: [] as { user_id: string; tee_time_preferences: string[] }[] }
 
-      // Count verified payments
-      const { count: paymentCount } = await supabase
-        .from('payments')
-        .select('*', { count: 'exact', head: true })
-        .eq('trip_id', trip.id)
-        .eq('type', 'deposit')
-        .not('verified_at', 'is', null)
+  const { data: eventPreferences } =
+    nextEvent && profileIds.length > 0
+      ? await supabase
+          .from('event_preferences')
+          .select('user_id, event_id, tee_time_preferences')
+          .eq('event_id', nextEvent.id)
+          .in('user_id', profileIds)
+      : { data: [] as { user_id: string; event_id: string; tee_time_preferences: string[] }[] }
 
-      return {
-        ...trip,
-        memberCount: memberCount || 0,
-        rsvpCount: rsvpCount || 0,
-        paymentCount: paymentCount || 0,
-      }
-    })
-  )
+  const defaultPrefMap = new Map((defaultPreferences || []).map((row) => [row.user_id, row.tee_time_preferences]))
+  const eventPrefMap = new Map((eventPreferences || []).map((row) => [row.user_id, row.tee_time_preferences]))
+  const availableSlots = (nextEvent?.event_time_slots || [])
+    .slice()
+    .sort((a, b) => a.display_order - b.display_order)
+    .map((slot) => slot.time_slot)
 
-  const formatDate = (date: string | null) => {
-    if (!date) return null
-    return format(new Date(date), 'MMM d, yyyy')
-  }
+  const runRows: Array<{
+    memberId: string
+    displayName: string
+    email: string
+    golfMemberName: string
+    golfMemberId: string
+    inviteStatus: 'not invited' | 'pending' | 'claimed' | 'revoked'
+    appStatus: 'not signed up' | 'ready' | 'missing preferences'
+    preferences: string[]
+  }> = (members || []).map((member) => {
+    const invite = member.invites?.[0]
+    const profileRow = member.profiles?.[0]
+    const rawPreferences: string[] = profileRow
+      ? eventPrefMap.get(profileRow.id) || defaultPrefMap.get(profileRow.id) || []
+      : []
+    const resolvedPreferences = rawPreferences
+      .filter((preference: string) => availableSlots.includes(preference))
+      .slice(0, 3)
+    const inviteStatus = (invite?.status || 'not invited') as 'not invited' | 'pending' | 'claimed' | 'revoked'
+    const appStatus: 'not signed up' | 'ready' | 'missing preferences' = !profileRow
+      ? 'not signed up'
+      : resolvedPreferences.length > 0
+        ? 'ready'
+        : 'missing preferences'
+
+    return {
+      memberId: member.id,
+      displayName: member.display_name,
+      email: member.email,
+      golfMemberName: member.golf_member_name,
+      golfMemberId: member.golf_member_id,
+      inviteStatus,
+      appStatus,
+      preferences: resolvedPreferences,
+    }
+  }).filter((row) => row.appStatus === 'ready')
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your trips
-          </p>
+    <main className="min-h-screen">
+      <div className="sticky top-0 z-30 bg-foreground text-background">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-left">
+            <p className="font-display text-2xl leading-none">Big Deal Admin</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
+              <Link href="/">Back</Link>
+            </Button>
+            <form action={signOut}>
+              <Button variant="ghost" size="sm" className="text-background hover:bg-white/10 hover:text-background" type="submit">
+                Sign Out
+              </Button>
+            </form>
+          </div>
         </div>
-        <Button asChild>
-          <Link href="/admin/trips/new">Create Trip</Link>
-        </Button>
       </div>
 
-      {tripsWithStats.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>No trips yet</CardTitle>
-            <CardDescription>
-              Create your first trip to get started.
-            </CardDescription>
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-4">
+        <Card className="border-white/70 bg-white/85 shadow-lg shadow-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-lg">Member invites</CardTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">Manage invites</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Member invites</DialogTitle>
+                </DialogHeader>
+                <InviteAdmin rows={members || []} />
+              </DialogContent>
+            </Dialog>
           </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/admin/trips/new">Create Trip</Link>
-            </Button>
-          </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tripsWithStats.map((trip) => (
-            <Card key={trip.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle>{trip.title}</CardTitle>
-                {trip.location_name && (
-                  <CardDescription>{trip.location_name}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {(trip.start_date || trip.end_date) && (
-                  <div className="text-sm text-muted-foreground">
-                    {trip.start_date && trip.end_date ? (
-                      <>
-                        {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
-                      </>
-                    ) : (
-                      trip.start_date && formatDate(trip.start_date)
-                    )}
-                  </div>
-                )}
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div>
-                    <div className="font-medium">{trip.memberCount}</div>
-                    <div className="text-muted-foreground">Members</div>
-                  </div>
-                  <div>
-                    <div className="font-medium">{trip.rsvpCount}</div>
-                    <div className="text-muted-foreground">RSVPs</div>
-                  </div>
-                  <div>
-                    <div className="font-medium">{trip.paymentCount}</div>
-                    <div className="text-muted-foreground">Paid</div>
-                  </div>
-                </div>
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/admin/trips/${trip.id}`}>Manage Trip</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+        <UpcomingRunAdmin rows={runRows} />
+      </div>
+    </main>
   )
 }
-

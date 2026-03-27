@@ -1,0 +1,10 @@
+{
+  "12333467313029277532": {
+    "display_name": "Jesse Bunich",
+    "phone": "+12065550111",
+    "email": "jesse@example.com",
+    "active": true,
+    "is_admin": false,
+    "is_system_admin": true
+  }
+}

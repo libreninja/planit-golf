@@ -12,7 +12,7 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: { path?: string; maxAge?: number; sameSite?: 'lax' | 'strict' | 'none'; secure?: boolean; httpOnly?: boolean } }>) {
+        setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options)
           )
@@ -21,4 +21,3 @@ export async function createClient() {
     }
   )
 }
-

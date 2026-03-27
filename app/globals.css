@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 84 33% 97%;
+    --foreground: 152 28% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 152 28% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 152 28% 16%;
+    --primary: 148 42% 34%;
+    --primary-foreground: 84 33% 98%;
+    --secondary: 88 23% 92%;
+    --secondary-foreground: 152 28% 22%;
+    --muted: 92 18% 93%;
+    --muted-foreground: 151 11% 39%;
+    --accent: 42 78% 88%;
+    --accent-foreground: 152 28% 20%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --border: 91 16% 84%;
+    --input: 91 16% 84%;
+    --ring: 148 42% 34%;
+    --radius: 1rem;
   }
 
   .dark {
@@ -54,7 +54,17 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top, hsl(42 75% 88% / 0.6), transparent 32rem),
+      linear-gradient(180deg, hsl(84 33% 97%), hsl(95 25% 94%));
+    font-family: var(--font-sans), sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), serif;
   }
 }
-

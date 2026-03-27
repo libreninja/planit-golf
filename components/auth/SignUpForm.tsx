@@ -5,37 +5,53 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { validateInviteForSignUp } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function LoginForm({ next = '/' }: { next?: string }) {
+export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const handleLogin = async (event: React.FormEvent) => {
+  const nextTarget = inviteToken ? `/invite/${inviteToken}` : '/'
+
+  const handleSignUp = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
 
+    const inviteCheck = await validateInviteForSignUp(email, inviteToken)
+    if (!inviteCheck.valid) {
+      router.push('/stay-tuned')
+      return
+    }
+
     const supabase = createClient()
-    const { error: loginError } = await supabase.auth.signInWithPassword({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextTarget)}`,
+        data: {
+          display_name: fullName,
+          invite_token: inviteToken,
+        },
+      },
     })
 
-    if (loginError) {
-      setError(loginError.message)
+    if (signUpError) {
+      setError(signUpError.message)
       setLoading(false)
       return
     }
 
-    router.push(next)
-    router.refresh()
+    router.push('/auth/sign-up-success')
   }
 
   const handleOAuthLogin = async (provider: 'google' | 'apple' | 'facebook') => {
@@ -43,7 +59,7 @@ export function LoginForm({ next = '/' }: { next?: string }) {
     setError(null)
 
     const supabase = createClient()
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextTarget)}`
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo },
@@ -58,17 +74,34 @@ export function LoginForm({ next = '/' }: { next?: string }) {
   return (
     <Card className="w-full max-w-md border-white/70 bg-white/90 shadow-xl shadow-primary/10 backdrop-blur">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg">
           <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3" strokeWidth="2" />
-            <path strokeWidth="2" d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83m-8.48 8.48l-2.83 2.83m14.14 0l-2.83-2.83M6.34 6.34L3.51 3.51" />
+            <path strokeWidth="2" d="M5 12h14M12 5l7 7-7 7" />
           </svg>
         </div>
-        <CardTitle className="text-3xl">Sign in to Big Deal</CardTitle>
-        <CardDescription>Manage your private tee time preferences.</CardDescription>
+        <CardTitle className="text-3xl">Accept your invite</CardTitle>
+        <CardDescription>
+          Create one shared Planit account to access the private Big Deal app.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={handleLogin} className="space-y-4">
+        {!inviteToken ? (
+          <div className="rounded-lg border border-accent/50 bg-accent/40 p-4 text-sm text-accent-foreground">
+            Big Deal is invite-only. If your email is not on the roster, you&apos;ll be sent to the waitlist.
+          </div>
+        ) : null}
+
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full name</Label>
+            <Input
+              id="fullName"
+              placeholder="Jesse Bunich"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -85,24 +118,19 @@ export function LoginForm({ next = '/' }: { next?: string }) {
             <Input
               id="password"
               type="password"
-              placeholder="Your password"
+              placeholder="Create a password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
+              minLength={6}
             />
-          </div>
-
-          <div className="flex justify-end">
-            <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-              Reset password
-            </Link>
           </div>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Sign In
+            Create account
           </Button>
         </form>
 
@@ -128,9 +156,9 @@ export function LoginForm({ next = '/' }: { next?: string }) {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          Need access?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">
-            Accept an invite
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            Sign in
           </Link>
         </p>
       </CardContent>
