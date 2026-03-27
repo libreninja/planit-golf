@@ -45,6 +45,7 @@ interface PreferenceFormProps {
   events: Event[]
   defaultPrefs: DefaultPrefs | null
   eventPrefs: EventPref[]
+  eventDemandCounts: Record<string, Record<string, number>>
 }
 
 type EditorState =
@@ -61,15 +62,22 @@ function formatDate(dateStr: string) {
   }).format(new Date(`${dateStr}T00:00:00Z`))
 }
 
+function getDemandLabel(count: number) {
+  if (count <= 0) return null
+  return `${count} request${count === 1 ? '' : 's'}`
+}
+
 function TimeChipSelector({
   selectedTimes,
   availableTimes,
+  demandCounts,
   onAdd,
   onRemove,
   onReorder,
 }: {
   selectedTimes: string[]
   availableTimes: string[]
+  demandCounts?: Record<string, number>
   onAdd: (time: string) => void
   onRemove: (time: string) => void
   onReorder: (fromIndex: number, toIndex: number) => void
@@ -100,7 +108,10 @@ function TimeChipSelector({
               >
                 <GripVertical className="h-3 w-3 opacity-60" />
                 <span className="mr-1 font-bold">#{index + 1}</span>
-                {time}
+                <span>{time}</span>
+                {getDemandLabel(demandCounts?.[time] || 0) ? (
+                  <span className="text-[11px] text-primary-foreground/80">{getDemandLabel(demandCounts?.[time] || 0)}</span>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => onRemove(time)}
@@ -127,7 +138,10 @@ function TimeChipSelector({
                 onClick={() => onAdd(time)}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-sm transition hover:border-primary hover:bg-secondary"
               >
-                {time}
+                <span>{time}</span>
+                {getDemandLabel(demandCounts?.[time] || 0) ? (
+                  <span className="ml-1 text-xs text-muted-foreground">{getDemandLabel(demandCounts?.[time] || 0)}</span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -143,6 +157,7 @@ export function PreferenceForm({
   events,
   defaultPrefs,
   eventPrefs,
+  eventDemandCounts,
 }: PreferenceFormProps) {
   const router = useRouter()
   const allTeeTimes = Array.from(
@@ -190,6 +205,10 @@ export function PreferenceForm({
           .sort((a, b) => a.display_order - b.display_order)
           .map((slot) => slot.time_slot)
       : allTeeTimes
+  const editorDemandCounts =
+    editor?.type === 'event'
+      ? eventDemandCounts[editor.eventId] || {}
+      : eventDemandCounts[events[0]?.id || ''] || {}
 
   const openDefaultsEditor = () => {
     setDraftTimes(defaultTimes)
@@ -306,6 +325,7 @@ export function PreferenceForm({
                 <TimeChipSelector
                   selectedTimes={draftTimes}
                   availableTimes={editorAvailableTimes}
+                  demandCounts={editorDemandCounts}
                   onAdd={(time) => {
                     if (draftTimes.length < 3) setDraftTimes([...draftTimes, time])
                   }}
@@ -382,6 +402,7 @@ export function PreferenceForm({
                             prefs.times.map((time, index) => (
                               <Badge key={`${event.id}-${time}`} variant="outline">
                                 #{index + 1} {time}
+                                {eventDemandCounts[event.id]?.[time] ? ` · ${eventDemandCounts[event.id][time]}` : ''}
                               </Badge>
                             ))
                           ) : (
@@ -419,6 +440,7 @@ export function PreferenceForm({
           <TimeChipSelector
             selectedTimes={draftTimes}
             availableTimes={editorAvailableTimes}
+            demandCounts={editorDemandCounts}
             onAdd={(time) => {
               if (draftTimes.length < 3) setDraftTimes([...draftTimes, time])
             }}

@@ -16,9 +16,10 @@ interface RunRow {
 
 interface UpcomingRunAdminProps {
   rows: RunRow[]
+  demandCounts: Record<string, number>
 }
 
-export function UpcomingRunAdmin({ rows }: UpcomingRunAdminProps) {
+export function UpcomingRunAdmin({ rows, demandCounts }: UpcomingRunAdminProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -51,9 +52,15 @@ export function UpcomingRunAdmin({ rows }: UpcomingRunAdminProps) {
               {rows.map((row) => (
                 <tr key={row.memberId} className="border-b border-border/70 last:border-b-0">
                   <td className="px-3 py-3 font-medium">{row.displayName}</td>
-                  <td className="px-3 py-3">{row.preferences[0] || ''}</td>
-                  <td className="px-3 py-3">{row.preferences[1] || ''}</td>
-                  <td className="px-3 py-3">{row.preferences[2] || ''}</td>
+                  <td className="px-3 py-3">
+                    {row.preferences[0] ? `${row.preferences[0]}${demandCounts[row.preferences[0]] ? ` · ${demandCounts[row.preferences[0]]}` : ''}` : ''}
+                  </td>
+                  <td className="px-3 py-3">
+                    {row.preferences[1] ? `${row.preferences[1]}${demandCounts[row.preferences[1]] ? ` · ${demandCounts[row.preferences[1]]}` : ''}` : ''}
+                  </td>
+                  <td className="px-3 py-3">
+                    {row.preferences[2] ? `${row.preferences[2]}${demandCounts[row.preferences[2]] ? ` · ${demandCounts[row.preferences[2]]}` : ''}` : ''}
+                  </td>
                 </tr>
               ))}
             </tbody>

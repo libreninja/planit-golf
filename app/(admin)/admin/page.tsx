@@ -116,6 +116,13 @@ export default async function AdminPage() {
     }
   }).filter((row) => row.appStatus === 'ready')
 
+  const nextRunDemandCounts = runRows.reduce<Record<string, number>>((counts, row) => {
+    for (const time of row.preferences) {
+      counts[time] = (counts[time] || 0) + 1
+    }
+    return counts
+  }, {})
+
   return (
     <main className="min-h-screen">
       <div className="sticky top-0 z-30 bg-foreground text-background">
@@ -153,7 +160,7 @@ export default async function AdminPage() {
             </Dialog>
           </CardHeader>
         </Card>
-        <UpcomingRunAdmin rows={runRows} />
+        <UpcomingRunAdmin rows={runRows} demandCounts={nextRunDemandCounts} />
       </div>
     </main>
   )
