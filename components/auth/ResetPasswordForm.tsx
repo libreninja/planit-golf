@@ -51,7 +51,7 @@ export function ResetPasswordForm() {
     <Card className="w-full max-w-md border-white/70 bg-white/90 shadow-xl shadow-primary/10 backdrop-blur">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl">Choose a new password</CardTitle>
-        <CardDescription>This updates the password for your shared Planit account.</CardDescription>
+        <CardDescription>This updates the password for your shared planit.golf account.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">

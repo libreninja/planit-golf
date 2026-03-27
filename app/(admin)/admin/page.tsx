@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/actions'
+import { HelpModal } from '@/components/help-modal'
 import { InviteAdmin } from '@/components/invite-admin'
 import { UpcomingRunAdmin } from '@/components/upcoming-run-admin'
 import { Button } from '@/components/ui/button'
@@ -128,9 +129,10 @@ export default async function AdminPage() {
       <div className="sticky top-0 z-30 bg-foreground text-background">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-left">
-            <p className="font-display text-2xl leading-none">Big Deal Admin</p>
+            <p className="font-display text-2xl leading-none">Good to Go Admin</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <HelpModal mode="admin" />
             <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
               <Link href="/">Back</Link>
             </Button>

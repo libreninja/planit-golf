@@ -6,11 +6,11 @@ export default function SignUpSuccessPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Check your email</CardTitle>
-          <CardDescription>Confirm your account to finish accessing Big Deal.</CardDescription>
+          <CardDescription>Confirm your account to continue.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Once you confirm your email, we&apos;ll send you back to your invite and finish linking your account.
+            Once you confirm your email, we&apos;ll finish linking your account.
           </p>
         </CardContent>
       </Card>

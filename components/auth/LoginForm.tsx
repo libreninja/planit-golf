@@ -64,8 +64,8 @@ export function LoginForm({ next = '/' }: { next?: string }) {
             <path strokeWidth="2" d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83m-8.48 8.48l-2.83 2.83m14.14 0l-2.83-2.83M6.34 6.34L3.51 3.51" />
           </svg>
         </div>
-        <CardTitle className="text-3xl">Sign in to Big Deal</CardTitle>
-        <CardDescription>Manage your private tee time preferences.</CardDescription>
+        <CardTitle className="text-3xl">Sign in</CardTitle>
+        <CardDescription>Use your planit.golf account to continue.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handleLogin} className="space-y-4">
@@ -127,12 +127,6 @@ export function LoginForm({ next = '/' }: { next?: string }) {
           </Button>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Need access?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">
-            Accept an invite
-          </Link>
-        </p>
       </CardContent>
     </Card>
   )

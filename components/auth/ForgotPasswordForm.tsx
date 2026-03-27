@@ -40,7 +40,7 @@ export function ForgotPasswordForm() {
     <Card className="w-full max-w-md border-white/70 bg-white/90 shadow-xl shadow-primary/10 backdrop-blur">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl">Reset password</CardTitle>
-        <CardDescription>We&apos;ll email you a secure reset link for your Big Deal account.</CardDescription>
+        <CardDescription>We&apos;ll email you a secure reset link for your account.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -59,7 +59,7 @@ export function ForgotPasswordForm() {
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {sent ? (
             <p className="text-sm text-foreground">
-              If that email exists in Planit, a reset link has been sent.
+              If that email exists in planit.golf, a reset link has been sent.
             </p>
           ) : null}
 

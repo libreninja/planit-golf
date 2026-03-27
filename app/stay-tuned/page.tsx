@@ -22,12 +22,12 @@ export default function StayTunedPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-foreground">
             <Clock className="h-8 w-8" />
           </div>
-          <CardTitle>Stay tuned</CardTitle>
-          <CardDescription>Big Deal is still private and invite-only.</CardDescription>
+          <CardTitle>Waitlist</CardTitle>
+          <CardDescription>Thanks for your interest.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-            Your account exists in the shared Planit system, but it has not been linked to an active Big Deal invite yet.
+            You are on the waitlist. We&apos;ll reach out if access becomes available.
           </div>
           <Button variant="outline" className="w-full" onClick={handleSignOut}>
             Sign Out

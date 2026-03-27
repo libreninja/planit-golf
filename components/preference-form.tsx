@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import { GripVertical, Shield, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { deleteEventPreference, saveDefaultPreferences, saveEventPreference, signOut } from '@/app/actions'
+import { HelpModal } from '@/components/help-modal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -269,13 +270,14 @@ export function PreferenceForm({
       <div className="sticky top-0 z-30 bg-foreground text-background">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="order-1 text-left">
-            <p className="font-display text-2xl leading-none">Big Deal</p>
+            <p className="font-display text-2xl leading-none">Good to Go</p>
           </div>
           <div className="order-2 flex flex-wrap items-center gap-2 sm:justify-end">
             <span className="mr-auto text-xs text-background/70 sm:mr-0 sm:order-2">
               {profile?.display_name || user.email}
             </span>
             <div className="flex flex-wrap items-center gap-2 sm:order-3">
+              <HelpModal mode="member" />
               {profile?.is_admin || profile?.is_system_admin ? (
                 <Button variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background" onClick={() => router.push('/admin')}>
                   <Shield className="mr-2 h-4 w-4" />

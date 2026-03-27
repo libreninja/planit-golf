@@ -6,8 +6,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
-  title: "Big Deal",
-  description: "Private tee time planning for league members.",
+  title: "planit.golf",
+  description: "planit.golf member access.",
 };
 
 export default function RootLayout({

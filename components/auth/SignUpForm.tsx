@@ -79,18 +79,12 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
             <path strokeWidth="2" d="M5 12h14M12 5l7 7-7 7" />
           </svg>
         </div>
-        <CardTitle className="text-3xl">Accept your invite</CardTitle>
+        <CardTitle className="text-3xl">Create account</CardTitle>
         <CardDescription>
-          Create one shared Planit account to access the private Big Deal app.
+          Create one shared planit.golf account to continue.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {!inviteToken ? (
-          <div className="rounded-lg border border-accent/50 bg-accent/40 p-4 text-sm text-accent-foreground">
-            Big Deal is invite-only. If your email is not on the roster, you&apos;ll be sent to the waitlist.
-          </div>
-        ) : null}
-
         <form onSubmit={handleSignUp} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">Full name</Label>

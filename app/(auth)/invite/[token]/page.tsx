@@ -16,7 +16,7 @@ export default async function InvitePage({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/login?next=/invite/${token}`)
+    redirect(`/signup?token=${token}`)
   }
 
   const { data: profile } = await supabase
