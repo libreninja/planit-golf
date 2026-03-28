@@ -370,9 +370,9 @@ export function PreferenceForm({
 
       <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 pb-28 sm:py-6 sm:pb-32">
 
-        <Card className="border-white/70 bg-white/85 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-foreground text-background">
-            <CardTitle className="text-lg text-background">
+        <Card className="overflow-hidden border-white/70 bg-white/85">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-primary text-primary-foreground">
+            <CardTitle className="text-lg text-primary-foreground">
               Preferred tee times{registrationsPaused ? ' (Weekly registration paused)' : ''}
             </CardTitle>
             <Dialog
@@ -386,7 +386,12 @@ export function PreferenceForm({
               }}
             >
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" onClick={openDefaultsEditor}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+                  onClick={openDefaultsEditor}
+                >
                   {defaultTimes.length > 0 ? 'Update' : 'Set defaults'}
                 </Button>
               </DialogTrigger>
@@ -417,7 +422,7 @@ export function PreferenceForm({
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="space-y-4">
               {defaultTimes.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -449,17 +454,14 @@ export function PreferenceForm({
                     </div>
                   </label>
 
-                  <label className="flex items-start gap-3">
-                    <div>
+                  <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background p-4">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">Revoke Good to Go membership entirely</p>
                       <p className="text-sm text-muted-foreground">Stop all future registrations and remove me from Good to Go planning.</p>
                     </div>
-                  </label>
-
-                  <div className="flex justify-end">
                     <Dialog open={confirmingRevoke} onOpenChange={setConfirmingRevoke}>
                       <DialogTrigger asChild>
-                        <Button size="sm" variant="destructive" disabled={savingRegistrationSettings || membershipRevoked}>
+                        <Button size="sm" variant="destructive" className="shrink-0" disabled={savingRegistrationSettings || membershipRevoked}>
                           {membershipRevoked ? 'Membership revoked' : 'Revoke membership'}
                         </Button>
                       </DialogTrigger>
@@ -488,11 +490,11 @@ export function PreferenceForm({
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/85 overflow-hidden">
-          <CardHeader className="bg-foreground text-background">
-            <CardTitle className="text-lg text-background">Individual event overrides</CardTitle>
+        <Card className="overflow-hidden border-white/70 bg-white/85">
+          <CardHeader className="bg-primary text-primary-foreground">
+            <CardTitle className="text-lg text-primary-foreground">Individual event overrides</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             <div className="mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <label className="flex items-center gap-2">
                 <input
@@ -555,7 +557,7 @@ export function PreferenceForm({
                           />
                           <span>Can&apos;t play this week</span>
                         </label>
-                        <Button variant="outline" size="sm" onClick={() => openEventEditor(event.id)}>
+                        <Button variant="outline" size="sm" className="border-border bg-background text-foreground hover:bg-secondary" onClick={() => openEventEditor(event.id)}>
                           Update
                         </Button>
                       </div>

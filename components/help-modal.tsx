@@ -58,9 +58,9 @@ export function HelpModal({ mode }: { mode: HelpMode }) {
           Help
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl overflow-hidden p-0">
-        <DialogHeader className="bg-foreground px-6 py-5 text-left text-background">
-          <DialogTitle className="text-background">{title}</DialogTitle>
+      <DialogContent className="max-w-2xl overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
+        <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
+          <DialogTitle className="text-primary-foreground">{title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-5 px-6 py-6 text-sm">
           {sections.map((section) => (
