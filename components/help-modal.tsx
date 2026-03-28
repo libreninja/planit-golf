@@ -59,11 +59,11 @@ export function HelpModal({ mode }: { mode: HelpMode }) {
           Help
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <DialogContent className="max-w-2xl overflow-hidden p-0">
+        <DialogHeader className="bg-foreground px-6 py-5 text-left text-background">
+          <DialogTitle className="text-background">{title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-5 text-sm">
+        <div className="space-y-5 px-6 py-6 text-sm">
           {sections.map((section) => (
             <section key={section.title} className="space-y-2">
               <h3 className="font-medium">{section.title}</h3>

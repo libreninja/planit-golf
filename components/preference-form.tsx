@@ -77,6 +77,9 @@ function getDemandLabel(count: number) {
   return `${count} request${count === 1 ? '' : 's'}`
 }
 
+const preferenceBadgeClassName =
+  'border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-600'
+
 function TimeChipSelector({
   selectedTimes,
   availableTimes,
@@ -197,6 +200,7 @@ export function PreferenceForm({
   const [draftSkipRegistration, setDraftSkipRegistration] = useState(false)
   const [savingEditor, setSavingEditor] = useState(false)
   const [showChangedOnly, setShowChangedOnly] = useState(false)
+  const [savingEventId, setSavingEventId] = useState<string | null>(null)
   const [registrationsPaused, setRegistrationsPaused] = useState(profile?.registrations_paused === true)
   const [membershipRevoked, setMembershipRevoked] = useState(profile?.membership_revoked === true)
   const [savingRegistrationSettings, setSavingRegistrationSettings] = useState(false)
@@ -235,8 +239,8 @@ export function PreferenceForm({
 
   const openEventEditor = (eventId: string) => {
     const preferences = getEventPreferences(eventId)
-    setDraftTimes(preferences.skipRegistration ? [] : preferences.times)
-    setDraftSkipRegistration(preferences.skipRegistration)
+    setDraftTimes(preferences.times)
+    setDraftSkipRegistration(false)
     setEditor({ type: 'event', eventId })
   }
 
@@ -255,10 +259,10 @@ export function PreferenceForm({
         await saveDefaultPreferences(draftTimes)
         setDefaultTimes(draftTimes)
       } else {
-        await saveEventRegistrationOverride(editor.eventId, draftSkipRegistration ? [] : draftTimes, draftSkipRegistration)
+        await saveEventRegistrationOverride(editor.eventId, draftTimes, false)
         setEventOverrides((current) => ({
           ...current,
-          [editor.eventId]: { times: draftSkipRegistration ? [] : draftTimes, skipRegistration: draftSkipRegistration },
+          [editor.eventId]: { times: draftTimes, skipRegistration: false },
         }))
       }
 
@@ -291,6 +295,28 @@ export function PreferenceForm({
       await saveRegistrationSettings(registrationsPaused, membershipRevoked)
     } finally {
       setSavingRegistrationSettings(false)
+    }
+  }
+
+  const handleToggleEventSkip = async (eventId: string, nextSkipRegistration: boolean) => {
+    const currentPreferences = getEventPreferences(eventId)
+
+    setSavingEventId(eventId)
+    try {
+      await saveEventRegistrationOverride(
+        eventId,
+        nextSkipRegistration ? [] : currentPreferences.times,
+        nextSkipRegistration,
+      )
+      setEventOverrides((current) => ({
+        ...current,
+        [eventId]: {
+          times: nextSkipRegistration ? [] : currentPreferences.times,
+          skipRegistration: nextSkipRegistration,
+        },
+      }))
+    } finally {
+      setSavingEventId(null)
     }
   }
 
@@ -381,7 +407,7 @@ export function PreferenceForm({
               {defaultTimes.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {defaultTimes.map((time, index) => (
-                    <Badge key={time} variant="outline">
+                    <Badge key={time} variant="outline" className={preferenceBadgeClassName}>
                       #{index + 1} {time}
                     </Badge>
                   ))}
@@ -474,12 +500,26 @@ export function PreferenceForm({
                           {prefs.skipRegistration ? <Badge variant="destructive">Don&apos;t register</Badge> : null}
                         </div>
                         <p className="text-sm text-muted-foreground">{event.course_name}</p>
+                        <label className="mt-3 flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={prefs.skipRegistration}
+                            disabled={savingEventId === event.id}
+                            onChange={(eventChange) => {
+                              void handleToggleEventSkip(event.id, eventChange.target.checked)
+                            }}
+                            className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
+                          />
+                          <div>
+                            <p className="text-sm font-medium">Can&apos;t play this week. Don&apos;t register.</p>
+                          </div>
+                        </label>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {prefs.skipRegistration ? (
                             <span className="text-sm text-muted-foreground">Not playing this week.</span>
                           ) : prefs.times.length > 0 ? (
                             prefs.times.map((time, index) => (
-                              <Badge key={`${event.id}-${time}`} variant="outline">
+                              <Badge key={`${event.id}-${time}`} variant="outline" className={preferenceBadgeClassName}>
                                 #{index + 1} {time}
                                 {eventDemandCounts[event.id]?.[time] ? ` · ${eventDemandCounts[event.id][time]}` : ''}
                               </Badge>
@@ -516,38 +556,21 @@ export function PreferenceForm({
           <DialogHeader>
             <DialogTitle>{editorEvent ? formatDate(editorEvent.event_date) : 'Event override'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <label className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={draftSkipRegistration}
-                onChange={(event) => setDraftSkipRegistration(event.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
-              />
-              <div>
-                <p className="text-sm font-medium">Can&apos;t play this week. Don&apos;t register.</p>
-                <p className="text-sm text-muted-foreground">Use this week-specific override to skip the run entirely.</p>
-              </div>
-            </label>
-
-            {!draftSkipRegistration ? (
-              <TimeChipSelector
-                selectedTimes={draftTimes}
-                availableTimes={editorAvailableTimes}
-                demandCounts={editorDemandCounts}
-                onAdd={(time) => {
-                  if (draftTimes.length < 3) setDraftTimes([...draftTimes, time])
-                }}
-                onRemove={(time) => setDraftTimes(draftTimes.filter((selectedTime) => selectedTime !== time))}
-                onReorder={(fromIndex, toIndex) => {
-                  const reordered = [...draftTimes]
-                  const [removed] = reordered.splice(fromIndex, 1)
-                  reordered.splice(toIndex, 0, removed)
-                  setDraftTimes(reordered)
-                }}
-              />
-            ) : null}
-          </div>
+          <TimeChipSelector
+            selectedTimes={draftTimes}
+            availableTimes={editorAvailableTimes}
+            demandCounts={editorDemandCounts}
+            onAdd={(time) => {
+              if (draftTimes.length < 3) setDraftTimes([...draftTimes, time])
+            }}
+            onRemove={(time) => setDraftTimes(draftTimes.filter((selectedTime) => selectedTime !== time))}
+            onReorder={(fromIndex, toIndex) => {
+              const reordered = [...draftTimes]
+              const [removed] = reordered.splice(fromIndex, 1)
+              reordered.splice(toIndex, 0, removed)
+              setDraftTimes(reordered)
+            }}
+          />
           <DialogFooter>
             {editor?.type === 'event' ? (
               <Button variant="ghost" onClick={handleUseDefaultsForEvent} disabled={savingEditor}>
