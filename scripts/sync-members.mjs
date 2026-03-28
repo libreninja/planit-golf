@@ -85,13 +85,16 @@ async function fetchGolfGeniusLeagueRosters() {
       throw new Error(`Could not find Golf Genius event for ${league}`)
     }
 
-    const rosterResponse = await getEventRoster({ event_id: event.id || event.event_id, page: 1 })
-    const rows = (Array.isArray(rosterResponse) ? rosterResponse : rosterResponse?.roster || [])
-      .map((row) => row.member || row)
-      .filter(Boolean)
-      .map((member) => ({ ...member, league }))
+    for (let page = 1; page <= 25; page += 1) {
+      const rosterResponse = await getEventRoster({ event_id: event.id || event.event_id, page })
+      const rows = (Array.isArray(rosterResponse) ? rosterResponse : rosterResponse?.roster || [])
+        .map((row) => row.member || row)
+        .filter(Boolean)
+        .map((member) => ({ ...member, league }))
 
-    rosterRows.push(...rows)
+      if (rows.length === 0) break
+      rosterRows.push(...rows)
+    }
   }
 
   const masterRosterRows = []
