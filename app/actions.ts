@@ -140,10 +140,7 @@ export async function createInvite(memberId: string) {
 
   revalidatePath('/admin')
   revalidatePath('/admin/invites')
-  return {
-    token,
-    email: member.email,
-  }
+  return token
 }
 
 export async function revokeInvite(inviteId: string) {

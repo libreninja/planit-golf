@@ -28,7 +28,6 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   const [query, setQuery] = useState('')
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({})
   const [busyRow, setBusyRow] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -60,8 +59,6 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         />
       </form>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-
       <div className="space-y-3 overflow-y-auto pr-1">
         {filteredRows.map((row) => {
           const invite = row.invites?.[0]
@@ -88,39 +85,15 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                     size="sm"
                     disabled={isPending && busyRow === row.id}
                     onClick={() => {
-                      setError(null)
                       setBusyRow(row.id)
                       startTransition(async () => {
                         try {
-                          const invite = await createInvite(row.id)
-                          const token = typeof invite === 'string' ? invite : invite.token
-                          const email = typeof invite === 'string' ? row.email : invite.email
-
-                          if (!email) {
-                            throw new Error('Member is missing an email address')
-                          }
-
-                          const response = await fetch('/api/invites/send', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ token, email }),
-                          })
-
-                          if (!response.ok) {
-                            const payload = await response.json().catch(() => null) as { error?: string } | null
-                            throw new Error(payload?.error || 'Invite failed to send')
-                          }
-
+                          const token = await createInvite(row.id)
                           setGeneratedLinks((current) => ({
                             ...current,
                             [row.id]: `/signup?token=${token}`,
                           }))
                           router.refresh()
-                        } catch (cause) {
-                          console.error(cause)
-                          setError(cause instanceof Error ? cause.message : 'Invite failed to send')
                         } finally {
                           setBusyRow(null)
                         }
@@ -136,18 +109,11 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                       size="sm"
                       disabled={isPending && busyRow === row.id}
                       onClick={() => {
-                        setError(null)
                         setBusyRow(row.id)
                         startTransition(async () => {
-                          try {
-                            await revokeInvite(invite.id)
-                            router.refresh()
-                          } catch (cause) {
-                            console.error(cause)
-                            setError(cause instanceof Error ? cause.message : 'Invite could not be revoked')
-                          } finally {
-                            setBusyRow(null)
-                          }
+                          await revokeInvite(invite.id)
+                          setBusyRow(null)
+                          router.refresh()
                         })
                       }}
                     >
