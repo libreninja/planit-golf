@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInvite, revokeInvite } from '@/app/actions'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +25,7 @@ interface InviteRow {
 }
 
 export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
+  const [localRows, setLocalRows] = useState(rows)
   const [query, setQuery] = useState('')
   const [showInvitedMembers, setShowInvitedMembers] = useState(false)
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({})
@@ -32,10 +33,14 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
+  useEffect(() => {
+    setLocalRows(rows)
+  }, [rows])
+
   const filteredRows = useMemo(() => {
     const normalized = query.trim().toLowerCase()
     if (!normalized) {
-      return rows
+      return localRows
         .filter((row) => {
           const status = row.invites?.[0]?.status || 'not invited'
           if (showInvitedMembers) return status !== 'not invited'
@@ -44,12 +49,12 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         .slice(0, 3)
     }
 
-    return rows.filter((row) =>
+    return localRows.filter((row) =>
       [row.display_name || '', row.email || '', row.phone || '', row.golf_member_name, row.golf_member_id].some((value) =>
         value.toLowerCase().includes(normalized),
       ),
     )
-  }, [query, rows, showInvitedMembers])
+  }, [localRows, query, showInvitedMembers])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
@@ -100,11 +105,28 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                       setBusyRow(row.id)
                       startTransition(async () => {
                         const token = await createInvite(row.id)
+                        setLocalRows((current) =>
+                          current.map((currentRow) =>
+                            currentRow.id === row.id
+                              ? {
+                                  ...currentRow,
+                                  invites: [
+                                    {
+                                      id: currentRow.invites?.[0]?.id || `pending-${row.id}`,
+                                      status: 'pending',
+                                      invite_token: token,
+                                    },
+                                  ],
+                                }
+                              : currentRow,
+                          ),
+                        )
                         setGeneratedLinks((current) => ({
                           ...current,
                           [row.id]: `/signup?token=${token}`,
                         }))
                         router.refresh()
+                        setBusyRow(null)
                       })
                     }}
                   >
@@ -120,7 +142,28 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                         setBusyRow(row.id)
                         startTransition(async () => {
                           await revokeInvite(invite.id)
+                          setLocalRows((current) =>
+                            current.map((currentRow) =>
+                              currentRow.id === row.id
+                                ? {
+                                    ...currentRow,
+                                    invites: [
+                                      {
+                                        ...invite,
+                                        status: 'revoked',
+                                      },
+                                    ],
+                                  }
+                                : currentRow,
+                            ),
+                          )
+                          setGeneratedLinks((current) => {
+                            const next = { ...current }
+                            delete next[row.id]
+                            return next
+                          })
                           router.refresh()
+                          setBusyRow(null)
                         })
                       }}
                     >
