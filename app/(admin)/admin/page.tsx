@@ -168,7 +168,7 @@ export default async function AdminPage() {
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">Manage invites</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden">
                 <DialogHeader>
                   <DialogTitle>Member invites</DialogTitle>
                 </DialogHeader>

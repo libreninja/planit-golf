@@ -28,6 +28,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   const [query, setQuery] = useState('')
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({})
   const [busyRow, setBusyRow] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -50,7 +51,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   }, [query, rows])
 
   return (
-    <div className="space-y-4">
+    <div className="flex max-h-[min(78vh,44rem)] flex-col gap-4 overflow-hidden">
       <form className="flex gap-2" onSubmit={(event) => event.preventDefault()}>
         <Input
           placeholder="Search by member name, email, phone, or Golf Genius ID"
@@ -59,7 +60,9 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         />
       </form>
 
-      <div className="space-y-3">
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      <div className="space-y-3 overflow-y-auto pr-1">
         {filteredRows.map((row) => {
           const invite = row.invites?.[0]
           const status = invite?.status || 'not invited'
@@ -85,14 +88,22 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                     size="sm"
                     disabled={isPending && busyRow === row.id}
                     onClick={() => {
+                      setError(null)
                       setBusyRow(row.id)
                       startTransition(async () => {
-                        const token = await createInvite(row.id)
-                        setGeneratedLinks((current) => ({
-                          ...current,
-                          [row.id]: `/signup?token=${token}`,
-                        }))
-                        router.refresh()
+                        try {
+                          const token = await createInvite(row.id)
+                          setGeneratedLinks((current) => ({
+                            ...current,
+                            [row.id]: `/signup?token=${token}`,
+                          }))
+                          router.refresh()
+                        } catch (cause) {
+                          console.error(cause)
+                          setError(cause instanceof Error ? cause.message : 'Invite failed to send')
+                        } finally {
+                          setBusyRow(null)
+                        }
                       })
                     }}
                   >
@@ -105,10 +116,18 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                       size="sm"
                       disabled={isPending && busyRow === row.id}
                       onClick={() => {
+                        setError(null)
                         setBusyRow(row.id)
                         startTransition(async () => {
-                          await revokeInvite(invite.id)
-                          router.refresh()
+                          try {
+                            await revokeInvite(invite.id)
+                            router.refresh()
+                          } catch (cause) {
+                            console.error(cause)
+                            setError(cause instanceof Error ? cause.message : 'Invite could not be revoked')
+                          } finally {
+                            setBusyRow(null)
+                          }
                         })
                       }}
                     >
