@@ -375,116 +375,115 @@ export function PreferenceForm({
             <CardTitle className="text-lg text-primary-foreground">
               Preferred tee times{registrationsPaused ? ' (Weekly registration paused)' : ''}
             </CardTitle>
-            <Dialog
-              open={editor?.type === 'defaults'}
-              onOpenChange={(open) => {
-                if (open) {
-                  openDefaultsEditor()
-                } else {
-                  closeEditor()
-                }
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-                  onClick={openDefaultsEditor}
-                >
-                  {defaultTimes.length > 0 ? 'Update' : 'Set defaults'}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Preferred tee times</DialogTitle>
-                </DialogHeader>
-                <TimeChipSelector
-                  selectedTimes={draftTimes}
-                  availableTimes={editorAvailableTimes}
-                  demandCounts={editorDemandCounts}
-                  onAdd={(time) => {
-                    if (draftTimes.length < 3) setDraftTimes([...draftTimes, time])
-                  }}
-                  onRemove={(time) => setDraftTimes(draftTimes.filter((selectedTime) => selectedTime !== time))}
-                  onReorder={(fromIndex, toIndex) => {
-                    const reordered = [...draftTimes]
-                    const [removed] = reordered.splice(fromIndex, 1)
-                    reordered.splice(toIndex, 0, removed)
-                    setDraftTimes(reordered)
-                  }}
-                />
-                <DialogFooter>
-                  <Button onClick={handleSaveEditor} disabled={savingEditor}>
-                    {savingEditor ? 'Saving...' : 'Save'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-4">
-              {defaultTimes.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {defaultTimes.map((time, index) => (
-                    <Badge key={time} variant="outline" className={preferenceBadgeClassName}>
-                      #{index + 1} {time}
-                    </Badge>
-                  ))}
+              <label className="flex items-start gap-3 rounded-md">
+                <input
+                  type="checkbox"
+                  checked={registrationsPaused}
+                  onChange={(event) => {
+                    void handleToggleRegistrationPause(event.target.checked || membershipRevoked)
+                  }}
+                  disabled={membershipRevoked}
+                  className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
+                />
+                <div>
+                  <p className="text-sm font-medium">Pause registrations indefinitely</p>
+                  <p className="text-sm text-muted-foreground">Stay in Good to Go, but do not register me until I turn this back on.</p>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No preferred tee times set.</p>
-              )}
+              </label>
 
-              <div className="rounded-xl border border-border bg-background/70 p-4">
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={registrationsPaused}
-                      onChange={(event) => {
-                        void handleToggleRegistrationPause(event.target.checked || membershipRevoked)
-                      }}
-                      disabled={membershipRevoked}
-                      className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
-                    />
-                    <div>
-                      <p className="text-sm font-medium">Pause registrations indefinitely</p>
-                      <p className="text-sm text-muted-foreground">Stay in Good to Go, but do not register me until I turn this back on.</p>
-                    </div>
-                  </label>
-
-                  <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background p-4">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">Revoke Good to Go membership entirely</p>
-                      <p className="text-sm text-muted-foreground">Stop all future registrations and remove me from Good to Go planning.</p>
-                    </div>
-                    <Dialog open={confirmingRevoke} onOpenChange={setConfirmingRevoke}>
-                      <DialogTrigger asChild>
-                        <Button size="sm" variant="destructive" className="shrink-0" disabled={savingRegistrationSettings || membershipRevoked}>
-                          {membershipRevoked ? 'Membership revoked' : 'Revoke membership'}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-lg overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
-                        <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
-                          <DialogTitle className="text-primary-foreground">Revoke Good to Go membership?</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3 px-6 py-6 text-sm text-muted-foreground">
-                          <p>Your Good to Go membership will be revoked immediately.</p>
-                          <p>You will no longer be able to log in or use this site, and no future registrations will be attempted for you.</p>
-                        </div>
-                        <DialogFooter className="px-6 pb-6">
-                          <Button variant="outline" onClick={() => setConfirmingRevoke(false)} disabled={savingRegistrationSettings}>
-                            Cancel
-                          </Button>
-                          <Button variant="destructive" onClick={() => { void handleConfirmRevoke() }} disabled={savingRegistrationSettings}>
-                            {savingRegistrationSettings ? 'Revoking...' : 'Yes, revoke membership'}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {defaultTimes.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {defaultTimes.map((time, index) => (
+                      <Badge key={time} variant="outline" className={preferenceBadgeClassName}>
+                        #{index + 1} {time}
+                      </Badge>
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No preferred tee times set.</p>
+                )}
+
+                <Dialog
+                  open={editor?.type === 'defaults'}
+                  onOpenChange={(open) => {
+                    if (open) {
+                      openDefaultsEditor()
+                    } else {
+                      closeEditor()
+                    }
+                  }}
+                >
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border bg-background text-foreground hover:bg-secondary"
+                      onClick={openDefaultsEditor}
+                    >
+                      {defaultTimes.length > 0 ? 'Update' : 'Set defaults'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Preferred tee times</DialogTitle>
+                    </DialogHeader>
+                    <TimeChipSelector
+                      selectedTimes={draftTimes}
+                      availableTimes={editorAvailableTimes}
+                      demandCounts={editorDemandCounts}
+                      onAdd={(time) => {
+                        if (draftTimes.length < 3) setDraftTimes([...draftTimes, time])
+                      }}
+                      onRemove={(time) => setDraftTimes(draftTimes.filter((selectedTime) => selectedTime !== time))}
+                      onReorder={(fromIndex, toIndex) => {
+                        const reordered = [...draftTimes]
+                        const [removed] = reordered.splice(fromIndex, 1)
+                        reordered.splice(toIndex, 0, removed)
+                        setDraftTimes(reordered)
+                      }}
+                    />
+                    <DialogFooter>
+                      <Button onClick={handleSaveEditor} disabled={savingEditor}>
+                        {savingEditor ? 'Saving...' : 'Save'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background/70 p-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Revoke Good to Go membership entirely</p>
+                  <p className="text-sm text-muted-foreground">Stop all future registrations and remove me from Good to Go planning.</p>
                 </div>
+                <Dialog open={confirmingRevoke} onOpenChange={setConfirmingRevoke}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="shrink-0" disabled={savingRegistrationSettings || membershipRevoked}>
+                      {membershipRevoked ? 'Membership revoked' : 'Revoke membership'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
+                    <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
+                      <DialogTitle className="text-primary-foreground">Revoke Good to Go membership?</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 px-6 py-6 text-sm text-muted-foreground">
+                      <p>Your Good to Go membership will be revoked immediately.</p>
+                      <p>You will no longer be able to log in or use this site, and no future registrations will be attempted for you.</p>
+                    </div>
+                    <DialogFooter className="px-6 pb-6">
+                      <Button variant="outline" onClick={() => setConfirmingRevoke(false)} disabled={savingRegistrationSettings}>
+                        Cancel
+                      </Button>
+                      <Button variant="destructive" onClick={() => { void handleConfirmRevoke() }} disabled={savingRegistrationSettings}>
+                        {savingRegistrationSettings ? 'Revoking...' : 'Yes, revoke membership'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </CardContent>
