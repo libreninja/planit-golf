@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getProfileRoles } from '@/lib/auth'
-import { syncMembersFromGolfGenius } from '@/lib/golfgenius-sync'
+import { syncMembersFromGolfGenius, testGolfGeniusConnection } from '@/lib/golfgenius-sync'
 import { createClient } from '@/lib/supabase/server'
 
 async function requireAdmin() {
@@ -23,6 +23,17 @@ async function requireAdmin() {
 
 export async function syncRoster() {
   await requireAdmin()
-  await syncMembersFromGolfGenius()
+  return await syncMembersFromGolfGenius()
+}
+
+export async function syncRosterAndRefresh() {
+  await requireAdmin()
+  const result = await syncMembersFromGolfGenius()
   revalidatePath('/admin')
+  return result
+}
+
+export async function testRosterConnection() {
+  await requireAdmin()
+  return await testGolfGeniusConnection()
 }

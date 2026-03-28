@@ -86,6 +86,24 @@ async function getEvents() {
     .filter(Boolean)
 }
 
+export async function testGolfGeniusConnection() {
+  const events = await getEvents()
+  const matchingEvents = events
+    .filter((event: any) =>
+      Object.values(LEAGUE_EVENT_PATTERNS).some((pattern) => pattern.test(event.name || '')),
+    )
+    .map((event: any) => ({
+      id: event.id || event.event_id,
+      name: event.name || 'Unnamed event',
+    }))
+
+  return {
+    success: true,
+    eventCount: matchingEvents.length,
+    events: matchingEvents.slice(0, 5),
+  }
+}
+
 async function getPagedRoster(endpoint: string, params: Record<string, string | number>) {
   const rows: GolfGeniusMember[] = []
 
