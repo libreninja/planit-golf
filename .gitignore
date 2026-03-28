@@ -38,3 +38,6 @@ next-env.d.ts
 
 # supabase local metadata
 supabase/.temp/
+
+# local roster sync overrides
+scripts/member-overrides.json
