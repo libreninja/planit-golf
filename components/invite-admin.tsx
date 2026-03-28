@@ -26,6 +26,7 @@ interface InviteRow {
 
 export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   const [query, setQuery] = useState('')
+  const [showInvitedMembers, setShowInvitedMembers] = useState(false)
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({})
   const [busyRow, setBusyRow] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -37,6 +38,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
       return rows
         .filter((row) => {
           const status = row.invites?.[0]?.status || 'not invited'
+          if (showInvitedMembers) return status !== 'not invited'
           return status !== 'claimed'
         })
         .slice(0, 3)
@@ -47,7 +49,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         value.toLowerCase().includes(normalized),
       ),
     )
-  }, [query, rows])
+  }, [query, rows, showInvitedMembers])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
@@ -58,6 +60,16 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
           onChange={(event) => setQuery(event.target.value)}
         />
       </form>
+
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={showInvitedMembers}
+          onChange={(event) => setShowInvitedMembers(event.target.checked)}
+          className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
+        />
+        <span>Show invited members</span>
+      </label>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
         {filteredRows.map((row) => {

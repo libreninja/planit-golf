@@ -15,17 +15,18 @@ export function AdminSyncControls() {
 
   const statusClassName =
     status.tone === 'success'
-      ? 'text-emerald-200'
+      ? 'text-emerald-700'
       : status.tone === 'error'
-        ? 'text-red-200'
-        : 'text-background/70'
+        ? 'text-red-700'
+        : 'text-muted-foreground'
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
       <Button
         variant="outline"
         size="sm"
-        className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background"
+        className="border-border bg-background text-foreground hover:bg-secondary hover:text-foreground"
         disabled={isPending}
         onClick={() => {
           startTransition(async () => {
@@ -45,13 +46,13 @@ export function AdminSyncControls() {
           })
         }}
       >
-        Test connection
+        Test GG connection
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background"
+        className="border-border bg-background text-foreground hover:bg-secondary hover:text-foreground"
         disabled={isPending}
         onClick={() => {
           startTransition(async () => {
@@ -72,6 +73,7 @@ export function AdminSyncControls() {
       >
         Sync roster
       </Button>
+      </div>
 
       {status.message ? (
         <p className={`text-xs sm:max-w-md ${statusClassName}`}>{status.message}</p>

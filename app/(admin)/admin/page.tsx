@@ -159,7 +159,6 @@ export default async function AdminPage() {
             <p className="font-display text-2xl leading-none">Good to Go Admin</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <AdminSyncControls />
             <HelpModal mode="admin" />
             <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
               <Link href="/">Back</Link>
@@ -176,27 +175,28 @@ export default async function AdminPage() {
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-4">
         <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-primary text-primary-foreground">
-            <CardTitle className="text-lg text-primary-foreground">Member invites</CardTitle>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-                >
-                  Manage invites
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="flex h-[32rem] max-h-[85vh] max-w-4xl flex-col overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
-                <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
-                  <DialogTitle className="text-primary-foreground">Member invites</DialogTitle>
-                </DialogHeader>
-                <div className="flex min-h-0 flex-1 px-6 py-6">
-                  <InviteAdmin rows={inviteRows} />
-                </div>
-              </DialogContent>
-            </Dialog>
+            <CardTitle className="text-lg text-primary-foreground">System tools</CardTitle>
           </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    Manage invites
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="flex h-[32rem] max-h-[85vh] max-w-4xl flex-col overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
+                  <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
+                    <DialogTitle className="text-primary-foreground">Manage invites</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex min-h-0 flex-1 px-6 py-6">
+                    <InviteAdmin rows={inviteRows} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <AdminSyncControls />
+            </div>
+          </CardContent>
         </Card>
         <UpcomingRunAdmin rows={runRows} demandCounts={nextRunDemandCounts} />
       </div>
