@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { syncRoster } from '@/app/admin-actions'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
@@ -158,6 +159,11 @@ export default async function AdminPage() {
             <p className="font-display text-2xl leading-none">Good to Go Admin</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <form action={syncRoster}>
+              <Button variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background" type="submit">
+                Sync roster
+              </Button>
+            </form>
             <HelpModal mode="admin" />
             <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
               <Link href="/">Back</Link>
