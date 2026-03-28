@@ -53,6 +53,21 @@ export default async function AdminPage() {
     .order('event_date', { ascending: true })
     .limit(1)
 
+  const inviteRows = (members || []).map((member) => ({
+    id: member.id,
+    display_name: member.display_name,
+    email: member.email,
+    phone: member.phone,
+    golf_member_name: member.golf_member_name,
+    golf_member_id: member.golf_member_id,
+    active: member.active,
+    invites: (member.invites || []).map((invite) => ({
+      id: invite.id,
+      status: invite.status,
+      invite_token: invite.invite_token,
+    })),
+  }))
+
   const nextEvent = events?.[0] || null
   const profileIds = (members || []).flatMap((member) => (member.profiles || []).map((profileRow) => profileRow.id))
 
@@ -157,7 +172,7 @@ export default async function AdminPage() {
                 <DialogHeader>
                   <DialogTitle>Member invites</DialogTitle>
                 </DialogHeader>
-                <InviteAdmin rows={members || []} />
+                <InviteAdmin rows={inviteRows} />
               </DialogContent>
             </Dialog>
           </CardHeader>

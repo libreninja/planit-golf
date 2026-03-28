@@ -3,6 +3,7 @@
 import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { getProfileRoles } from '@/lib/auth'
+import { sendInviteEmail } from '@/lib/email/mailer'
 import { isConfiguredSystemAdminEmail } from '@/lib/system-admin'
 import { createClient } from '@/lib/supabase/server'
 
@@ -114,6 +115,17 @@ export async function createInvite(memberId: string) {
   const supabase = await requireAdmin()
   const token = randomUUID()
 
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('email')
+    .eq('id', memberId)
+    .maybeSingle()
+
+  if (memberError) throw memberError
+  if (!member?.email) {
+    throw new Error('Member is missing an email address')
+  }
+
   const { error } = await supabase.from('invites').upsert(
     {
       member_id: memberId,
@@ -126,6 +138,8 @@ export async function createInvite(memberId: string) {
   )
 
   if (error) throw error
+
+  await sendInviteEmail(token, member.email)
 
   revalidatePath('/admin')
   revalidatePath('/admin/invites')
