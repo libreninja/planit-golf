@@ -9,6 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { requireAdmin } from '@/lib/auth'
 
+function toArray<T>(value: T | T[] | null | undefined): T[] {
+  if (Array.isArray(value)) return value
+  if (value == null) return []
+  return [value]
+}
+
 export default async function AdminPage() {
   await requireAdmin()
   const supabase = await createClient()
@@ -61,7 +67,7 @@ export default async function AdminPage() {
     golf_member_name: member.golf_member_name,
     golf_member_id: member.golf_member_id,
     active: member.active,
-    invites: (member.invites || []).map((invite) => ({
+    invites: toArray(member.invites).map((invite) => ({
       id: invite.id,
       status: invite.status,
       invite_token: invite.invite_token,
@@ -69,7 +75,7 @@ export default async function AdminPage() {
   }))
 
   const nextEvent = events?.[0] || null
-  const profileIds = (members || []).flatMap((member) => (member.profiles || []).map((profileRow) => profileRow.id))
+  const profileIds = (members || []).flatMap((member) => toArray(member.profiles).map((profileRow) => profileRow.id))
 
   const { data: defaultPreferences } =
     profileIds.length > 0
@@ -105,8 +111,8 @@ export default async function AdminPage() {
     appStatus: 'not signed up' | 'ready' | 'missing preferences'
     preferences: string[]
   }> = (members || []).map((member) => {
-    const invite = member.invites?.[0]
-    const profileRow = member.profiles?.[0]
+    const invite = toArray(member.invites)[0]
+    const profileRow = toArray(member.profiles)[0]
     const rawPreferences: string[] = profileRow
       ? eventPrefMap.get(profileRow.id) || defaultPrefMap.get(profileRow.id) || []
       : []
