@@ -31,11 +31,11 @@ export function UpcomingRunAdmin({ rows, demandCounts }: UpcomingRunAdminProps) 
   }
 
   return (
-    <Card className="border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-      <CardHeader>
-        <CardTitle>Next run</CardTitle>
+    <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
+      <CardHeader className="bg-primary text-primary-foreground">
+        <CardTitle className="text-lg text-primary-foreground">Next run</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No accepted members with preferences yet.</p>
         ) : (

@@ -172,18 +172,26 @@ export default async function AdminPage() {
       </div>
 
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-4">
-        <Card className="border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg">Member invites</CardTitle>
+        <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-primary text-primary-foreground">
+            <CardTitle className="text-lg text-primary-foreground">Member invites</CardTitle>
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">Manage invites</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+                >
+                  Manage invites
+                </Button>
               </DialogTrigger>
-              <DialogContent className="flex h-[32rem] max-h-[85vh] max-w-4xl flex-col overflow-hidden">
-                <DialogHeader>
-                  <DialogTitle>Member invites</DialogTitle>
+              <DialogContent className="flex h-[32rem] max-h-[85vh] max-w-4xl flex-col overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
+                <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
+                  <DialogTitle className="text-primary-foreground">Member invites</DialogTitle>
                 </DialogHeader>
-                <InviteAdmin rows={inviteRows} />
+                <div className="flex min-h-0 flex-1 px-6 py-6">
+                  <InviteAdmin rows={inviteRows} />
+                </div>
               </DialogContent>
             </Dialog>
           </CardHeader>

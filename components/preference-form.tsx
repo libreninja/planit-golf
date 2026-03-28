@@ -465,15 +465,15 @@ export function PreferenceForm({
                           {membershipRevoked ? 'Membership revoked' : 'Revoke membership'}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-lg">
-                        <DialogHeader>
-                          <DialogTitle>Revoke Good to Go membership?</DialogTitle>
+                      <DialogContent className="max-w-lg overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
+                        <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
+                          <DialogTitle className="text-primary-foreground">Revoke Good to Go membership?</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-3 text-sm text-muted-foreground">
+                        <div className="space-y-3 px-6 py-6 text-sm text-muted-foreground">
                           <p>Your Good to Go membership will be revoked immediately.</p>
                           <p>You will no longer be able to log in or use this site, and no future registrations will be attempted for you.</p>
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="px-6 pb-6">
                           <Button variant="outline" onClick={() => setConfirmingRevoke(false)} disabled={savingRegistrationSettings}>
                             Cancel
                           </Button>
