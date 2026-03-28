@@ -3,6 +3,7 @@
 import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { getProfileRoles } from '@/lib/auth'
+import { sendInviteEmail } from '@/lib/email/mailer'
 import { isConfiguredSystemAdminEmail } from '@/lib/system-admin'
 import { createClient } from '@/lib/supabase/server'
 
@@ -137,6 +138,8 @@ export async function createInvite(memberId: string) {
   )
 
   if (error) throw error
+
+  await sendInviteEmail(token, member.email)
 
   revalidatePath('/admin')
   revalidatePath('/admin/invites')

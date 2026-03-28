@@ -50,7 +50,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   }, [query, rows])
 
   return (
-    <div className="flex max-h-[min(78vh,44rem)] flex-col gap-4 overflow-hidden">
+    <div className="space-y-4">
       <form className="flex gap-2" onSubmit={(event) => event.preventDefault()}>
         <Input
           placeholder="Search by member name, email, phone, or Golf Genius ID"
@@ -59,7 +59,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         />
       </form>
 
-      <div className="space-y-3 overflow-y-auto pr-1">
+      <div className="space-y-3">
         {filteredRows.map((row) => {
           const invite = row.invites?.[0]
           const status = invite?.status || 'not invited'
@@ -87,16 +87,12 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                     onClick={() => {
                       setBusyRow(row.id)
                       startTransition(async () => {
-                        try {
-                          const token = await createInvite(row.id)
-                          setGeneratedLinks((current) => ({
-                            ...current,
-                            [row.id]: `/signup?token=${token}`,
-                          }))
-                          router.refresh()
-                        } finally {
-                          setBusyRow(null)
-                        }
+                        const token = await createInvite(row.id)
+                        setGeneratedLinks((current) => ({
+                          ...current,
+                          [row.id]: `/signup?token=${token}`,
+                        }))
+                        router.refresh()
                       })
                     }}
                   >
@@ -112,7 +108,6 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                         setBusyRow(row.id)
                         startTransition(async () => {
                           await revokeInvite(invite.id)
-                          setBusyRow(null)
                           router.refresh()
                         })
                       }}
