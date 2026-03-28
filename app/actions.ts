@@ -111,7 +111,6 @@ async function requireAdmin() {
 }
 
 export async function createInvite(memberId: string) {
-  const { sendInviteEmail } = await import('@/lib/email/mailer')
   const supabase = await requireAdmin()
   const token = randomUUID()
 
@@ -139,11 +138,12 @@ export async function createInvite(memberId: string) {
 
   if (error) throw error
 
-  await sendInviteEmail(token, member.email)
-
   revalidatePath('/admin')
   revalidatePath('/admin/invites')
-  return token
+  return {
+    token,
+    email: member.email,
+  }
 }
 
 export async function revokeInvite(inviteId: string) {

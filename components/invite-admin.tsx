@@ -92,7 +92,27 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                       setBusyRow(row.id)
                       startTransition(async () => {
                         try {
-                          const token = await createInvite(row.id)
+                          const invite = await createInvite(row.id)
+                          const token = typeof invite === 'string' ? invite : invite.token
+                          const email = typeof invite === 'string' ? row.email : invite.email
+
+                          if (!email) {
+                            throw new Error('Member is missing an email address')
+                          }
+
+                          const response = await fetch('/api/invites/send', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ token, email }),
+                          })
+
+                          if (!response.ok) {
+                            const payload = await response.json().catch(() => null) as { error?: string } | null
+                            throw new Error(payload?.error || 'Invite failed to send')
+                          }
+
                           setGeneratedLinks((current) => ({
                             ...current,
                             [row.id]: `/signup?token=${token}`,
