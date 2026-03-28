@@ -50,8 +50,8 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   }, [query, rows])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-      <form className="flex gap-2" onSubmit={(event) => event.preventDefault()}>
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
+      <form className="flex gap-2 py-1" onSubmit={(event) => event.preventDefault()}>
         <Input
           placeholder="Search by member name, email, phone, or Golf Genius ID"
           value={query}
