@@ -100,7 +100,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
             <Label htmlFor="fullName">Full name</Label>
             <Input
               id="fullName"
-              placeholder="Jesse Bunich"
+              placeholder="Your full name"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               required
