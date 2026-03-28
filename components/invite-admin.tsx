@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInvite, revokeInvite } from '@/app/actions'
 import { Badge } from '@/components/ui/badge'
@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input'
 
 interface InviteRow {
   id: string
-  display_name: string
-  email: string
+  display_name: string | null
+  email: string | null
   phone: string | null
   golf_member_name: string
   golf_member_id: string
@@ -28,19 +28,8 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   const [query, setQuery] = useState('')
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({})
   const [busyRow, setBusyRow] = useState<string | null>(null)
-  const [origin, setOrigin] = useState('')
-  const [mounted, setMounted] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
-
-  useEffect(() => {
-    setMounted(true)
-    setOrigin(window.location.origin)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
 
   const filteredRows = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -54,7 +43,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
     }
 
     return rows.filter((row) =>
-      [row.display_name, row.email, row.phone || '', row.golf_member_name, row.golf_member_id].some((value) =>
+      [row.display_name || '', row.email || '', row.phone || '', row.golf_member_name, row.golf_member_id].some((value) =>
         value.toLowerCase().includes(normalized),
       ),
     )
@@ -74,18 +63,17 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         {filteredRows.map((row) => {
           const invite = row.invites?.[0]
           const status = invite?.status || 'not invited'
-          const inviteLink =
-            generatedLinks[row.id] || (invite && origin ? `${origin}/signup?token=${invite.invite_token}` : null)
+          const inviteLink = generatedLinks[row.id] || (invite ? `/signup?token=${invite.invite_token}` : null)
 
           return (
             <div key={row.id} className="rounded-xl border border-border bg-background/80 p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{row.display_name}</p>
+                    <p className="font-medium">{row.display_name || row.golf_member_name}</p>
                     <Badge variant={status === 'claimed' ? 'default' : 'secondary'}>{status}</Badge>
                   </div>
-                  <p className="truncate text-sm text-muted-foreground">{row.email}</p>
+                  {row.email ? <p className="truncate text-sm text-muted-foreground">{row.email}</p> : null}
                   <p className="text-sm text-muted-foreground">
                     {row.golf_member_name} · {row.golf_member_id}
                   </p>
@@ -102,7 +90,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
                         const token = await createInvite(row.id)
                         setGeneratedLinks((current) => ({
                           ...current,
-                          [row.id]: `${window.location.origin}/signup?token=${token}`,
+                          [row.id]: `/signup?token=${token}`,
                         }))
                         router.refresh()
                       })
