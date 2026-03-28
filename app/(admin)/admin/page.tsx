@@ -1,13 +1,11 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { AdminSyncControls } from '@/components/admin-sync-controls'
+import { AdminSystemTools } from '@/components/admin-system-tools'
 import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
-import { InviteAdmin } from '@/components/invite-admin'
 import { UpcomingRunAdmin } from '@/components/upcoming-run-admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { requireAdmin } from '@/lib/auth'
 
 function toArray<T>(value: T | T[] | null | undefined): T[] {
@@ -29,6 +27,7 @@ export default async function AdminPage() {
       phone,
       golf_member_name,
       golf_member_id,
+      league,
       active,
       invites (
         id,
@@ -76,6 +75,10 @@ export default async function AdminPage() {
       invite_token: invite.invite_token,
     })),
   }))
+  const claimedInviteCount = inviteRows.filter((row) => row.invites?.[0]?.status === 'claimed').length
+  const pendingInviteCount = inviteRows.filter((row) => row.invites?.[0]?.status === 'pending').length
+  const mensRosterCount = (members || []).filter((member) => member.league === 'mens').length
+  const womensRosterCount = (members || []).filter((member) => member.league === 'womens').length
 
   const nextEvent = events?.[0] || null
   const profileIds = (members || []).flatMap((member) => toArray(member.profiles).map((profileRow) => profileRow.id))
@@ -178,24 +181,13 @@ export default async function AdminPage() {
             <CardTitle className="text-lg text-primary-foreground">System tools</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Manage invites
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="flex h-[32rem] max-h-[85vh] max-w-4xl flex-col overflow-hidden p-0 [&>button]:text-primary-foreground [&>button]:opacity-100">
-                  <DialogHeader className="bg-primary px-6 py-5 text-left text-primary-foreground">
-                    <DialogTitle className="text-primary-foreground">Manage invites</DialogTitle>
-                  </DialogHeader>
-                  <div className="flex min-h-0 flex-1 px-6 py-6">
-                    <InviteAdmin rows={inviteRows} />
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <AdminSyncControls />
-            </div>
+            <AdminSystemTools
+              inviteRows={inviteRows}
+              claimedInviteCount={claimedInviteCount}
+              pendingInviteCount={pendingInviteCount}
+              mensRosterCount={mensRosterCount}
+              womensRosterCount={womensRosterCount}
+            />
           </CardContent>
         </Card>
         <UpcomingRunAdmin rows={runRows} demandCounts={nextRunDemandCounts} />
