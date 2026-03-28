@@ -40,13 +40,13 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   const filteredRows = useMemo(() => {
     const normalized = query.trim().toLowerCase()
     if (!normalized) {
-      return localRows
-        .filter((row) => {
-          const status = row.invites?.[0]?.status || 'not invited'
-          if (showInvitedMembers) return status !== 'not invited'
-          return status !== 'claimed'
-        })
-        .slice(0, 3)
+      const baseRows = localRows.filter((row) => {
+        const status = row.invites?.[0]?.status || 'not invited'
+        if (showInvitedMembers) return status !== 'not invited'
+        return status !== 'claimed'
+      })
+
+      return showInvitedMembers ? baseRows : baseRows.slice(0, 3)
     }
 
     return localRows.filter((row) =>
