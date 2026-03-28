@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { ENABLED_OAUTH_PROVIDERS, type OAuthProvider } from '@/lib/auth-providers'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -38,7 +39,7 @@ export function LoginForm({ next = '/' }: { next?: string }) {
     router.refresh()
   }
 
-  const handleOAuthLogin = async (provider: 'google' | 'apple' | 'facebook') => {
+  const handleOAuthLogin = async (provider: OAuthProvider) => {
     setLoading(true)
     setError(null)
 
@@ -106,26 +107,26 @@ export function LoginForm({ next = '/' }: { next?: string }) {
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
-            <span className="bg-card px-3 text-muted-foreground">Or continue with</span>
-          </div>
-        </div>
+        {ENABLED_OAUTH_PROVIDERS.length > 0 ? (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
+                <span className="bg-card px-3 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" disabled={loading} onClick={() => handleOAuthLogin('google')}>
-            Google
-          </Button>
-          <Button variant="outline" disabled={loading} onClick={() => handleOAuthLogin('apple')}>
-            Apple
-          </Button>
-          <Button variant="outline" disabled={loading} onClick={() => handleOAuthLogin('facebook')}>
-            Facebook
-          </Button>
-        </div>
+            <div className={`grid gap-3 ${ENABLED_OAUTH_PROVIDERS.length === 1 ? 'grid-cols-1' : ENABLED_OAUTH_PROVIDERS.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              {ENABLED_OAUTH_PROVIDERS.map((provider) => (
+                <Button key={provider} variant="outline" disabled={loading} onClick={() => handleOAuthLogin(provider)}>
+                  {provider === 'google' ? 'Google' : provider === 'apple' ? 'Apple' : 'Facebook'}
+                </Button>
+              ))}
+            </div>
+          </>
+        ) : null}
 
       </CardContent>
     </Card>

@@ -6,10 +6,13 @@ import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { validateInviteForSignUp } from '@/app/actions'
+import { ENABLED_OAUTH_PROVIDERS, type OAuthProvider } from '@/lib/auth-providers'
+import { PasswordRequirements } from '@/components/auth/PasswordRequirements'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getPasswordValidationMessage, PASSWORD_MIN_LENGTH } from '@/lib/password-policy'
 
 export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
   const [email, setEmail] = useState('')
@@ -25,6 +28,13 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
     event.preventDefault()
     setLoading(true)
     setError(null)
+
+    const passwordError = getPasswordValidationMessage(password)
+    if (passwordError) {
+      setError(passwordError)
+      setLoading(false)
+      return
+    }
 
     const inviteCheck = await validateInviteForSignUp(email, inviteToken)
     if (!inviteCheck.valid) {
@@ -54,7 +64,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
     router.push('/auth/sign-up-success')
   }
 
-  const handleOAuthLogin = async (provider: 'google' | 'apple' | 'facebook') => {
+  const handleOAuthLogin = async (provider: OAuthProvider) => {
     setLoading(true)
     setError(null)
 
@@ -116,9 +126,11 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              minLength={6}
+              minLength={PASSWORD_MIN_LENGTH}
             />
           </div>
+
+          <PasswordRequirements password={password} />
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
@@ -128,26 +140,26 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
-            <span className="bg-card px-3 text-muted-foreground">Or continue with</span>
-          </div>
-        </div>
+        {ENABLED_OAUTH_PROVIDERS.length > 0 ? (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
+                <span className="bg-card px-3 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" disabled={loading} onClick={() => handleOAuthLogin('google')}>
-            Google
-          </Button>
-          <Button variant="outline" disabled={loading} onClick={() => handleOAuthLogin('apple')}>
-            Apple
-          </Button>
-          <Button variant="outline" disabled={loading} onClick={() => handleOAuthLogin('facebook')}>
-            Facebook
-          </Button>
-        </div>
+            <div className={`grid gap-3 ${ENABLED_OAUTH_PROVIDERS.length === 1 ? 'grid-cols-1' : ENABLED_OAUTH_PROVIDERS.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              {ENABLED_OAUTH_PROVIDERS.map((provider) => (
+                <Button key={provider} variant="outline" disabled={loading} onClick={() => handleOAuthLogin(provider)}>
+                  {provider === 'google' ? 'Google' : provider === 'apple' ? 'Apple' : 'Facebook'}
+                </Button>
+              ))}
+            </div>
+          </>
+        ) : null}
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}

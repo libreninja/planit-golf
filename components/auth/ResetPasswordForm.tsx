@@ -5,10 +5,12 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { PasswordRequirements } from '@/components/auth/PasswordRequirements'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getPasswordValidationMessage, PASSWORD_MIN_LENGTH } from '@/lib/password-policy'
 
 export function ResetPasswordForm() {
   const [password, setPassword] = useState('')
@@ -22,8 +24,9 @@ export function ResetPasswordForm() {
     setLoading(true)
     setError(null)
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    const passwordError = getPasswordValidationMessage(password)
+    if (passwordError) {
+      setError(passwordError)
       setLoading(false)
       return
     }
@@ -63,9 +66,10 @@ export function ResetPasswordForm() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              minLength={6}
+              minLength={PASSWORD_MIN_LENGTH}
             />
           </div>
+          <PasswordRequirements password={password} />
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm password</Label>
             <Input
@@ -74,7 +78,7 @@ export function ResetPasswordForm() {
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               required
-              minLength={6}
+              minLength={PASSWORD_MIN_LENGTH}
             />
           </div>
 
