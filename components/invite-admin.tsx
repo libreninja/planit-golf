@@ -50,7 +50,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
   }, [query, rows])
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
       <form className="flex gap-2" onSubmit={(event) => event.preventDefault()}>
         <Input
           placeholder="Search by member name, email, phone, or Golf Genius ID"
@@ -59,7 +59,7 @@ export function InviteAdmin({ rows }: { rows: InviteRow[] }) {
         />
       </form>
 
-      <div className="space-y-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
         {filteredRows.map((row) => {
           const invite = row.invites?.[0]
           const status = invite?.status || 'not invited'
