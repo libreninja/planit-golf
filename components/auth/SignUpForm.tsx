@@ -23,6 +23,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
   const router = useRouter()
 
   const nextTarget = inviteToken ? `/invite/${inviteToken}` : '/'
+  const loginHref = inviteToken ? `/login?next=${encodeURIComponent(nextTarget)}` : '/login'
 
   const handleSignUp = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -38,7 +39,8 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
 
     const inviteCheck = await validateInviteForSignUp(email, inviteToken)
     if (!inviteCheck.valid) {
-      router.push('/stay-tuned')
+      setError('This invite is invalid or tied to a different email address.')
+      setLoading(false)
       return
     }
 
@@ -163,7 +165,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link href={loginHref} className="font-medium text-primary hover:underline">
             Sign in
           </Link>
         </p>
