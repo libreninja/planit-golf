@@ -70,7 +70,7 @@ async function loadEnvFile(filePath) {
 async function fetchGolfGeniusLeagueRosters() {
   await loadEnvFile(GIDIOT_ENV_PATH)
   const { getEvents } = await import(GIDIOT_EVENTS_PATH)
-  const { getEventRoster } = await import(GIDIOT_ROSTERS_PATH)
+  const { getEventRoster, getMasterRoster } = await import(GIDIOT_ROSTERS_PATH)
 
   const eventsResponse = await getEvents({ page: 1 })
   const events = (Array.isArray(eventsResponse) ? eventsResponse : eventsResponse?.events || [])
@@ -94,7 +94,32 @@ async function fetchGolfGeniusLeagueRosters() {
     rosterRows.push(...rows)
   }
 
-  return rosterRows
+  const masterRosterRows = []
+  for (let page = 1; page <= 25; page += 1) {
+    const rosterResponse = await getMasterRoster({ page })
+    const rows = (Array.isArray(rosterResponse) ? rosterResponse : rosterResponse?.roster || rosterResponse?.members || [])
+      .map((row) => row.member || row)
+      .filter(Boolean)
+
+    if (rows.length === 0) break
+    masterRosterRows.push(...rows)
+  }
+
+  const mergedByName = new Map()
+  for (const player of [...masterRosterRows, ...rosterRows]) {
+    const golfMemberName = player.name || `${player.last_name}, ${player.first_name}`.trim()
+    const normalizedName = normalizeName(golfMemberName)
+    const existing = mergedByName.get(normalizedName)
+
+    mergedByName.set(normalizedName, {
+      ...player,
+      name: golfMemberName,
+      email: player.email || existing?.email || null,
+      league: player.league || existing?.league,
+    })
+  }
+
+  return Array.from(mergedByName.values())
 }
 
 function buildLocalRoster(playersJson) {
