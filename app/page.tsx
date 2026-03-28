@@ -91,6 +91,10 @@ export default async function Home() {
     redirect("/stay-tuned")
   }
 
+  if (resolvedProfile?.membership_revoked) {
+    redirect("/stay-tuned")
+  }
+
   const { data: member } = resolvedProfile?.member_id
     ? await supabase
         .from("members")

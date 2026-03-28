@@ -18,11 +18,11 @@ const memberSections = [
     title: 'How it works',
     items: [
       'Preferred tee times are your weekly defaults.',
-      'Use event specific overrides to skip or change preferences for that week.',
+      'Use Individual event overrides to skip or change preferences for a specific week.',
       'We will attempt to register your first preference, then second or third as needed.',
       'We cannot guarantee playing partners will be on the same tee time.',
       'Pause registrations if you want to stay in Good to Go but stop getting entered until you turn it back on.',
-      'Revoke Good to Go membership if you want to leave the system entirely.',
+      'Revoking Good to Go membership removes your access to the site and stops all future registrations.',
     ],
   },
 ]

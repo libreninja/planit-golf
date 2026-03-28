@@ -117,7 +117,7 @@ function TimeChipSelector({
                   }
                 }}
                 onDragEnd={() => setDraggedIndex(null)}
-                className={`flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground ${draggedIndex === index ? 'opacity-50' : ''}`}
+                className={`flex items-center gap-1 rounded-full border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white ${draggedIndex === index ? 'opacity-50' : ''}`}
               >
                 <GripVertical className="h-3 w-3 opacity-60" />
                 <span className="mr-1 font-bold">#{index + 1}</span>
@@ -197,13 +197,13 @@ export function PreferenceForm({
   })
   const [editor, setEditor] = useState<EditorState>(null)
   const [draftTimes, setDraftTimes] = useState<string[]>([])
-  const [draftSkipRegistration, setDraftSkipRegistration] = useState(false)
   const [savingEditor, setSavingEditor] = useState(false)
   const [showChangedOnly, setShowChangedOnly] = useState(false)
   const [savingEventId, setSavingEventId] = useState<string | null>(null)
   const [registrationsPaused, setRegistrationsPaused] = useState(profile?.registrations_paused === true)
   const [membershipRevoked, setMembershipRevoked] = useState(profile?.membership_revoked === true)
   const [savingRegistrationSettings, setSavingRegistrationSettings] = useState(false)
+  const [confirmingRevoke, setConfirmingRevoke] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -233,21 +233,18 @@ export function PreferenceForm({
 
   const openDefaultsEditor = () => {
     setDraftTimes(defaultTimes)
-    setDraftSkipRegistration(false)
     setEditor({ type: 'defaults' })
   }
 
   const openEventEditor = (eventId: string) => {
     const preferences = getEventPreferences(eventId)
     setDraftTimes(preferences.times)
-    setDraftSkipRegistration(false)
     setEditor({ type: 'event', eventId })
   }
 
   const closeEditor = () => {
     setEditor(null)
     setDraftTimes([])
-    setDraftSkipRegistration(false)
   }
 
   const handleSaveEditor = async () => {
@@ -289,12 +286,28 @@ export function PreferenceForm({
     }
   }
 
-  const handleSaveRegistrationSettings = async () => {
+  const handleToggleRegistrationPause = async (nextPaused: boolean) => {
+    setRegistrationsPaused(nextPaused)
     setSavingRegistrationSettings(true)
     try {
-      await saveRegistrationSettings(registrationsPaused, membershipRevoked)
+      await saveRegistrationSettings(nextPaused, membershipRevoked)
     } finally {
       setSavingRegistrationSettings(false)
+    }
+  }
+
+  const handleConfirmRevoke = async () => {
+    setMembershipRevoked(true)
+    setRegistrationsPaused(true)
+    setSavingRegistrationSettings(true)
+    try {
+      await saveRegistrationSettings(true, true)
+      await signOut()
+      router.push('/stay-tuned')
+      router.refresh()
+    } finally {
+      setSavingRegistrationSettings(false)
+      setConfirmingRevoke(false)
     }
   }
 
@@ -357,9 +370,11 @@ export function PreferenceForm({
 
       <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 pb-28 sm:py-6 sm:pb-32">
 
-        <Card className="border-white/70 bg-white/85">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg">Preferred tee times</CardTitle>
+        <Card className="border-white/70 bg-white/85 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-foreground text-background">
+            <CardTitle className="text-lg text-background">
+              Preferred tee times{registrationsPaused ? ' (Weekly registration paused)' : ''}
+            </CardTitle>
             <Dialog
               open={editor?.type === 'defaults'}
               onOpenChange={(open) => {
@@ -422,7 +437,9 @@ export function PreferenceForm({
                     <input
                       type="checkbox"
                       checked={registrationsPaused}
-                      onChange={(event) => setRegistrationsPaused(event.target.checked || membershipRevoked)}
+                      onChange={(event) => {
+                        void handleToggleRegistrationPause(event.target.checked || membershipRevoked)
+                      }}
                       disabled={membershipRevoked}
                       className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
                     />
@@ -433,18 +450,6 @@ export function PreferenceForm({
                   </label>
 
                   <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={membershipRevoked}
-                      onChange={(event) => {
-                        const nextValue = event.target.checked
-                        setMembershipRevoked(nextValue)
-                        if (nextValue) {
-                          setRegistrationsPaused(true)
-                        }
-                      }}
-                      className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
-                    />
                     <div>
                       <p className="text-sm font-medium">Revoke Good to Go membership entirely</p>
                       <p className="text-sm text-muted-foreground">Stop all future registrations and remove me from Good to Go planning.</p>
@@ -452,9 +457,30 @@ export function PreferenceForm({
                   </label>
 
                   <div className="flex justify-end">
-                    <Button size="sm" variant="outline" onClick={handleSaveRegistrationSettings} disabled={savingRegistrationSettings}>
-                      {savingRegistrationSettings ? 'Saving...' : 'Save registration status'}
-                    </Button>
+                    <Dialog open={confirmingRevoke} onOpenChange={setConfirmingRevoke}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="destructive" disabled={savingRegistrationSettings || membershipRevoked}>
+                          {membershipRevoked ? 'Membership revoked' : 'Revoke membership'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>Revoke Good to Go membership?</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm text-muted-foreground">
+                          <p>Your Good to Go membership will be revoked immediately.</p>
+                          <p>You will no longer be able to log in or use this site, and no future registrations will be attempted for you.</p>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setConfirmingRevoke(false)} disabled={savingRegistrationSettings}>
+                            Cancel
+                          </Button>
+                          <Button variant="destructive" onClick={() => { void handleConfirmRevoke() }} disabled={savingRegistrationSettings}>
+                            {savingRegistrationSettings ? 'Revoking...' : 'Yes, revoke membership'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </div>
@@ -462,9 +488,9 @@ export function PreferenceForm({
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/85">
-          <CardHeader>
-            <CardTitle className="text-lg">Upcoming events</CardTitle>
+        <Card className="border-white/70 bg-white/85 overflow-hidden">
+          <CardHeader className="bg-foreground text-background">
+            <CardTitle className="text-lg text-background">Individual event overrides</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
@@ -500,20 +526,6 @@ export function PreferenceForm({
                           {prefs.skipRegistration ? <Badge variant="destructive">Don&apos;t register</Badge> : null}
                         </div>
                         <p className="text-sm text-muted-foreground">{event.course_name}</p>
-                        <label className="mt-3 flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={prefs.skipRegistration}
-                            disabled={savingEventId === event.id}
-                            onChange={(eventChange) => {
-                              void handleToggleEventSkip(event.id, eventChange.target.checked)
-                            }}
-                            className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-ring"
-                          />
-                          <div>
-                            <p className="text-sm font-medium">Can&apos;t play this week. Don&apos;t register.</p>
-                          </div>
-                        </label>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {prefs.skipRegistration ? (
                             <span className="text-sm text-muted-foreground">Not playing this week.</span>
@@ -530,9 +542,23 @@ export function PreferenceForm({
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm" onClick={() => openEventEditor(event.id)}>
-                        Update
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <label className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm">
+                          <input
+                            type="checkbox"
+                            checked={prefs.skipRegistration}
+                            disabled={savingEventId === event.id}
+                            onChange={(eventChange) => {
+                              void handleToggleEventSkip(event.id, eventChange.target.checked)
+                            }}
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
+                          />
+                          <span>Can&apos;t play this week</span>
+                        </label>
+                        <Button variant="outline" size="sm" onClick={() => openEventEditor(event.id)}>
+                          Update
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )
