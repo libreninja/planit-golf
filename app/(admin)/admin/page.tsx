@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { signOut } from '@/app/actions'
+import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
 import { InviteAdmin } from '@/components/invite-admin'
 import { UpcomingRunAdmin } from '@/components/upcoming-run-admin'
