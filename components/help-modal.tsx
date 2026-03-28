@@ -8,19 +8,22 @@ type HelpMode = 'member' | 'admin'
 
 const memberSections = [
   {
-    title: 'How preferences work',
+    title: 'Welcome',
     items: [
-      'Pick up to three tee times and rank them in order.',
-      'Preferred tee times are your defaults for future weeks.',
-      'Use an event override only when a specific week should differ.',
+      "Welcome to the IGC Good to Go system. The first rule is we don't talk about Good to Go.",
+      'YOU ARE RESPONSIBLE FOR CANCELLING RESERVATIONS IF YOU CAN’T PLAY.',
     ],
   },
   {
-    title: 'How runs are resolved',
+    title: 'How it works',
     items: [
-      'The bot attempts your first choice, then second, then third.',
-      'Each player is registered individually.',
-      'Crowded times show request counts so you can see demand before the run.',
+      'Preferred tee times are your weekly defaults.',
+      'Use event specific overrides to skip or change preferences for that week.',
+      'We will attempt to register your first preference, then second or third as needed.',
+      'We cannot guarantee playing partners will be on the same tee time.',
+      'The number of Good to Go members trying to register for the same time is shown inline, for example: 7:22 4.',
+      'Pause registrations if you want to stay in Good to Go but stop getting entered until you turn it back on.',
+      'Revoke Good to Go membership if you want to leave the system entirely.',
     ],
   },
 ]

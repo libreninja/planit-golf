@@ -16,7 +16,7 @@ export default async function Home() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, member_id, invite_id, is_admin, is_system_admin")
+    .select("id, display_name, member_id, invite_id, is_admin, is_system_admin, registrations_paused, membership_revoked")
     .eq("id", user.id)
     .maybeSingle()
 
@@ -65,6 +65,8 @@ export default async function Home() {
           member_id: member.id,
           is_admin: true,
           is_system_admin: true,
+          registrations_paused: resolvedProfile?.registrations_paused ?? false,
+          membership_revoked: resolvedProfile?.membership_revoked ?? false,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
@@ -74,6 +76,8 @@ export default async function Home() {
         member_id: member.id,
         is_admin: true,
         is_system_admin: true,
+        registrations_paused: resolvedProfile?.registrations_paused ?? false,
+        membership_revoked: resolvedProfile?.membership_revoked ?? false,
       }
     }
   }
@@ -125,7 +129,7 @@ export default async function Home() {
 
   const { data: eventPrefs } = await supabase
     .from("event_preferences")
-    .select("event_id, tee_time_preferences")
+    .select("event_id, tee_time_preferences, skip_registration")
     .eq("user_id", user.id)
 
   const { data: leagueMembers } = member?.league
@@ -134,12 +138,14 @@ export default async function Home() {
         .select(`
           id,
           profiles (
-            id
+            id,
+            registrations_paused,
+            membership_revoked
           )
         `)
         .eq("active", true)
         .eq("league", member.league)
-    : { data: [] as Array<{ id: string; profiles: Array<{ id: string }> | null }> }
+    : { data: [] as Array<{ id: string; profiles: Array<{ id: string; registrations_paused: boolean; membership_revoked: boolean }> | null }> }
 
   const leagueProfileIds = (leagueMembers || []).flatMap((memberRow) =>
     (memberRow.profiles || []).map((profileRow) => profileRow.id),
@@ -158,21 +164,28 @@ export default async function Home() {
     leagueProfileIds.length > 0 && eventIds.length > 0
       ? await supabase
           .from("event_preferences")
-          .select("user_id, event_id, tee_time_preferences")
+          .select("user_id, event_id, tee_time_preferences, skip_registration")
           .in("user_id", leagueProfileIds)
           .in("event_id", eventIds)
-      : { data: [] as Array<{ user_id: string; event_id: string; tee_time_preferences: string[] }> }
+      : { data: [] as Array<{ user_id: string; event_id: string; tee_time_preferences: string[]; skip_registration: boolean }> }
 
   const defaultPrefMap = new Map((allDefaultPrefs || []).map((row) => [row.user_id, row.tee_time_preferences]))
-  const eventPrefMap = new Map((allEventPrefs || []).map((row) => [`${row.event_id}:${row.user_id}`, row.tee_time_preferences]))
+  const eventPrefMap = new Map((allEventPrefs || []).map((row) => [`${row.event_id}:${row.user_id}`, row]))
   const eventDemandCounts = Object.fromEntries(
     (events || []).map((event) => {
       const availableSlots = new Set((event.event_time_slots || []).map((slot) => slot.time_slot))
       const counts: Record<string, number> = {}
 
-      for (const profileId of leagueProfileIds) {
+      for (const memberRow of leagueMembers || []) {
+        const profileRow = (memberRow.profiles || [])[0]
+        if (!profileRow || profileRow.registrations_paused || profileRow.membership_revoked) continue
+
+        const profileId = profileRow.id
+        const eventPreference = eventPrefMap.get(`${event.id}:${profileId}`)
+        if (eventPreference?.skip_registration) continue
+
         const preferences =
-          eventPrefMap.get(`${event.id}:${profileId}`) ||
+          eventPreference?.tee_time_preferences ||
           defaultPrefMap.get(profileId) ||
           []
 

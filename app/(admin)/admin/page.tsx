@@ -36,7 +36,9 @@ export default async function AdminPage() {
       ),
       profiles (
         id,
-        email
+        email,
+        registrations_paused,
+        membership_revoked
       )
     `)
     .eq('active', true)
@@ -89,13 +91,13 @@ export default async function AdminPage() {
     nextEvent && profileIds.length > 0
       ? await supabase
           .from('event_preferences')
-          .select('user_id, event_id, tee_time_preferences')
+          .select('user_id, event_id, tee_time_preferences, skip_registration')
           .eq('event_id', nextEvent.id)
           .in('user_id', profileIds)
-      : { data: [] as { user_id: string; event_id: string; tee_time_preferences: string[] }[] }
+      : { data: [] as { user_id: string; event_id: string; tee_time_preferences: string[]; skip_registration: boolean }[] }
 
   const defaultPrefMap = new Map((defaultPreferences || []).map((row) => [row.user_id, row.tee_time_preferences]))
-  const eventPrefMap = new Map((eventPreferences || []).map((row) => [row.user_id, row.tee_time_preferences]))
+  const eventPrefMap = new Map((eventPreferences || []).map((row) => [row.user_id, row]))
   const availableSlots = (nextEvent?.event_time_slots || [])
     .slice()
     .sort((a, b) => a.display_order - b.display_order)
@@ -113,8 +115,9 @@ export default async function AdminPage() {
   }> = (members || []).map((member) => {
     const invite = toArray(member.invites)[0]
     const profileRow = toArray(member.profiles)[0]
+    const eventPreference = profileRow ? eventPrefMap.get(profileRow.id) : null
     const rawPreferences: string[] = profileRow
-      ? eventPrefMap.get(profileRow.id) || defaultPrefMap.get(profileRow.id) || []
+      ? eventPreference?.tee_time_preferences || defaultPrefMap.get(profileRow.id) || []
       : []
     const resolvedPreferences = rawPreferences
       .filter((preference: string) => availableSlots.includes(preference))
@@ -122,6 +125,8 @@ export default async function AdminPage() {
     const inviteStatus = (invite?.status || 'not invited') as 'not invited' | 'pending' | 'claimed' | 'revoked'
     const appStatus: 'not signed up' | 'ready' | 'missing preferences' = !profileRow
       ? 'not signed up'
+      : profileRow.registrations_paused || profileRow.membership_revoked || eventPreference?.skip_registration
+        ? 'missing preferences'
       : resolvedPreferences.length > 0
         ? 'ready'
         : 'missing preferences'
