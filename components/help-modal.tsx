@@ -21,7 +21,6 @@ const memberSections = [
       'Use event specific overrides to skip or change preferences for that week.',
       'We will attempt to register your first preference, then second or third as needed.',
       'We cannot guarantee playing partners will be on the same tee time.',
-      'The number of Good to Go members trying to register for the same time is shown inline, for example: 7:22 4.',
       'Pause registrations if you want to stay in Good to Go but stop getting entered until you turn it back on.',
       'Revoke Good to Go membership if you want to leave the system entirely.',
     ],
@@ -72,6 +71,21 @@ export function HelpModal({ mode }: { mode: HelpMode }) {
                   <li key={item}>{item}</li>
                 ))}
               </ul>
+              {mode === 'member' && section.title === 'How it works' ? (
+                <div className="rounded-xl border border-border bg-muted/40 p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    Example demand chip
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <div className="inline-flex items-center rounded-full border border-emerald-700 bg-emerald-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+                      #1 7:22 · 4
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      `7:22` is the tee time. `4` means four Good to Go members are currently trying for it.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </section>
           ))}
         </div>
