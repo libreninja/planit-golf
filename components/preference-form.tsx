@@ -539,7 +539,7 @@ export function PreferenceForm({
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-sm text-muted-foreground">Using preferred tee times</span>
+                            <span className="text-sm text-muted-foreground">No preferred tee times set. We will not register you for this week.</span>
                           )}
                         </div>
                       </div>

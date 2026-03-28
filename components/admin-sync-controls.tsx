@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { syncRosterAndRefresh, testRosterConnection } from '@/app/admin-actions'
 import { Button } from '@/components/ui/button'
 
@@ -13,6 +13,15 @@ export function AdminSyncControls() {
   const [status, setStatus] = useState<StatusState>({ tone: 'neutral', message: '' })
   const [isPending, startTransition] = useTransition()
 
+  useEffect(() => {
+    if (!status.message) return
+    const timeout = window.setTimeout(() => {
+      setStatus({ tone: 'neutral', message: '' })
+    }, 5000)
+
+    return () => window.clearTimeout(timeout)
+  }, [status])
+
   const statusClassName =
     status.tone === 'success'
       ? 'text-emerald-700'
@@ -21,8 +30,7 @@ export function AdminSyncControls() {
         : 'text-muted-foreground'
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Button
         variant="outline"
         size="sm"
@@ -46,7 +54,7 @@ export function AdminSyncControls() {
           })
         }}
       >
-        Test GG connection
+        Test connection
       </Button>
 
       <Button
@@ -73,10 +81,11 @@ export function AdminSyncControls() {
       >
         Sync roster
       </Button>
-      </div>
 
       {status.message ? (
-        <p className={`text-xs sm:max-w-md ${statusClassName}`}>{status.message}</p>
+        <div className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border bg-background px-4 py-3 text-sm shadow-xl ${statusClassName}`}>
+          {status.message}
+        </div>
       ) : null}
     </div>
   )
