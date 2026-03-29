@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function LoginForm({ next = '/' }: { next?: string }) {
-  const [email, setEmail] = useState('')
+export function LoginForm({ next = '/', prefillEmail = '', notice = '' }: { next?: string; prefillEmail?: string; notice?: string }) {
+  const [email, setEmail] = useState(prefillEmail)
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -100,6 +100,7 @@ export function LoginForm({ next = '/' }: { next?: string }) {
           </div>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {!error && notice ? <p className="text-sm text-primary">{notice}</p> : null}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

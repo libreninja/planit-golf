@@ -5,15 +5,16 @@ import { revalidatePath } from 'next/cache'
 import { getProfileRoles } from '@/lib/auth'
 import { sendInviteEmail } from '@/lib/email/mailer'
 import { isConfiguredSystemAdminEmail } from '@/lib/system-admin'
+import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 
 export async function validateInviteForSignUp(email: string, inviteToken: string) {
   if (await isConfiguredSystemAdminEmail(email)) {
-    return { valid: true }
+    return { valid: true, authStatus: 'none' as const }
   }
 
   if (!email || !inviteToken) {
-    return { valid: false }
+    return { valid: false, authStatus: 'none' as const }
   }
 
   const supabase = await createClient()
@@ -22,8 +23,27 @@ export async function validateInviteForSignUp(email: string, inviteToken: string
     signup_token: inviteToken,
   })
 
+  if (error || data !== true) {
+    return { valid: false, authStatus: 'none' as const }
+  }
+
+  const serviceClient = createServiceClient()
+  const normalizedEmail = email.trim().toLowerCase()
+  const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers({ page: 1, perPage: 1000 })
+
+  if (usersError) {
+    throw usersError
+  }
+
+  const existingUser = usersData.users.find((user) => (user.email || '').trim().toLowerCase() === normalizedEmail)
+
   return {
-    valid: !error && data === true,
+    valid: true,
+    authStatus: existingUser
+      ? existingUser.email_confirmed_at
+        ? ('confirmed' as const)
+        : ('unconfirmed' as const)
+      : ('none' as const),
   }
 }
 

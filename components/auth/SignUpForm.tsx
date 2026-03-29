@@ -19,6 +19,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -29,6 +30,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
     event.preventDefault()
     setLoading(true)
     setError(null)
+    setNotice(null)
 
     const passwordError = getPasswordValidationMessage(password)
     if (passwordError) {
@@ -40,6 +42,30 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
     const inviteCheck = await validateInviteForSignUp(email, inviteToken)
     if (!inviteCheck.valid) {
       setError('This invite is invalid or tied to a different email address.')
+      setLoading(false)
+      return
+    }
+
+    if (inviteCheck.authStatus === 'confirmed') {
+      router.push(`/login?next=${encodeURIComponent(nextTarget)}&email=${encodeURIComponent(email)}&notice=${encodeURIComponent('You already have an account. Sign in to continue.')}`)
+      return
+    }
+
+    if (inviteCheck.authStatus === 'unconfirmed') {
+      const supabase = createClient()
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextTarget)}`,
+        },
+      })
+
+      if (resendError) {
+        setError(resendError.message)
+      } else {
+        setNotice('You already started sign up. We resent the confirmation email.')
+      }
       setLoading(false)
       return
     }
@@ -135,6 +161,7 @@ export function SignUpForm({ inviteToken = '' }: { inviteToken?: string }) {
           <PasswordRequirements password={password} />
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {notice ? <p className="text-sm text-primary">{notice}</p> : null}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
