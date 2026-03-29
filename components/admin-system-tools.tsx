@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { syncRosterAndRefresh, testRosterConnection } from '@/app/admin-actions'
 import { InviteAdmin } from '@/components/invite-admin'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,6 @@ interface InviteRow {
 }
 
 interface AdminSystemToolsProps {
-  inviteRows: InviteRow[]
   claimedInviteCount: number
   pendingInviteCount: number
   mensRosterCount: number
@@ -32,14 +31,50 @@ interface AdminSystemToolsProps {
 }
 
 export function AdminSystemTools({
-  inviteRows,
   claimedInviteCount,
   pendingInviteCount,
   mensRosterCount,
   womensRosterCount,
 }: AdminSystemToolsProps) {
   const [connectionStatus, setConnectionStatus] = useState('Not tested')
+  const [inviteRows, setInviteRows] = useState<InviteRow[]>([])
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [inviteRowsLoading, setInviteRowsLoading] = useState(false)
+  const [inviteRowsError, setInviteRowsError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (!inviteDialogOpen || inviteRowsLoading || inviteRows.length > 0) return
+
+    let cancelled = false
+    setInviteRowsLoading(true)
+    setInviteRowsError(null)
+
+    void fetch('/api/admin-invites', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Unable to load invites')
+        return response.json() as Promise<{ inviteRows?: InviteRow[] }>
+      })
+      .then((payload) => {
+        if (!cancelled) {
+          setInviteRows(payload.inviteRows || [])
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setInviteRowsError(error instanceof Error ? error.message : 'Unable to load invites')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setInviteRowsLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [inviteDialogOpen, inviteRows.length, inviteRowsLoading])
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background/70">
@@ -56,7 +91,7 @@ export function AdminSystemTools({
             {claimedInviteCount} active · {pendingInviteCount} pending
           </div>
           <div>
-            <Dialog>
+            <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   Manage invites
@@ -67,7 +102,17 @@ export function AdminSystemTools({
                   <DialogTitle className="text-primary-foreground">Manage invites</DialogTitle>
                 </DialogHeader>
                 <div className="flex min-h-0 flex-1 px-6 py-6">
-                  <InviteAdmin rows={inviteRows} />
+                  {inviteRowsLoading ? (
+                    <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                      Loading invites...
+                    </div>
+                  ) : inviteRowsError ? (
+                    <div className="flex flex-1 items-center justify-center text-sm text-destructive">
+                      {inviteRowsError}
+                    </div>
+                  ) : (
+                    <InviteAdmin rows={inviteRows} />
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
