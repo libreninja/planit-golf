@@ -22,6 +22,8 @@ type MemberRow = {
   id: string
   display_name: string
   email: string
+  roster_email: string | null
+  email_override: string | null
   phone: string | null
   golf_member_name: string
   golf_member_id: string
@@ -164,7 +166,7 @@ export async function syncMembersFromGolfGenius() {
 
   const { data: existingMembers, error: existingMembersError } = await supabase
     .from('members')
-    .select('id, display_name, email, phone, golf_member_name, golf_member_id, league, active')
+    .select('id, display_name, email, roster_email, email_override, phone, golf_member_name, golf_member_id, league, active')
     .order('display_name', { ascending: true })
 
   if (existingMembersError) throw existingMembersError
@@ -180,12 +182,14 @@ export async function syncMembersFromGolfGenius() {
     }
 
     const name = matched.name || `${matched.last_name}, ${matched.first_name}`.trim()
-    const nextEmail = matched.email ? normalizeEmail(matched.email) : member.email
+    const nextRosterEmail = matched.email ? normalizeEmail(matched.email) : member.roster_email || member.email
+    const nextEffectiveEmail = member.email_override ? normalizeEmail(member.email_override) : nextRosterEmail
 
     return {
       ...member,
       display_name: getDisplayName(name),
-      email: nextEmail,
+      email: nextEffectiveEmail,
+      roster_email: nextRosterEmail,
       league: matched.league || member.league,
       active: true,
     }

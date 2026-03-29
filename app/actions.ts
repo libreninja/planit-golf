@@ -115,3 +115,32 @@ export async function revokeInvite(inviteId: string) {
   revalidatePath('/admin')
   revalidatePath('/admin/invites')
 }
+
+export async function updateMemberEmail(memberId: string, nextEmail: string) {
+  const supabase = await requireAdmin()
+  const normalizedEmail = nextEmail.trim().toLowerCase()
+
+  if (!normalizedEmail) {
+    throw new Error('Email is required')
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailPattern.test(normalizedEmail)) {
+    throw new Error('Enter a valid email address')
+  }
+
+  const { error } = await supabase
+    .from('members')
+    .update({
+      email: normalizedEmail,
+      email_override: normalizedEmail,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', memberId)
+
+  if (error) throw error
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/invites')
+  return normalizedEmail
+}

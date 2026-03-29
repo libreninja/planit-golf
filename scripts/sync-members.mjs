@@ -177,6 +177,8 @@ function mergeMembers({ golfGeniusRoster, localRoster, overrides }) {
         `${player.first_name || ""} ${player.last_name || ""}`.trim() ||
         titleCaseName(localEntry.golf_member_name).replace(",", ""),
       email: normalizeEmail(email),
+      roster_email: normalizeEmail(player.email || email),
+      email_override: override.email ? normalizeEmail(override.email) : null,
       phone: override.phone || null,
       golf_member_name: localEntry.golf_member_name,
       golf_member_id: localEntry.golf_member_id,
@@ -215,7 +217,24 @@ function getSupabaseClient() {
 }
 
 async function upsertMembers(supabase, members) {
-  const payload = members.map(({ is_admin, is_system_admin, ...member }) => member)
+  const { data: existingMembers, error: existingMembersError } = await supabase
+    .from("members")
+    .select("id, golf_member_id, email_override")
+    .in("golf_member_id", members.map((member) => member.golf_member_id))
+
+  if (existingMembersError) throw existingMembersError
+
+  const existingMembersByGolfId = new Map((existingMembers || []).map((member) => [member.golf_member_id, member]))
+  const payload = members.map(({ is_admin, is_system_admin, ...member }) => {
+    const existing = existingMembersByGolfId.get(member.golf_member_id)
+    const emailOverride = member.email_override || existing?.email_override || null
+
+    return {
+      ...member,
+      email_override: emailOverride,
+      email: emailOverride || member.roster_email || member.email,
+    }
+  })
   const { error } = await supabase.from("members").upsert(payload, { onConflict: "golf_member_id" })
   if (error) throw error
 }
