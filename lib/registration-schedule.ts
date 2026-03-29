@@ -1,5 +1,10 @@
 type League = 'mens' | 'womens'
 
+type UpcomingEventLike = {
+  event_date: string
+  league?: string | null
+}
+
 function getPacificNowParts() {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles',
@@ -69,6 +74,42 @@ export function getNextRunEventDate(league: League) {
   }
 
   return addDaysToDateString(baseDate, daysUntilRegistration + 7)
+}
+
+export async function getNextRunEventDateFromStatus(
+  serviceClient: any,
+  league: League,
+  upcomingEvents: UpcomingEventLike[] = [],
+) {
+  const fallbackDate = getNextRunEventDate(league)
+  const eventsForLeague = upcomingEvents
+    .filter((event) => event.league === league || event.league == null)
+    .map((event) => event.event_date)
+    .sort()
+
+  try {
+    const { data, error } = await serviceClient
+      .from('registration_runs')
+      .select('event_date, status')
+      .eq('league', league)
+      .order('event_date', { ascending: false })
+      .limit(1)
+
+    if (error || !data?.length) {
+      return fallbackDate
+    }
+
+    const latestRun = data[0]
+
+    if (latestRun.status !== 'completed') {
+      return latestRun.event_date
+    }
+
+    const nextPendingEventDate = eventsForLeague.find((eventDate) => eventDate > latestRun.event_date)
+    return nextPendingEventDate || fallbackDate
+  } catch {
+    return fallbackDate
+  }
 }
 
 export function getRegistrationWindow(league: League, eventDate: string) {

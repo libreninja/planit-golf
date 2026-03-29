@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getNextRunEventDate, getRegistrationWindow } from '@/lib/registration-schedule'
+import { getNextRunEventDateFromStatus, getRegistrationWindow } from '@/lib/registration-schedule'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { AdminSystemTools } from '@/components/admin-system-tools'
@@ -84,8 +84,8 @@ export default async function AdminPage() {
   const womensRosterCount = (members || []).filter((member) => member.league === 'womens').length
 
   const targetRunDateByLeague = {
-    mens: getNextRunEventDate('mens'),
-    womens: getNextRunEventDate('womens'),
+    mens: await getNextRunEventDateFromStatus(serviceClient, 'mens', events || []),
+    womens: await getNextRunEventDateFromStatus(serviceClient, 'womens', events || []),
   }
   const nextEventsByLeague = new Map<string, NonNullable<typeof events>[number]>()
   for (const event of events || []) {

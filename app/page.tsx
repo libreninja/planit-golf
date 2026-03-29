@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { PreferenceForm } from "@/components/preference-form"
-import { getNextRunEventDate } from "@/lib/registration-schedule"
+import { getNextRunEventDate, getNextRunEventDateFromStatus } from "@/lib/registration-schedule"
 import { createServiceClient } from "@/lib/supabase/service"
 import { createClient } from "@/lib/supabase/server"
 import { isConfiguredSystemAdminEmail } from "@/lib/system-admin"
@@ -157,15 +157,26 @@ export default async function Home() {
     `)
     .order("event_date", { ascending: true })
 
+  let nextRunEventDate: string | null = null
   if (member?.league) {
-    eventsQuery = eventsQuery
-      .eq("league", member.league)
-      .gte("event_date", getNextRunEventDate(member.league as 'mens' | 'womens'))
+    eventsQuery = eventsQuery.eq("league", member.league)
   } else {
     eventsQuery = eventsQuery.gte("event_date", new Date().toISOString().split("T")[0])
   }
 
-  const { data: events } = await eventsQuery
+  const { data: allEvents } = await eventsQuery
+
+  if (member?.league) {
+    nextRunEventDate = await getNextRunEventDateFromStatus(
+      serviceClient,
+      member.league as 'mens' | 'womens',
+      allEvents || [],
+    )
+  }
+
+  const events = member?.league && nextRunEventDate
+    ? (allEvents || []).filter((event) => event.event_date >= nextRunEventDate)
+    : (allEvents || []).filter((event) => event.event_date >= getNextRunEventDate((member?.league as 'mens' | 'womens' | undefined) || 'mens'))
 
   const { data: defaultPrefs } = await supabase
     .from("default_preferences")
