@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { AdminSystemTools } from '@/components/admin-system-tools'
 import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
@@ -17,8 +18,9 @@ function toArray<T>(value: T | T[] | null | undefined): T[] {
 export default async function AdminPage() {
   await requireAdmin()
   const supabase = await createClient()
+  const serviceClient = createServiceClient()
 
-  const { data: members } = await supabase
+  const { data: members } = await serviceClient
     .from('members')
     .select(`
       id,
@@ -44,7 +46,7 @@ export default async function AdminPage() {
     .eq('active', true)
     .order('display_name', { ascending: true })
 
-  const { data: events } = await supabase
+  const { data: events } = await serviceClient
     .from('events')
     .select(`
       id,
@@ -93,7 +95,7 @@ export default async function AdminPage() {
 
   const { data: eventPreferences } =
     nextEvent && profileIds.length > 0
-      ? await supabase
+      ? await serviceClient
           .from('event_preferences')
           .select('user_id, event_id, tee_time_preferences, skip_registration')
           .eq('event_id', nextEvent.id)
