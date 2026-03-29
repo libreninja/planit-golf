@@ -15,6 +15,63 @@ function toArray<T>(value: T | T[] | null | undefined): T[] {
   return [value]
 }
 
+function getPacificNowParts() {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+    hour: '2-digit',
+    hour12: false,
+  })
+
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(new Date())
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  )
+
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    weekday: parts.weekday,
+    hour: Number(parts.hour),
+  }
+}
+
+function addDaysToDateString(dateString: string, days: number) {
+  const [year, month, day] = dateString.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function getNextRunEventDate(league: 'mens' | 'womens') {
+  const now = getPacificNowParts()
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  }
+  const targetWeekday = league === 'womens' ? 3 : 2
+  const currentWeekday = weekdayMap[now.weekday]
+  const baseDate = `${String(now.year).padStart(4, '0')}-${String(now.month).padStart(2, '0')}-${String(now.day).padStart(2, '0')}`
+  let daysUntil = ((targetWeekday - currentWeekday + 7) % 7) + 7
+
+  if (currentWeekday === 0 && now.hour >= 12) {
+    daysUntil += 7
+  }
+
+  return addDaysToDateString(baseDate, daysUntil)
+}
+
 export default async function AdminPage() {
   await requireAdmin()
   const supabase = await createClient()
@@ -82,10 +139,16 @@ export default async function AdminPage() {
   const mensRosterCount = (members || []).filter((member) => member.league === 'mens').length
   const womensRosterCount = (members || []).filter((member) => member.league === 'womens').length
 
+  const targetRunDateByLeague = {
+    mens: getNextRunEventDate('mens'),
+    womens: getNextRunEventDate('womens'),
+  }
   const nextEventsByLeague = new Map<string, NonNullable<typeof events>[number]>()
   for (const event of events || []) {
     if (!event.league || nextEventsByLeague.has(event.league)) continue
-    nextEventsByLeague.set(event.league, event)
+    if (event.event_date === targetRunDateByLeague[event.league as 'mens' | 'womens']) {
+      nextEventsByLeague.set(event.league, event)
+    }
   }
   const profileIds = (members || []).flatMap((member) => toArray(member.profiles).map((profileRow) => profileRow.id))
 
