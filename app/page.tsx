@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { PreferenceForm } from "@/components/preference-form"
+import { getNextRunEventDate } from "@/lib/registration-schedule"
 import { createServiceClient } from "@/lib/supabase/service"
 import { createClient } from "@/lib/supabase/server"
 import { isConfiguredSystemAdminEmail } from "@/lib/system-admin"
@@ -151,11 +152,14 @@ export default async function Home() {
         display_order
       )
     `)
-    .gte("event_date", new Date().toISOString().split("T")[0])
     .order("event_date", { ascending: true })
 
   if (member?.league) {
-    eventsQuery = eventsQuery.eq("league", member.league)
+    eventsQuery = eventsQuery
+      .eq("league", member.league)
+      .gte("event_date", getNextRunEventDate(member.league as 'mens' | 'womens'))
+  } else {
+    eventsQuery = eventsQuery.gte("event_date", new Date().toISOString().split("T")[0])
   }
 
   const { data: events } = await eventsQuery
