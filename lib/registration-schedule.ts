@@ -34,6 +34,15 @@ function addDaysToDateString(dateString: string, days: number) {
   return date.toISOString().slice(0, 10)
 }
 
+function formatDateLabel(dateString: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${dateString}T00:00:00Z`))
+}
+
 export function getNextRunEventDate(league: League) {
   const now = getPacificNowParts()
   const weekdayMap: Record<string, number> = {
@@ -58,3 +67,14 @@ export function getNextRunEventDate(league: League) {
   return addDaysToDateString(baseDate, daysUntil)
 }
 
+export function getRegistrationWindow(league: League, eventDate: string) {
+  const openDate = addDaysToDateString(eventDate, -7)
+  const closeOffset = league === 'womens' ? -3 : -2
+  const closeDate = addDaysToDateString(eventDate, closeOffset)
+
+  return {
+    roundLabel: formatDateLabel(eventDate),
+    opensLabel: `${formatDateLabel(openDate)} at 12:00 PM PT`,
+    closesLabel: `${formatDateLabel(closeDate)} at 11:59 PM PT`,
+  }
+}

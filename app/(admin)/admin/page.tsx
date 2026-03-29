@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getNextRunEventDate } from '@/lib/registration-schedule'
+import { getNextRunEventDate, getRegistrationWindow } from '@/lib/registration-schedule'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { AdminSystemTools } from '@/components/admin-system-tools'
@@ -175,7 +175,8 @@ export default async function AdminPage() {
       return counts
     }, {})
     const title = league === 'mens' ? "Men's next registration run" : league === 'womens' ? "Women's next registration run" : `${league} next registration run`
-    return { title, rows, demandCounts }
+    const registrationWindow = getRegistrationWindow(league as 'mens' | 'womens', event.event_date)
+    return { title, rows, demandCounts, ...registrationWindow }
   })
 
   return (
@@ -215,7 +216,15 @@ export default async function AdminPage() {
           </CardContent>
         </Card>
         {runSections.map((section) => (
-          <UpcomingRunAdmin key={section.title} title={section.title} rows={section.rows} demandCounts={section.demandCounts} />
+          <UpcomingRunAdmin
+            key={section.title}
+            title={section.title}
+            roundLabel={section.roundLabel}
+            opensLabel={section.opensLabel}
+            closesLabel={section.closesLabel}
+            rows={section.rows}
+            demandCounts={section.demandCounts}
+          />
         ))}
       </div>
     </main>

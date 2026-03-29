@@ -16,11 +16,14 @@ interface RunRow {
 
 interface UpcomingRunAdminProps {
   title?: string
+  roundLabel?: string
+  opensLabel?: string
+  closesLabel?: string
   rows: RunRow[]
   demandCounts: Record<string, number>
 }
 
-export function UpcomingRunAdmin({ title = 'Next run', rows, demandCounts }: UpcomingRunAdminProps) {
+export function UpcomingRunAdmin({ title = 'Next run', roundLabel, opensLabel, closesLabel, rows, demandCounts }: UpcomingRunAdminProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -37,6 +40,13 @@ export function UpcomingRunAdmin({ title = 'Next run', rows, demandCounts }: Upc
         <CardTitle className="text-lg text-primary-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
+        {roundLabel || opensLabel || closesLabel ? (
+          <div className="mb-4 space-y-1 text-sm text-muted-foreground">
+            {roundLabel ? <p><span className="font-medium text-foreground">Registering for:</span> {roundLabel}</p> : null}
+            {opensLabel ? <p><span className="font-medium text-foreground">Opens:</span> {opensLabel}</p> : null}
+            {closesLabel ? <p><span className="font-medium text-foreground">Closes:</span> {closesLabel}</p> : null}
+          </div>
+        ) : null}
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No accepted members with preferences yet.</p>
         ) : (
