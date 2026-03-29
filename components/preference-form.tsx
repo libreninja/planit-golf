@@ -394,7 +394,7 @@ export function PreferenceForm({
                 </div>
               </label>
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {defaultTimes.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {defaultTimes.map((time, index) => (
@@ -421,7 +421,7 @@ export function PreferenceForm({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-border bg-background text-foreground hover:bg-secondary"
+                      className="w-full border-border bg-background text-foreground hover:bg-secondary sm:w-auto"
                       onClick={openDefaultsEditor}
                     >
                       {defaultTimes.length > 0 ? 'Update' : 'Set defaults'}
@@ -455,14 +455,14 @@ export function PreferenceForm({
                 </Dialog>
               </div>
 
-              <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background/70 p-4">
+              <div className="flex flex-col gap-4 rounded-xl border border-border bg-background/70 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Revoke Good to Go membership entirely</p>
                   <p className="text-sm text-muted-foreground">Stop all future registrations and remove me from Good to Go planning.</p>
                 </div>
                 <Dialog open={confirmingRevoke} onOpenChange={setConfirmingRevoke}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="destructive" className="shrink-0" disabled={savingRegistrationSettings || membershipRevoked}>
+                    <Button size="sm" variant="destructive" className="w-full shrink-0 sm:w-auto" disabled={savingRegistrationSettings || membershipRevoked}>
                       {membershipRevoked ? 'Membership revoked' : 'Revoke membership'}
                     </Button>
                   </DialogTrigger>
@@ -519,7 +519,7 @@ export function PreferenceForm({
 
                 return (
                   <div key={event.id} className="rounded-xl border border-border bg-background/80 p-4">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium">{formatDate(event.event_date)}</p>
@@ -543,8 +543,8 @@ export function PreferenceForm({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <label className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <label className="inline-flex min-h-9 items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm">
                           <input
                             type="checkbox"
                             checked={prefs.skipRegistration}
@@ -556,7 +556,7 @@ export function PreferenceForm({
                           />
                           <span>Can&apos;t play this week</span>
                         </label>
-                        <Button variant="outline" size="sm" className="border-border bg-background text-foreground hover:bg-secondary" onClick={() => openEventEditor(event.id)}>
+                        <Button variant="outline" size="sm" className="w-full border-border bg-background text-foreground hover:bg-secondary sm:w-auto" onClick={() => openEventEditor(event.id)}>
                           Update
                         </Button>
                       </div>

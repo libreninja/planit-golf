@@ -59,6 +59,7 @@
       radial-gradient(circle at top, hsl(42 75% 88% / 0.6), transparent 32rem),
       linear-gradient(180deg, hsl(84 33% 97%), hsl(95 25% 94%));
     font-family: var(--font-sans), sans-serif;
+    overflow-x: hidden;
   }
 
   h1,
