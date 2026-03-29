@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 
 const overridesPath = path.join(process.cwd(), 'scripts', 'member-overrides.json')
+let overridesCache: Promise<Record<string, OverrideEntry>> | null = null
 
 type OverrideEntry = {
   email?: string
@@ -9,10 +10,23 @@ type OverrideEntry = {
 }
 
 async function loadOverrides(): Promise<Record<string, OverrideEntry>> {
+  if (overridesCache) {
+    return overridesCache
+  }
+
+  overridesCache = (async () => {
+    try {
+      const raw = await fs.readFile(overridesPath, 'utf8')
+      return JSON.parse(raw)
+    } catch {
+      return {}
+    }
+  })()
+
   try {
-    const raw = await fs.readFile(overridesPath, 'utf8')
-    return JSON.parse(raw)
+    return await overridesCache
   } catch {
+    overridesCache = null
     return {}
   }
 }

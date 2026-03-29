@@ -134,13 +134,24 @@ export default async function Home() {
     redirect("/stay-tuned")
   }
 
-  const { data: member } = resolvedProfile?.member_id
-    ? await supabase
-        .from("members")
-        .select("id, league")
-        .eq("id", resolvedProfile.member_id)
-        .maybeSingle()
-    : { data: null }
+  const [{ data: member }, { data: defaultPrefs }, { data: eventPrefs }] = await Promise.all([
+    resolvedProfile?.member_id
+      ? supabase
+          .from("members")
+          .select("id, league")
+          .eq("id", resolvedProfile.member_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("default_preferences")
+      .select("tee_time_preferences")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("event_preferences")
+      .select("event_id, tee_time_preferences, skip_registration")
+      .eq("user_id", user.id),
+  ])
 
   let eventsQuery = supabase
     .from("events")
@@ -177,17 +188,6 @@ export default async function Home() {
   const events = member?.league && nextRunEventDate
     ? (allEvents || []).filter((event) => event.event_date >= nextRunEventDate)
     : (allEvents || []).filter((event) => event.event_date >= getNextRunEventDate((member?.league as 'mens' | 'womens' | undefined) || 'mens'))
-
-  const { data: defaultPrefs } = await supabase
-    .from("default_preferences")
-    .select("tee_time_preferences")
-    .eq("user_id", user.id)
-    .maybeSingle()
-
-  const { data: eventPrefs } = await supabase
-    .from("event_preferences")
-    .select("event_id, tee_time_preferences, skip_registration")
-    .eq("user_id", user.id)
 
   return (
     <PreferenceForm
