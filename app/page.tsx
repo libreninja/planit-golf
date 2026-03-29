@@ -15,6 +15,11 @@ export default async function Home() {
     redirect("/login")
   }
 
+  const inviteToken =
+    typeof user.user_metadata?.invite_token === "string"
+      ? user.user_metadata.invite_token
+      : null
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, display_name, member_id, invite_id, is_admin, is_system_admin, registrations_paused, membership_revoked")
@@ -47,11 +52,6 @@ export default async function Home() {
   }
 
   if (!resolvedProfile || !resolvedProfile.member_id || !resolvedProfile.invite_id) {
-    const inviteToken =
-      typeof user.user_metadata?.invite_token === "string"
-        ? user.user_metadata.invite_token
-        : null
-
     if (inviteToken && user.email) {
       const { data: claimResult } = await supabase.rpc("claim_invite_for_user", {
         claim_user_id: user.id,
@@ -124,6 +124,9 @@ export default async function Home() {
   )
 
   if (!canAccessWithoutInvite) {
+    if (inviteToken) {
+      redirect(`/invite/${inviteToken}`)
+    }
     redirect("/stay-tuned")
   }
 

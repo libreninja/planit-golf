@@ -11,7 +11,21 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      const inviteToken =
+        typeof user?.user_metadata?.invite_token === 'string'
+          ? user.user_metadata.invite_token
+          : null
+
+      const destination =
+        inviteToken && !next.startsWith('/invite/')
+          ? `/invite/${inviteToken}`
+          : next
+
+      return NextResponse.redirect(`${origin}${destination}`)
     }
   }
 
