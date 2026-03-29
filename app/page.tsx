@@ -21,8 +21,31 @@ export default async function Home() {
     .maybeSingle()
 
   let resolvedProfile = profile
+  const serviceClient = createServiceClient()
 
-  if (resolvedProfile && (!resolvedProfile.member_id || !resolvedProfile.invite_id)) {
+  if (!resolvedProfile && user.email) {
+    await serviceClient
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        email: user.email,
+        display_name:
+          typeof user.user_metadata?.display_name === "string"
+            ? user.user_metadata.display_name
+            : user.email.split("@")[0],
+        updated_at: new Date().toISOString(),
+      })
+
+    const { data: createdProfile } = await supabase
+      .from("profiles")
+      .select("id, display_name, member_id, invite_id, is_admin, is_system_admin, registrations_paused, membership_revoked")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    resolvedProfile = createdProfile
+  }
+
+  if (!resolvedProfile || !resolvedProfile.member_id || !resolvedProfile.invite_id) {
     const inviteToken =
       typeof user.user_metadata?.invite_token === "string"
         ? user.user_metadata.invite_token
@@ -41,8 +64,21 @@ export default async function Home() {
 
       const claimedInvite = Array.isArray(claimResult) ? claimResult[0] : claimResult
       if (claimedInvite?.member_id && claimedInvite?.invite_id) {
+        const baseProfile = resolvedProfile || {
+          id: user.id,
+          display_name:
+            typeof user.user_metadata?.display_name === "string"
+              ? user.user_metadata.display_name
+              : null,
+          member_id: null,
+          invite_id: null,
+          is_admin: false,
+          is_system_admin: false,
+          registrations_paused: false,
+          membership_revoked: false,
+        }
         resolvedProfile = {
-          ...resolvedProfile,
+          ...baseProfile,
           member_id: claimedInvite.member_id,
           invite_id: claimedInvite.invite_id,
         }
@@ -51,7 +87,6 @@ export default async function Home() {
   }
 
   if (user.email && resolvedProfile && await isConfiguredSystemAdminEmail(user.email)) {
-    const serviceClient = createServiceClient()
     const { data: member } = await serviceClient
       .from("members")
       .select("id")

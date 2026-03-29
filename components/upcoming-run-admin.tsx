@@ -15,11 +15,12 @@ interface RunRow {
 }
 
 interface UpcomingRunAdminProps {
+  title?: string
   rows: RunRow[]
   demandCounts: Record<string, number>
 }
 
-export function UpcomingRunAdmin({ rows, demandCounts }: UpcomingRunAdminProps) {
+export function UpcomingRunAdmin({ title = 'Next run', rows, demandCounts }: UpcomingRunAdminProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export function UpcomingRunAdmin({ rows, demandCounts }: UpcomingRunAdminProps) 
   return (
     <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
       <CardHeader className="bg-primary text-primary-foreground">
-        <CardTitle className="text-lg text-primary-foreground">Next run</CardTitle>
+        <CardTitle className="text-lg text-primary-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
         {rows.length === 0 ? (

@@ -52,6 +52,7 @@ export default async function AdminPage() {
       id,
       event_date,
       course_name,
+      league,
       registration_opens_at,
       status,
       event_time_slots (
@@ -61,7 +62,6 @@ export default async function AdminPage() {
     `)
     .eq('status', 'upcoming')
     .order('event_date', { ascending: true })
-    .limit(1)
 
   const inviteRows = (members || []).map((member) => ({
     id: member.id,
@@ -82,34 +82,34 @@ export default async function AdminPage() {
   const mensRosterCount = (members || []).filter((member) => member.league === 'mens').length
   const womensRosterCount = (members || []).filter((member) => member.league === 'womens').length
 
-  const nextEvent = events?.[0] || null
+  const nextEventsByLeague = new Map<string, NonNullable<typeof events>[number]>()
+  for (const event of events || []) {
+    if (!event.league || nextEventsByLeague.has(event.league)) continue
+    nextEventsByLeague.set(event.league, event)
+  }
   const profileIds = (members || []).flatMap((member) => toArray(member.profiles).map((profileRow) => profileRow.id))
 
   const { data: defaultPreferences } =
     profileIds.length > 0
-      ? await supabase
+      ? await serviceClient
           .from('default_preferences')
           .select('user_id, tee_time_preferences')
           .in('user_id', profileIds)
       : { data: [] as { user_id: string; tee_time_preferences: string[] }[] }
 
   const { data: eventPreferences } =
-    nextEvent && profileIds.length > 0
+    nextEventsByLeague.size > 0 && profileIds.length > 0
       ? await serviceClient
           .from('event_preferences')
           .select('user_id, event_id, tee_time_preferences, skip_registration')
-          .eq('event_id', nextEvent.id)
+          .in('event_id', Array.from(nextEventsByLeague.values()).map((event) => event.id))
           .in('user_id', profileIds)
       : { data: [] as { user_id: string; event_id: string; tee_time_preferences: string[]; skip_registration: boolean }[] }
 
   const defaultPrefMap = new Map((defaultPreferences || []).map((row) => [row.user_id, row.tee_time_preferences]))
-  const eventPrefMap = new Map((eventPreferences || []).map((row) => [row.user_id, row]))
-  const availableSlots = (nextEvent?.event_time_slots || [])
-    .slice()
-    .sort((a, b) => a.display_order - b.display_order)
-    .map((slot) => slot.time_slot)
+  const eventPrefMap = new Map((eventPreferences || []).map((row) => [`${row.event_id}:${row.user_id}`, row]))
 
-  const runRows: Array<{
+  type RunRow = {
     memberId: string
     displayName: string
     email: string
@@ -118,43 +118,58 @@ export default async function AdminPage() {
     inviteStatus: 'not invited' | 'pending' | 'claimed' | 'revoked'
     appStatus: 'not signed up' | 'ready' | 'missing preferences'
     preferences: string[]
-  }> = (members || []).map((member) => {
-    const invite = toArray(member.invites)[0]
-    const profileRow = toArray(member.profiles)[0]
-    const eventPreference = profileRow ? eventPrefMap.get(profileRow.id) : null
-    const rawPreferences: string[] = profileRow
-      ? eventPreference?.tee_time_preferences || defaultPrefMap.get(profileRow.id) || []
-      : []
-    const resolvedPreferences = rawPreferences
-      .filter((preference: string) => availableSlots.includes(preference))
-      .slice(0, 3)
-    const inviteStatus = (invite?.status || 'not invited') as 'not invited' | 'pending' | 'claimed' | 'revoked'
-    const appStatus: 'not signed up' | 'ready' | 'missing preferences' = !profileRow
-      ? 'not signed up'
-      : profileRow.registrations_paused || profileRow.membership_revoked || eventPreference?.skip_registration
-        ? 'missing preferences'
-      : resolvedPreferences.length > 0
-        ? 'ready'
-        : 'missing preferences'
+  }
 
-    return {
-      memberId: member.id,
-      displayName: member.display_name,
-      email: member.email,
-      golfMemberName: member.golf_member_name,
-      golfMemberId: member.golf_member_id,
-      inviteStatus,
-      appStatus,
-      preferences: resolvedPreferences,
-    }
-  }).filter((row) => row.appStatus === 'ready')
+  const buildRunRows = (league: string, eventId: string, availableSlots: string[]): RunRow[] =>
+    (members || [])
+      .filter((member) => member.league === league)
+      .map((member) => {
+        const invite = toArray(member.invites)[0]
+        const profileRow = toArray(member.profiles)[0]
+        const eventPreference = profileRow ? eventPrefMap.get(`${eventId}:${profileRow.id}`) : null
+        const rawPreferences: string[] = profileRow
+          ? eventPreference?.tee_time_preferences || defaultPrefMap.get(profileRow.id) || []
+          : []
+        const resolvedPreferences = rawPreferences
+          .filter((preference: string) => availableSlots.includes(preference))
+          .slice(0, 3)
+        const inviteStatus = (invite?.status || 'not invited') as 'not invited' | 'pending' | 'claimed' | 'revoked'
+        const appStatus: 'not signed up' | 'ready' | 'missing preferences' = !profileRow
+          ? 'not signed up'
+          : profileRow.registrations_paused || profileRow.membership_revoked || eventPreference?.skip_registration
+            ? 'missing preferences'
+            : resolvedPreferences.length > 0
+              ? 'ready'
+              : 'missing preferences'
 
-  const nextRunDemandCounts = runRows.reduce<Record<string, number>>((counts, row) => {
-    for (const time of row.preferences) {
-      counts[time] = (counts[time] || 0) + 1
-    }
-    return counts
-  }, {})
+        return {
+          memberId: member.id,
+          displayName: member.display_name,
+          email: member.email,
+          golfMemberName: member.golf_member_name,
+          golfMemberId: member.golf_member_id,
+          inviteStatus,
+          appStatus,
+          preferences: resolvedPreferences,
+        }
+      })
+      .filter((row) => row.appStatus === 'ready')
+
+  const runSections = Array.from(nextEventsByLeague.entries()).map(([league, event]) => {
+    const availableSlots = (event.event_time_slots || [])
+      .slice()
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((slot) => slot.time_slot)
+    const rows = buildRunRows(league, event.id, availableSlots)
+    const demandCounts = rows.reduce<Record<string, number>>((counts, row) => {
+      for (const time of row.preferences) {
+        counts[time] = (counts[time] || 0) + 1
+      }
+      return counts
+    }, {})
+    const title = league === 'mens' ? "Men's next run" : league === 'womens' ? "Women's next run" : `${league} next run`
+    return { title, rows, demandCounts }
+  })
 
   return (
     <main className="min-h-screen">
@@ -192,7 +207,9 @@ export default async function AdminPage() {
             />
           </CardContent>
         </Card>
-        <UpcomingRunAdmin rows={runRows} demandCounts={nextRunDemandCounts} />
+        {runSections.map((section) => (
+          <UpcomingRunAdmin key={section.title} title={section.title} rows={section.rows} demandCounts={section.demandCounts} />
+        ))}
       </div>
     </main>
   )

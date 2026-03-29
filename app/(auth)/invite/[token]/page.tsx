@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,9 +15,24 @@ export default async function InvitePage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  const serviceClient = createServiceClient()
 
   if (!user) {
     redirect(`/signup?token=${token}`)
+  }
+
+  if (user.email) {
+    await serviceClient
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        email: user.email,
+        display_name:
+          typeof user.user_metadata?.display_name === 'string'
+            ? user.user_metadata.display_name
+            : user.email.split('@')[0],
+        updated_at: new Date().toISOString(),
+      })
   }
 
   const { data: profile } = await supabase
