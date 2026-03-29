@@ -55,6 +55,8 @@ test.describe('authenticated smoke', () => {
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByText('Preferred tee times')).toBeVisible()
     await expect(page.getByText('Individual event overrides')).toBeVisible()
+    await expect(page.getByRole('button', { name: /update|set defaults/i })).toBeVisible()
+    await expect(page.getByText(/can't play this week/i).first()).toBeVisible()
   })
 
   test('admin dashboard loads for an admin user', async ({ page }) => {
@@ -66,5 +68,7 @@ test.describe('authenticated smoke', () => {
     await expect(page).toHaveURL(/\/admin$/)
     await expect(page.getByText('Good to Go Admin')).toBeVisible()
     await expect(page.getByText('System tools')).toBeVisible()
+    await expect(page.getByText(/Men's next registration run/i)).toBeVisible()
+    await expect(page.getByText(/Women's next registration run/i)).toBeVisible()
   })
 })

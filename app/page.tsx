@@ -189,73 +189,6 @@ export default async function Home() {
     .select("event_id, tee_time_preferences, skip_registration")
     .eq("user_id", user.id)
 
-  const { data: leagueMembers } = member?.league
-    ? await supabase
-        .from("members")
-        .select(`
-          id,
-          profiles (
-            id,
-            registrations_paused,
-            membership_revoked
-          )
-        `)
-        .eq("active", true)
-        .eq("league", member.league)
-    : { data: [] as Array<{ id: string; profiles: Array<{ id: string; registrations_paused: boolean; membership_revoked: boolean }> | null }> }
-
-  const leagueProfileIds = (leagueMembers || []).flatMap((memberRow) =>
-    (memberRow.profiles || []).map((profileRow) => profileRow.id),
-  )
-  const eventIds = (events || []).map((event) => event.id)
-
-  const { data: allDefaultPrefs } =
-    leagueProfileIds.length > 0
-      ? await supabase
-          .from("default_preferences")
-          .select("user_id, tee_time_preferences")
-          .in("user_id", leagueProfileIds)
-      : { data: [] as Array<{ user_id: string; tee_time_preferences: string[] }> }
-
-  const { data: allEventPrefs } =
-    leagueProfileIds.length > 0 && eventIds.length > 0
-      ? await supabase
-          .from("event_preferences")
-          .select("user_id, event_id, tee_time_preferences, skip_registration")
-          .in("user_id", leagueProfileIds)
-          .in("event_id", eventIds)
-      : { data: [] as Array<{ user_id: string; event_id: string; tee_time_preferences: string[]; skip_registration: boolean }> }
-
-  const defaultPrefMap = new Map((allDefaultPrefs || []).map((row) => [row.user_id, row.tee_time_preferences]))
-  const eventPrefMap = new Map((allEventPrefs || []).map((row) => [`${row.event_id}:${row.user_id}`, row]))
-  const eventDemandCounts = Object.fromEntries(
-    (events || []).map((event) => {
-      const availableSlots = new Set((event.event_time_slots || []).map((slot) => slot.time_slot))
-      const counts: Record<string, number> = {}
-
-      for (const memberRow of leagueMembers || []) {
-        const profileRow = (memberRow.profiles || [])[0]
-        if (!profileRow || profileRow.registrations_paused || profileRow.membership_revoked) continue
-
-        const profileId = profileRow.id
-        const eventPreference = eventPrefMap.get(`${event.id}:${profileId}`)
-        if (eventPreference?.skip_registration) continue
-
-        const preferences =
-          eventPreference?.tee_time_preferences ||
-          defaultPrefMap.get(profileId) ||
-          []
-
-        for (const time of preferences.slice(0, 3)) {
-          if (!availableSlots.has(time)) continue
-          counts[time] = (counts[time] || 0) + 1
-        }
-      }
-
-      return [event.id, counts]
-    }),
-  )
-
   return (
     <PreferenceForm
       user={user}
@@ -263,7 +196,7 @@ export default async function Home() {
       events={events || []}
       defaultPrefs={defaultPrefs}
       eventPrefs={eventPrefs || []}
-      eventDemandCounts={eventDemandCounts}
+      eventDemandCounts={{}}
     />
   )
 }

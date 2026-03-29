@@ -185,6 +185,7 @@ export function PreferenceForm({
   )
 
   const [defaultTimes, setDefaultTimes] = useState<string[]>(defaultPrefs?.tee_time_preferences || [])
+  const [demandCounts, setDemandCounts] = useState<Record<string, Record<string, number>>>(eventDemandCounts)
   const [eventOverrides, setEventOverrides] = useState<Record<string, EventOverrideState>>(() => {
     const overrides: Record<string, EventOverrideState> = {}
     for (const eventPref of eventPrefs) {
@@ -210,6 +211,36 @@ export function PreferenceForm({
     setMounted(true)
   }, [])
 
+  useEffect(() => {
+    setDemandCounts(eventDemandCounts)
+  }, [eventDemandCounts])
+
+  useEffect(() => {
+    if (!mounted || events.length === 0) return
+
+    const controller = new AbortController()
+    const eventIds = events.map((event) => event.id).join(',')
+
+    void fetch(`/api/member-demand?eventIds=${encodeURIComponent(eventIds)}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Unable to load demand counts')
+        return response.json() as Promise<{ eventDemandCounts?: Record<string, Record<string, number>> }>
+      })
+      .then((payload) => {
+        setDemandCounts(payload.eventDemandCounts || {})
+      })
+      .catch((error) => {
+        if ((error as Error).name !== 'AbortError') {
+          console.error(error)
+        }
+      })
+
+    return () => controller.abort()
+  }, [mounted, events, defaultTimes, eventOverrides])
+
   if (!mounted) {
     return null
   }
@@ -228,8 +259,8 @@ export function PreferenceForm({
       : allTeeTimes
   const editorDemandCounts =
     editor?.type === 'event'
-      ? eventDemandCounts[editor.eventId] || {}
-      : eventDemandCounts[events[0]?.id || ''] || {}
+      ? demandCounts[editor.eventId] || {}
+      : demandCounts[events[0]?.id || ''] || {}
 
   const openDefaultsEditor = () => {
     setDraftTimes(defaultTimes)
@@ -534,7 +565,7 @@ export function PreferenceForm({
                             prefs.times.map((time, index) => (
                               <Badge key={`${event.id}-${time}`} variant="outline" className={preferenceBadgeClassName}>
                                 #{index + 1} {time}
-                                {eventDemandCounts[event.id]?.[time] ? ` · ${eventDemandCounts[event.id][time]}` : ''}
+                                {demandCounts[event.id]?.[time] ? ` · ${demandCounts[event.id][time]}` : ''}
                               </Badge>
                             ))
                           ) : (
