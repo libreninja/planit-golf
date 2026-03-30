@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { syncRosterAndRefresh, testRosterConnection } from '@/app/admin-actions'
 import { InviteAdmin } from '@/components/invite-admin'
 import { Button } from '@/components/ui/button'
@@ -43,38 +43,25 @@ export function AdminSystemTools({
   const [inviteRowsError, setInviteRowsError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  useEffect(() => {
-    if (!inviteDialogOpen || inviteRowsLoading || inviteRows.length > 0) return
-
-    let cancelled = false
+  const loadInviteRows = async () => {
     setInviteRowsLoading(true)
     setInviteRowsError(null)
 
-    void fetch('/api/admin-invites', { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Unable to load invites')
-        return response.json() as Promise<{ inviteRows?: InviteRow[] }>
-      })
-      .then((payload) => {
-        if (!cancelled) {
-          setInviteRows(payload.inviteRows || [])
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setInviteRowsError(error instanceof Error ? error.message : 'Unable to load invites')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setInviteRowsLoading(false)
-        }
-      })
+    try {
+      const response = await fetch('/api/admin-invites', { cache: 'no-store' })
+      const payload = await response.json().catch(() => ({}))
 
-    return () => {
-      cancelled = true
+      if (!response.ok) {
+        throw new Error(typeof payload?.error === 'string' ? payload.error : 'Unable to load invites')
+      }
+
+      setInviteRows(payload.inviteRows || [])
+    } catch (error) {
+      setInviteRowsError(error instanceof Error ? error.message : 'Unable to load invites')
+    } finally {
+      setInviteRowsLoading(false)
     }
-  }, [inviteDialogOpen, inviteRows.length, inviteRowsLoading])
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background/70">
@@ -91,7 +78,15 @@ export function AdminSystemTools({
             {claimedInviteCount} active · {pendingInviteCount} pending
           </div>
           <div>
-            <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <Dialog
+              open={inviteDialogOpen}
+              onOpenChange={(open) => {
+                setInviteDialogOpen(open)
+                if (open) {
+                  void loadInviteRows()
+                }
+              }}
+            >
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   Manage invites
