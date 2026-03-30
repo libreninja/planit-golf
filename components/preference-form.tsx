@@ -81,7 +81,7 @@ function DemandCountInline({
 }) {
   return (
     <span
-      className={`inline-block min-w-[2.75rem] text-right tabular-nums ${muted ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}
+      className={`ml-1 inline-flex w-[1.75rem] justify-end tabular-nums ${muted ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}
       aria-hidden={count <= 0}
     >
       {count > 0 ? `· ${count}` : '\u00a0'}
