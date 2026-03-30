@@ -72,9 +72,21 @@ function formatDate(dateStr: string) {
   }).format(new Date(`${dateStr}T00:00:00Z`))
 }
 
-function getDemandLabel(count: number) {
-  if (count <= 0) return null
-  return `${count} request${count === 1 ? '' : 's'}`
+function DemandCountInline({
+  count,
+  muted = false,
+}: {
+  count: number
+  muted?: boolean
+}) {
+  return (
+    <span
+      className={`inline-block min-w-[2.75rem] text-right tabular-nums ${muted ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}
+      aria-hidden={count <= 0}
+    >
+      {count > 0 ? `· ${count}` : '\u00a0'}
+    </span>
+  )
 }
 
 const preferenceBadgeClassName =
@@ -122,9 +134,7 @@ function TimeChipSelector({
                 <GripVertical className="h-3 w-3 opacity-60" />
                 <span className="mr-1 font-bold">#{index + 1}</span>
                 <span>{time}</span>
-                {getDemandLabel(demandCounts?.[time] || 0) ? (
-                  <span className="text-[11px] text-primary-foreground/80">{getDemandLabel(demandCounts?.[time] || 0)}</span>
-                ) : null}
+                <DemandCountInline count={demandCounts?.[time] || 0} muted />
                 <button
                   type="button"
                   onClick={() => onRemove(time)}
@@ -152,9 +162,7 @@ function TimeChipSelector({
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-sm transition hover:border-primary hover:bg-secondary"
               >
                 <span>{time}</span>
-                {getDemandLabel(demandCounts?.[time] || 0) ? (
-                  <span className="ml-1 text-xs text-muted-foreground">{getDemandLabel(demandCounts?.[time] || 0)}</span>
-                ) : null}
+                <DemandCountInline count={demandCounts?.[time] || 0} />
               </button>
             ))}
           </div>
@@ -565,7 +573,7 @@ export function PreferenceForm({
                             prefs.times.map((time, index) => (
                               <Badge key={`${event.id}-${time}`} variant="outline" className={preferenceBadgeClassName}>
                                 #{index + 1} {time}
-                                {demandCounts[event.id]?.[time] ? ` · ${demandCounts[event.id][time]}` : ''}
+                                <DemandCountInline count={demandCounts[event.id]?.[time] || 0} muted />
                               </Badge>
                             ))
                           ) : (
