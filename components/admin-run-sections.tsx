@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { LastRunSections } from '@/components/last-run-sections'
 import { UpcomingRunAdmin } from '@/components/upcoming-run-admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -106,6 +107,7 @@ export function AdminRunSections() {
           demandCounts={section.demandCounts}
         />
       ))}
+      <LastRunSections />
     </>
   )
 }
