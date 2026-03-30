@@ -59,7 +59,7 @@ export default async function AdminPage() {
       </div>
 
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-4">
-        <AdminSectionCard title="System tools" contentClassName="pt-0">
+        <AdminSectionCard title="System tools" defaultOpen={false} contentClassName="pt-0">
           <AdminSystemTools
             claimedInviteCount={claimedInviteCount}
             pendingInviteCount={pendingInviteCount}

@@ -65,14 +65,14 @@ export function AdminSystemTools({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background/70">
-      <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_auto] gap-3 border-b border-border px-4 py-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto] gap-3 border-b border-border px-4 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
         <div>Tool</div>
         <div>Status</div>
         <div>Action</div>
       </div>
 
       <div className="divide-y divide-border">
-        <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_auto] items-center gap-3 px-4 py-4">
+        <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto] items-center gap-3 px-4 py-3">
           <div className="text-sm font-medium text-foreground">Invites</div>
           <div className="text-sm text-muted-foreground">
             {claimedInviteCount} active · {pendingInviteCount} pending
@@ -114,7 +114,7 @@ export function AdminSystemTools({
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_auto] items-center gap-3 px-4 py-4">
+        <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto] items-center gap-3 px-4 py-3">
           <div className="text-sm font-medium text-foreground">GG connection</div>
           <div className="text-sm text-muted-foreground">{connectionStatus}</div>
           <div>
@@ -138,7 +138,7 @@ export function AdminSystemTools({
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_auto] items-center gap-3 px-4 py-4">
+        <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto] items-center gap-3 px-4 py-3">
           <div className="text-sm font-medium text-foreground">Roster</div>
           <div className="text-sm text-muted-foreground">
             {mensRosterCount} men · {womensRosterCount} women
