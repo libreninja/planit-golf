@@ -10,6 +10,7 @@ interface RunRow {
   email: string
   golfMemberName: string
   golfMemberId: string
+  runOrder: number
   inviteStatus: 'not invited' | 'pending' | 'claimed' | 'revoked'
   appStatus: 'not signed up' | 'ready' | 'missing preferences'
   preferences: string[]
@@ -20,6 +21,10 @@ interface RunSection {
   roundLabel?: string
   opensLabel?: string
   closesLabel?: string
+  orderPolicy?: string
+  orderSeed?: string
+  taskCount?: number
+  validationWarnings?: string[]
   rows: RunRow[]
   demandCounts: Record<string, number>
 }
@@ -93,6 +98,10 @@ export function AdminRunSections() {
           roundLabel={section.roundLabel}
           opensLabel={section.opensLabel}
           closesLabel={section.closesLabel}
+          orderPolicy={section.orderPolicy}
+          orderSeed={section.orderSeed}
+          taskCount={section.taskCount}
+          validationWarnings={section.validationWarnings}
           rows={section.rows}
           demandCounts={section.demandCounts}
         />
