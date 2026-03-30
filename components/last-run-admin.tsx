@@ -1,6 +1,7 @@
 'use client'
 
 import { AdminSectionCard } from '@/components/admin-section-card'
+import { Badge } from '@/components/ui/badge'
 
 interface LastRunRow {
   playerName: string
@@ -33,7 +34,11 @@ export function LastRunAdmin({
   return (
     <AdminSectionCard
       title={title}
-      headerRight={`${successCount} success · ${failureCount} failed`}
+      headerRight={
+        <Badge variant="outline" className="border-white/30 bg-white/10 text-primary-foreground">
+          {successCount} success · {failureCount} failed
+        </Badge>
+      }
     >
         <div className="mb-4 space-y-1 text-sm text-muted-foreground">
           {roundLabel ? <p><span className="font-medium text-foreground">Round:</span> {roundLabel}</p> : null}

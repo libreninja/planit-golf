@@ -1,6 +1,7 @@
 'use client'
 
 import { AdminSectionCard } from '@/components/admin-section-card'
+import { Badge } from '@/components/ui/badge'
 
 interface RunRow {
   memberId: string
@@ -31,7 +32,13 @@ export function UpcomingRunAdmin({ title = 'Next run', roundLabel, opensLabel, c
   return (
     <AdminSectionCard
       title={title}
-      headerRight={typeof taskCount === 'number' ? `${taskCount} task${taskCount === 1 ? '' : 's'}` : undefined}
+      headerRight={
+        typeof taskCount === 'number' ? (
+          <Badge variant="outline" className="border-white/30 bg-white/10 text-primary-foreground">
+            {taskCount} task{taskCount === 1 ? '' : 's'}
+          </Badge>
+        ) : undefined
+      }
     >
         {roundLabel || opensLabel || closesLabel ? (
           <div className="mb-4 space-y-1 text-sm text-muted-foreground">
