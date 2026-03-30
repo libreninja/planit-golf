@@ -5,11 +5,11 @@ import type { User } from '@supabase/supabase-js'
 import { GripVertical, Shield, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { deleteEventPreference, saveDefaultPreferences, saveEventRegistrationOverride, saveRegistrationSettings } from '@/app/preference-actions'
+import { AdminSectionCard } from '@/components/admin-section-card'
 import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 interface Profile {
@@ -408,14 +408,9 @@ export function PreferenceForm({
       </div>
 
       <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 pb-28 sm:py-6 sm:pb-32">
-
-        <Card className="overflow-hidden border-white/70 bg-white/85">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-primary text-primary-foreground">
-            <CardTitle className="text-lg text-primary-foreground">
-              Preferred tee times{registrationsPaused ? ' (Weekly registration paused)' : ''}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
+        <AdminSectionCard
+          title={`Preferred tee times${registrationsPaused ? ' (Weekly registration paused)' : ''}`}
+        >
             <div className="space-y-4">
               <label className="flex items-start gap-3 rounded-md">
                 <input
@@ -525,14 +520,12 @@ export function PreferenceForm({
                 </Dialog>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdminSectionCard>
 
-        <Card className="overflow-hidden border-white/70 bg-white/85">
-          <CardHeader className="bg-primary text-primary-foreground">
-            <CardTitle className="text-lg text-primary-foreground">Individual event overrides</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
+        <AdminSectionCard
+          title="Individual event overrides"
+          headerRight={<Badge variant="outline" className="border-white/30 bg-white/10 text-primary-foreground">{visibleEvents.length} events</Badge>}
+        >
             <div className="mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <label className="flex items-center gap-2">
                 <input
@@ -543,7 +536,6 @@ export function PreferenceForm({
                 />
                 <span>Only show events with overrides</span>
               </label>
-              <Badge variant="outline">{visibleEvents.length} events</Badge>
             </div>
             <div className="max-h-[min(52vh,34rem)] overflow-y-auto pr-1 sm:pr-2">
               <div className="space-y-3">
@@ -606,8 +598,7 @@ export function PreferenceForm({
             )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdminSectionCard>
       </div>
 
       <Dialog
