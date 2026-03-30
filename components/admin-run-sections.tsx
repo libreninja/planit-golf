@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { AdminSectionCard } from '@/components/admin-section-card'
 import { LastRunSections } from '@/components/last-run-sections'
 import { UpcomingRunAdmin } from '@/components/upcoming-run-admin'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface RunRow {
   memberId: string
@@ -32,12 +32,9 @@ interface RunSection {
 
 function LoadingCard() {
   return (
-    <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-      <CardHeader className="bg-primary text-primary-foreground">
-        <CardTitle className="text-lg text-primary-foreground">Loading next registration runs</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4 text-sm text-muted-foreground">Fetching the latest run data...</CardContent>
-    </Card>
+    <AdminSectionCard title="Next registration runs" contentClassName="text-sm text-muted-foreground">
+      Fetching the latest run data...
+    </AdminSectionCard>
   )
 }
 
@@ -81,12 +78,9 @@ export function AdminRunSections() {
 
   if (error) {
     return (
-      <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-        <CardHeader className="bg-primary text-primary-foreground">
-          <CardTitle className="text-lg text-primary-foreground">Next registration runs</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 text-sm text-destructive">{error}</CardContent>
-      </Card>
+      <AdminSectionCard title="Next registration runs" contentClassName="text-sm text-destructive">
+        {error}
+      </AdminSectionCard>
     )
   }
 

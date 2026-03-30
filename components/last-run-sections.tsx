@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { AdminSectionCard } from '@/components/admin-section-card'
 import { LastRunAdmin } from '@/components/last-run-admin'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface LastRunRow {
   playerName: string
@@ -53,34 +53,25 @@ export function LastRunSections() {
 
   if (loading) {
     return (
-      <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-        <CardHeader className="bg-primary text-primary-foreground">
-          <CardTitle className="text-lg text-primary-foreground">Loading last run results</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 text-sm text-muted-foreground">Fetching the latest run outcomes...</CardContent>
-      </Card>
+      <AdminSectionCard title="Last run results" contentClassName="text-sm text-muted-foreground">
+        Fetching the latest run outcomes...
+      </AdminSectionCard>
     )
   }
 
   if (error) {
     return (
-      <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-        <CardHeader className="bg-primary text-primary-foreground">
-          <CardTitle className="text-lg text-primary-foreground">Last run results</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 text-sm text-destructive">{error}</CardContent>
-      </Card>
+      <AdminSectionCard title="Last run results" contentClassName="text-sm text-destructive">
+        {error}
+      </AdminSectionCard>
     )
   }
 
   if (sections.length === 0) {
     return (
-      <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-        <CardHeader className="bg-primary text-primary-foreground">
-          <CardTitle className="text-lg text-primary-foreground">Last run results</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 text-sm text-muted-foreground">No completed runs have been recorded yet.</CardContent>
-      </Card>
+      <AdminSectionCard title="Last run results" contentClassName="text-sm text-muted-foreground">
+        No completed runs have been recorded yet.
+      </AdminSectionCard>
     )
   }
 

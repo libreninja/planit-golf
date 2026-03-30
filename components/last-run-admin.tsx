@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminSectionCard } from '@/components/admin-section-card'
 
 interface LastRunRow {
   playerName: string
@@ -31,11 +31,10 @@ export function LastRunAdmin({
   rows,
 }: LastRunSection) {
   return (
-    <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-      <CardHeader className="bg-primary text-primary-foreground">
-        <CardTitle className="text-lg text-primary-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4">
+    <AdminSectionCard
+      title={title}
+      headerRight={`${successCount} success · ${failureCount} failed`}
+    >
         <div className="mb-4 space-y-1 text-sm text-muted-foreground">
           {roundLabel ? <p><span className="font-medium text-foreground">Round:</span> {roundLabel}</p> : null}
           <p><span className="font-medium text-foreground">Status:</span> {status}</p>
@@ -68,7 +67,6 @@ export function LastRunAdmin({
             </tbody>
           </table>
         )}
-      </CardContent>
-    </Card>
+    </AdminSectionCard>
   )
 }

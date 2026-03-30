@@ -2,11 +2,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { AdminRunSections } from '@/components/admin-run-sections'
+import { AdminSectionCard } from '@/components/admin-section-card'
 import { AdminSystemTools } from '@/components/admin-system-tools'
 import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { requireAdmin } from '@/lib/auth'
 
 function toArray<T>(value: T | T[] | null | undefined): T[] {
@@ -59,19 +59,14 @@ export default async function AdminPage() {
       </div>
 
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-4">
-        <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-primary text-primary-foreground">
-            <CardTitle className="text-lg text-primary-foreground">System tools</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <AdminSystemTools
-              claimedInviteCount={claimedInviteCount}
-              pendingInviteCount={pendingInviteCount}
-              mensRosterCount={mensRosterCount}
-              womensRosterCount={womensRosterCount}
-            />
-          </CardContent>
-        </Card>
+        <AdminSectionCard title="System tools" contentClassName="pt-0">
+          <AdminSystemTools
+            claimedInviteCount={claimedInviteCount}
+            pendingInviteCount={pendingInviteCount}
+            mensRosterCount={mensRosterCount}
+            womensRosterCount={womensRosterCount}
+          />
+        </AdminSectionCard>
         <AdminRunSections />
       </div>
     </main>

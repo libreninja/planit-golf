@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminSectionCard } from '@/components/admin-section-card'
 
 interface RunRow {
   memberId: string
@@ -29,22 +28,11 @@ interface UpcomingRunAdminProps {
 }
 
 export function UpcomingRunAdmin({ title = 'Next run', roundLabel, opensLabel, closesLabel, orderPolicy, orderSeed, taskCount, validationWarnings, rows, demandCounts }: UpcomingRunAdminProps) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
-
   return (
-    <Card className="overflow-hidden border-white/70 bg-white/85 shadow-lg shadow-primary/10">
-      <CardHeader className="bg-primary text-primary-foreground">
-        <CardTitle className="text-lg text-primary-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4">
+    <AdminSectionCard
+      title={title}
+      headerRight={typeof taskCount === 'number' ? `${taskCount} task${taskCount === 1 ? '' : 's'}` : undefined}
+    >
         {roundLabel || opensLabel || closesLabel ? (
           <div className="mb-4 space-y-1 text-sm text-muted-foreground">
             {roundLabel ? <p><span className="font-medium text-foreground">Registering for:</span> {roundLabel}</p> : null}
@@ -95,7 +83,6 @@ export function UpcomingRunAdmin({ title = 'Next run', roundLabel, opensLabel, c
             </tbody>
           </table>
         )}
-      </CardContent>
-    </Card>
+    </AdminSectionCard>
   )
 }
