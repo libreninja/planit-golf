@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { ensureInviteLinkForUser } from '@/lib/invite-linking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
@@ -22,17 +23,16 @@ export default async function InvitePage({
   }
 
   if (user.email) {
-    await serviceClient
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        email: user.email,
-        display_name:
-          typeof user.user_metadata?.display_name === 'string'
-            ? user.user_metadata.display_name
-            : user.email.split('@')[0],
-        updated_at: new Date().toISOString(),
-      })
+    await ensureInviteLinkForUser({
+      serviceClient,
+      userId: user.id,
+      email: user.email,
+      displayName:
+        typeof user.user_metadata?.display_name === 'string'
+          ? user.user_metadata.display_name
+          : user.email.split('@')[0],
+      inviteToken: token,
+    })
   }
 
   const { data: profile } = await supabase
@@ -63,19 +63,18 @@ export default async function InvitePage({
     )
   }
 
-  const { data: claimResult } = await supabase.rpc('claim_invite_for_user', {
-    claim_user_id: user.id,
-    claim_email: user.email,
-    claim_token: token,
-    claim_display_name:
+  const claimResult = await ensureInviteLinkForUser({
+    serviceClient,
+    userId: user.id,
+    email: user.email,
+    displayName:
       typeof user.user_metadata?.display_name === 'string'
         ? user.user_metadata.display_name
         : null,
+    inviteToken: token,
   })
 
-  const claimedInvite = Array.isArray(claimResult) ? claimResult[0] : claimResult
-
-  if (!claimedInvite?.member_id || !claimedInvite?.invite_id) {
+  if (!claimResult?.memberId || !claimResult?.inviteId) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <Card className="w-full max-w-md">

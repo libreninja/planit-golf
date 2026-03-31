@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { PreferenceForm } from "@/components/preference-form"
 import { getNextRunEventDate, getNextRunEventDateFromStatus } from "@/lib/registration-schedule"
+import { ensureInviteLinkForUser } from "@/lib/invite-linking"
 import { createServiceClient } from "@/lib/supabase/service"
 import { createClient } from "@/lib/supabase/server"
 import { isConfiguredSystemAdminEmail } from "@/lib/system-admin"
@@ -30,17 +31,16 @@ export default async function Home() {
   const serviceClient = createServiceClient()
 
   if (!resolvedProfile && user.email) {
-    await serviceClient
-      .from("profiles")
-      .upsert({
-        id: user.id,
-        email: user.email,
-        display_name:
-          typeof user.user_metadata?.display_name === "string"
-            ? user.user_metadata.display_name
-            : user.email.split("@")[0],
-        updated_at: new Date().toISOString(),
-      })
+    await ensureInviteLinkForUser({
+      serviceClient,
+      userId: user.id,
+      email: user.email,
+      displayName:
+        typeof user.user_metadata?.display_name === "string"
+          ? user.user_metadata.display_name
+          : user.email.split("@")[0],
+      inviteToken,
+    })
 
     const { data: createdProfile } = await supabase
       .from("profiles")
@@ -52,19 +52,19 @@ export default async function Home() {
   }
 
   if (!resolvedProfile || !resolvedProfile.member_id || !resolvedProfile.invite_id) {
-    if (inviteToken && user.email) {
-      const { data: claimResult } = await supabase.rpc("claim_invite_for_user", {
-        claim_user_id: user.id,
-        claim_email: user.email,
-        claim_token: inviteToken,
-        claim_display_name:
+    if (user.email) {
+      const claimResult = await ensureInviteLinkForUser({
+        serviceClient,
+        userId: user.id,
+        email: user.email,
+        displayName:
           typeof user.user_metadata?.display_name === "string"
             ? user.user_metadata.display_name
             : null,
+        inviteToken,
       })
 
-      const claimedInvite = Array.isArray(claimResult) ? claimResult[0] : claimResult
-      if (claimedInvite?.member_id && claimedInvite?.invite_id) {
+      if (claimResult?.memberId && claimResult?.inviteId) {
         const baseProfile = resolvedProfile || {
           id: user.id,
           display_name:
@@ -80,8 +80,8 @@ export default async function Home() {
         }
         resolvedProfile = {
           ...baseProfile,
-          member_id: claimedInvite.member_id,
-          invite_id: claimedInvite.invite_id,
+          member_id: claimResult.memberId,
+          invite_id: claimResult.inviteId,
         }
       }
     }
