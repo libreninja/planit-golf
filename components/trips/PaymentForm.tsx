@@ -118,7 +118,7 @@ export function PaymentForm({
         <DialogHeader>
           <DialogTitle>Report Payment</DialogTitle>
           <DialogDescription>
-            Let us know you've sent the deposit
+            Let us know you&apos;ve sent the deposit
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -234,4 +234,3 @@ export function PaymentForm({
     </Dialog>
   )
 }
-

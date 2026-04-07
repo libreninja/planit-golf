@@ -108,7 +108,7 @@ export function RSVPForm({ tripId, existingRSVP }: RSVPFormProps) {
         <DialogHeader>
           <DialogTitle>RSVP</DialogTitle>
           <DialogDescription>
-            Let us know if you'll be joining this trip
+            Let us know if you&apos;ll be joining this trip
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -126,8 +126,8 @@ export function RSVPForm({ tripId, existingRSVP }: RSVPFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="yes">Yes, I'm in!</SelectItem>
-                      <SelectItem value="no">No, can't make it</SelectItem>
+                      <SelectItem value="yes">Yes, I&apos;m in!</SelectItem>
+                      <SelectItem value="no">No, can&apos;t make it</SelectItem>
                       <SelectItem value="maybe">Maybe</SelectItem>
                     </SelectContent>
                   </Select>
@@ -237,4 +237,3 @@ export function RSVPForm({ tripId, existingRSVP }: RSVPFormProps) {
     </Dialog>
   )
 }
-

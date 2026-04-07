@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ export function RosterTable({ tripId }: RosterTableProps) {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
 
-  const loadRoster = async () => {
+  const loadRoster = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/admin/roster?trip_id=${tripId}`)
@@ -34,11 +34,11 @@ export function RosterTable({ tripId }: RosterTableProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [tripId])
 
   useEffect(() => {
     loadRoster()
-  }, [tripId])
+  }, [loadRoster])
 
   const handleVerifyPayment = async (paymentId: string) => {
     try {
@@ -151,4 +151,3 @@ export function RosterTable({ tripId }: RosterTableProps) {
     </div>
   )
 }
-
