@@ -9,8 +9,12 @@ import {
   getLeaderboardRows,
 } from '@/lib/public-pace'
 
-export default async function LeaderboardPage() {
-  const rows = await getLeaderboardRows()
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>
+}) {
+  const [{ status }, rows] = await Promise.all([searchParams, getLeaderboardRows()])
 
   return (
     <main className="min-h-screen px-4 py-6 sm:py-10">
@@ -24,6 +28,14 @@ export default async function LeaderboardPage() {
             </p>
           </div>
         </section>
+
+        {status === 'finished' ? (
+          <Card className="mt-5 border-primary/20 bg-primary/10">
+            <CardContent className="p-4 text-sm font-medium text-primary">
+              Thanks, you&apos;re done. Your time is recorded.
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="mt-5 grid gap-3">
           {rows.length === 0 ? (

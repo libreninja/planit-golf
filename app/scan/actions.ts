@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import {
-  finishPaceTimingRun,
   getActivePaceEvent,
   getCheckpointByToken,
   startPaceTimingRun,
@@ -53,26 +52,4 @@ export async function confirmPaceScan(token: string, formData: FormData) {
   })
 
   redirect(`/scan/${token}?status=started`)
-}
-
-export async function finishPaceScan(token: string) {
-  const checkpoint = await getCheckpointByToken(token)
-  const cookieStore = await cookies()
-  const finishToken = cookieStore.get(paceRunCookieName)?.value
-
-  if (!checkpoint || !finishToken) {
-    redirect(`/scan/${token}?status=invalid`)
-  }
-
-  const timingRun = await finishPaceTimingRun({
-    checkpoint,
-    finishToken,
-  })
-
-  if (!timingRun) {
-    redirect(`/scan/${token}?status=invalid-finish`)
-  }
-
-  cookieStore.delete(paceRunCookieName)
-  redirect(`/scan/${token}?status=finished`)
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { confirmPaceScan } from '@/app/scan/actions'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,6 @@ const paceRunCookieName = 'public_pace_run'
 
 function statusCopy(status?: string) {
   if (status === 'started') return 'Start time recorded. Scan the next QR code when your group finishes the hole.'
-  if (status === 'finished') return 'Finish time recorded. Your hole time is now on the leaderboard.'
   if (status === 'no-event') return 'No active tee sheet is configured for this checkpoint yet.'
   if (status === 'invalid') return 'This scan could not be recorded. Check the GGID and try again.'
   if (status === 'invalid-finish') return 'That continuation link is invalid or expired.'
@@ -46,12 +45,20 @@ export default async function ScanPage({
     !activeRun.finished_at &&
     activeRun.checkpoint_id !== checkpoint.id,
   )
-  const finishedRun = shouldFinishActiveRun && activeRunToken
-    ? await finishPaceTimingRun({ checkpoint, finishToken: activeRunToken })
-    : null
-  const showActiveRun = Boolean(activeRun && !activeRun.finished_at && !finishedRun)
-  const effectiveStatus = finishedRun ? 'finished' : status
-  const message = statusCopy(effectiveStatus)
+
+  if (shouldFinishActiveRun && activeRunToken) {
+    const finishedRun = await finishPaceTimingRun({ checkpoint, finishToken: activeRunToken })
+    if (!finishedRun) redirect(`/scan/${token}?status=invalid-finish`)
+    redirect('/leaderboard?status=finished')
+  }
+
+  if (activeRun?.finished_at && activeRun.finished_checkpoint_id === checkpoint.id) {
+    redirect('/leaderboard?status=finished')
+  }
+
+  const checkpointIsFinishOnly = checkpoint.label.toLowerCase() === 'checkpoint 2'
+  const showActiveRun = Boolean(activeRun && !activeRun.finished_at)
+  const message = statusCopy(status)
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:py-10">
@@ -96,17 +103,6 @@ export default async function ScanPage({
           </Card>
         ) : null}
 
-        {finishedRun ? (
-          <Card className="border-primary/20 bg-white/95">
-            <CardHeader>
-              <CardTitle>Hole finished</CardTitle>
-              <CardDescription>
-                GGID {finishedRun.group_ggid} was completed at {checkpoint.label}.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : null}
-
         {showActiveRun ? (
           <Card className="border-primary/20 bg-primary/10">
             <CardHeader>
@@ -118,7 +114,18 @@ export default async function ScanPage({
           </Card>
         ) : null}
 
-        {event && !showActiveRun && !finishedRun ? (
+        {event && !showActiveRun && checkpointIsFinishOnly ? (
+          <Card className="bg-white/95">
+            <CardHeader>
+              <CardTitle>No timer running</CardTitle>
+              <CardDescription>
+                Scan the first QR code at the tee before scanning this finish checkpoint.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
+
+        {event && !showActiveRun && !checkpointIsFinishOnly ? (
           <Card className="bg-white/95">
             <CardHeader>
               <CardTitle>Start hole timer</CardTitle>
@@ -128,28 +135,32 @@ export default async function ScanPage({
               <form action={confirmPaceScan.bind(null, token)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="groupGgid">Foursome GGID</Label>
-                  <Input
-                    id="groupGgid"
-                    name="groupGgid"
-                    autoCapitalize="characters"
-                    autoComplete="off"
-                    inputMode="text"
-                    placeholder="Enter GGID"
-                    required
-                    className="h-14 rounded-2xl text-lg uppercase"
-                  />
+                  <div className="flex items-center gap-2 rounded-2xl border border-input bg-background p-1 shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                    <Input
+                      id="groupGgid"
+                      name="groupGgid"
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      inputMode="text"
+                      placeholder="Enter GGID"
+                      required
+                      className="h-12 flex-1 border-0 bg-transparent text-lg uppercase shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                    />
+                    <Button type="submit" className="h-12 rounded-xl px-5 text-base">
+                      Send
+                    </Button>
+                  </div>
                 </div>
-                <Button type="submit" className="h-14 w-full rounded-2xl text-lg">
-                  Start timer
-                </Button>
               </form>
             </CardContent>
           </Card>
         ) : null}
 
-        <Button asChild variant="outline" className="self-start rounded-full bg-white/80">
-          <Link href="/leaderboard">View leaderboard</Link>
-        </Button>
+        {!checkpointIsFinishOnly ? (
+          <Button asChild variant="outline" className="self-start rounded-full bg-white/80">
+            <Link href="/leaderboard">View leaderboard</Link>
+          </Button>
+        ) : null}
       </div>
     </main>
   )
