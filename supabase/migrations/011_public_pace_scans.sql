@@ -48,6 +48,6 @@ ALTER TABLE public.public_pace_scans ENABLE ROW LEVEL SECURITY;
 
 INSERT INTO public.public_pace_checkpoints (token, label, course_name, league, hole_number)
 VALUES
-  ('interbay-checkpoint-1', 'Checkpoint 1', 'Interbay Golf Center', NULL, NULL),
-  ('interbay-checkpoint-2', 'Checkpoint 2', 'Interbay Golf Center', NULL, NULL)
+  ('IQF0he_G-FXX6sTT', 'Checkpoint 1', 'Interbay Golf Center', NULL, NULL),
+  ('rLkzBpG0dBNQg4MX', 'Checkpoint 2', 'Interbay Golf Center', NULL, NULL)
 ON CONFLICT (token) DO NOTHING;
