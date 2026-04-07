@@ -48,6 +48,7 @@ export type LeaderboardRow = {
 
 export type PaceTimingRun = {
   id: string
+  checkpoint_id: string
   event_date: string
   group_ggid: string
   started_at: string
@@ -408,7 +409,7 @@ export async function startPaceTimingRun({
       onConflict: 'checkpoint_id,event_date,foursome_key',
       ignoreDuplicates: true,
     })
-    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .select('id, checkpoint_id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
     .maybeSingle()
 
   if (error) throw error
@@ -416,7 +417,7 @@ export async function startPaceTimingRun({
 
   const { data: existing, error: existingError } = await supabase
     .from('public_pace_scans')
-    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .select('id, checkpoint_id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
     .eq('checkpoint_id', checkpoint.id)
     .eq('event_date', event.event_date)
     .eq('foursome_key', normalizedGgid)
@@ -445,7 +446,7 @@ export async function finishPaceTimingRun({
     })
     .eq('continuation_token', finishToken)
     .is('finished_at', null)
-    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .select('id, checkpoint_id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
     .maybeSingle()
 
   if (error) throw error
@@ -453,7 +454,7 @@ export async function finishPaceTimingRun({
 
   const { data: existing, error: existingError } = await supabase
     .from('public_pace_scans')
-    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .select('id, checkpoint_id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
     .eq('continuation_token', finishToken)
     .maybeSingle()
 
@@ -466,7 +467,7 @@ export async function getPaceTimingRunByToken(finishToken: string) {
   const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('public_pace_scans')
-    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .select('id, checkpoint_id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
     .eq('continuation_token', finishToken)
     .maybeSingle()
 

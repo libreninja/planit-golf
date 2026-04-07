@@ -2,13 +2,14 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 
-import { confirmPaceScan, finishPaceScan } from '@/app/scan/actions'
+import { confirmPaceScan } from '@/app/scan/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   formatDateLabel,
+  finishPaceTimingRun,
   getActivePaceEvent,
   getCheckpointByToken,
   getPaceTimingRunByToken,
@@ -38,10 +39,19 @@ export default async function ScanPage({
   if (!checkpoint) notFound()
 
   const event = await getActivePaceEvent(checkpoint)
-  const message = statusCopy(status)
   const activeRunToken = cookieStore.get(paceRunCookieName)?.value || null
   const activeRun = activeRunToken ? await getPaceTimingRunByToken(activeRunToken) : null
-  const canFinishActiveRun = Boolean(activeRun && !activeRun.finished_at)
+  const shouldFinishActiveRun = Boolean(
+    activeRun &&
+    !activeRun.finished_at &&
+    activeRun.checkpoint_id !== checkpoint.id,
+  )
+  const finishedRun = shouldFinishActiveRun && activeRunToken
+    ? await finishPaceTimingRun({ checkpoint, finishToken: activeRunToken })
+    : null
+  const showActiveRun = Boolean(activeRun && !activeRun.finished_at && !finishedRun)
+  const effectiveStatus = finishedRun ? 'finished' : status
+  const message = statusCopy(effectiveStatus)
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:py-10">
@@ -86,25 +96,29 @@ export default async function ScanPage({
           </Card>
         ) : null}
 
-        {canFinishActiveRun ? (
+        {finishedRun ? (
           <Card className="border-primary/20 bg-white/95">
             <CardHeader>
-              <CardTitle>Finish this hole?</CardTitle>
+              <CardTitle>Hole finished</CardTitle>
               <CardDescription>
-                Active GGID {activeRun?.group_ggid}. If this is the next QR code for that group, record the finish now.
+                GGID {finishedRun.group_ggid} was completed at {checkpoint.label}.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form action={finishPaceScan.bind(null, token)}>
-                <Button type="submit" className="h-14 w-full rounded-2xl text-lg">
-                  Finish hole
-                </Button>
-              </form>
-            </CardContent>
           </Card>
         ) : null}
 
-        {event && !canFinishActiveRun ? (
+        {showActiveRun ? (
+          <Card className="border-primary/20 bg-primary/10">
+            <CardHeader>
+              <CardTitle>Timer is running</CardTitle>
+              <CardDescription>
+                Active GGID {activeRun?.group_ggid}. Scan the next QR code when your foursome finishes the hole.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
+
+        {event && !showActiveRun && !finishedRun ? (
           <Card className="bg-white/95">
             <CardHeader>
               <CardTitle>Start hole timer</CardTitle>
