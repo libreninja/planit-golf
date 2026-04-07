@@ -1,24 +1,27 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 
-import { confirmPaceScan } from '@/app/scan/actions'
+import { confirmPaceScan, finishPaceScan } from '@/app/scan/actions'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  fetchLiveFoursomes,
   formatDateLabel,
-  formatTimeLabel,
   getActivePaceEvent,
   getCheckpointByToken,
-  type TeeSheetFoursome,
+  getPaceTimingRunByToken,
 } from '@/lib/public-pace'
 
+const paceRunCookieName = 'public_pace_run'
+
 function statusCopy(status?: string) {
-  if (status === 'recorded') return 'Timestamp recorded. You can close this page or check the leaderboard.'
-  if (status === 'stale') return 'That tee group is no longer available. Choose the current group below.'
+  if (status === 'started') return 'Start time recorded. Scan the next QR code when your group finishes the hole.'
+  if (status === 'finished') return 'Finish time recorded. Your hole time is now on the leaderboard.'
   if (status === 'no-event') return 'No active tee sheet is configured for this checkpoint yet.'
-  if (status === 'invalid') return 'This scan could not be recorded. Try scanning the QR code again.'
-  if (status === 'lookup-error') return 'The live tee sheet could not be loaded. Try again in a moment.'
+  if (status === 'invalid') return 'This scan could not be recorded. Check the GGID and try again.'
+  if (status === 'invalid-finish') return 'That continuation link is invalid or expired.'
   return null
 }
 
@@ -29,22 +32,16 @@ export default async function ScanPage({
   params: Promise<{ token: string }>
   searchParams: Promise<{ status?: string }>
 }) {
-  const [{ token }, { status }] = await Promise.all([params, searchParams])
+  const [{ token }, { status }, cookieStore] = await Promise.all([params, searchParams, cookies()])
   const checkpoint = await getCheckpointByToken(token)
 
   if (!checkpoint) notFound()
 
   const event = await getActivePaceEvent(checkpoint)
-  let foursomes: TeeSheetFoursome[] = []
-  let lookupError = false
-  if (event) {
-    try {
-      foursomes = await fetchLiveFoursomes(event, checkpoint)
-    } catch {
-      lookupError = true
-    }
-  }
   const message = statusCopy(status)
+  const activeRunToken = cookieStore.get(paceRunCookieName)?.value || null
+  const activeRun = activeRunToken ? await getPaceTimingRunByToken(activeRunToken) : null
+  const canFinishActiveRun = Boolean(activeRun && !activeRun.finished_at)
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:py-10">
@@ -53,7 +50,7 @@ export default async function ScanPage({
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">planit.golf public checkpoint</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">{checkpoint.label}</h1>
           <p className="mt-3 max-w-xl text-base text-muted-foreground">
-            Select your foursome to record the checkpoint timestamp. This page does not require member sign-in.
+            Enter the GGID assigned to your foursome. This starts the timer; scan the next QR code to finish.
           </p>
           {event ? (
             <div className="mt-5 flex flex-wrap gap-2 text-sm">
@@ -89,53 +86,52 @@ export default async function ScanPage({
           </Card>
         ) : null}
 
-        {event && lookupError ? (
-          <Card>
+        {canFinishActiveRun ? (
+          <Card className="border-primary/20 bg-white/95">
             <CardHeader>
-              <CardTitle>Tee sheet unavailable</CardTitle>
+              <CardTitle>Finish this hole?</CardTitle>
               <CardDescription>
-                The live tee sheet could not be loaded from Golf Genius. Confirm the API key, event ID, and round ID.
+                Active GGID {activeRun?.group_ggid}. If this is the next QR code for that group, record the finish now.
               </CardDescription>
             </CardHeader>
+            <CardContent>
+              <form action={finishPaceScan.bind(null, token)}>
+                <Button type="submit" className="h-14 w-full rounded-2xl text-lg">
+                  Finish hole
+                </Button>
+              </form>
+            </CardContent>
           </Card>
         ) : null}
 
-        {event && !lookupError && foursomes.length === 0 ? (
-          <Card>
+        {event && !canFinishActiveRun ? (
+          <Card className="bg-white/95">
             <CardHeader>
-              <CardTitle>No recent groups</CardTitle>
-              <CardDescription>
-                No tee groups are inside the checkpoint window yet. If your group just teed off, refresh this page.
-              </CardDescription>
+              <CardTitle>Start hole timer</CardTitle>
+              <CardDescription>Use the GGID your foursome received at tee-off.</CardDescription>
             </CardHeader>
+            <CardContent>
+              <form action={confirmPaceScan.bind(null, token)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="groupGgid">Foursome GGID</Label>
+                  <Input
+                    id="groupGgid"
+                    name="groupGgid"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    inputMode="text"
+                    placeholder="Enter GGID"
+                    required
+                    className="h-14 rounded-2xl text-lg uppercase"
+                  />
+                </div>
+                <Button type="submit" className="h-14 w-full rounded-2xl text-lg">
+                  Start timer
+                </Button>
+              </form>
+            </CardContent>
           </Card>
         ) : null}
-
-        <div className="grid gap-3">
-          {foursomes.map((foursome) => (
-            <form key={foursome.key} action={confirmPaceScan.bind(null, token)}>
-              <input type="hidden" name="foursomeKey" value={foursome.key} />
-              <button
-                type="submit"
-                className="group w-full rounded-[1.5rem] border border-border bg-white/90 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-emerald-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <span className="flex items-start justify-between gap-4">
-                  <span>
-                    <span className="block text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                      Teed off {formatTimeLabel(foursome.actualStartAt)}
-                    </span>
-                    <span className="mt-2 block text-2xl font-semibold text-foreground">
-                      {foursome.playerNames.length > 0 ? foursome.playerNames.join(' / ') : `Tee time ${foursome.teeTime}`}
-                    </span>
-                  </span>
-                  <span className="rounded-full bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground transition group-hover:bg-foreground">
-                    Record
-                  </span>
-                </span>
-              </button>
-            </form>
-          ))}
-        </div>
 
         <Button asChild variant="outline" className="self-start rounded-full bg-white/80">
           <Link href="/leaderboard">View leaderboard</Link>

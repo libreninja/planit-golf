@@ -20,7 +20,7 @@ export default async function LeaderboardPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-100/80">public pace board</p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">Fastest foursomes</h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-50/75 sm:text-base">
-              Rankings use the official clubhouse tee-off time and the QR checkpoint scan timestamp.
+              Rankings use the first QR scan as the start and the next QR scan as the finish.
             </p>
           </div>
         </section>
@@ -48,15 +48,18 @@ export default async function LeaderboardPage() {
                     {row.checkpointLabel} · {formatDateLabel(row.eventDate)}
                   </p>
                   <h2 className="mt-1 text-2xl font-semibold">
-                    {row.playerNames.length > 0 ? row.playerNames.join(' / ') : `Tee time ${row.teeTime}`}
+                    {row.groupGgid ? `GGID ${row.groupGgid}` : 'Unknown group'}
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Start {formatTimeLabel(row.actualStartAt)} · Scan {formatTimeLabel(row.scannedAt)}
+                    Start {formatTimeLabel(row.startedAt)}
+                    {row.finishedAt ? ` · Finish ${formatTimeLabel(row.finishedAt)}` : ' · In progress'}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-accent px-4 py-3 text-center text-accent-foreground">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em]">Elapsed</p>
-                  <p className="text-2xl font-bold">{formatElapsedMinutes(row.elapsedMinutes)}</p>
+                  <p className="text-2xl font-bold">
+                    {row.elapsedMinutes === null ? 'Running' : formatElapsedMinutes(row.elapsedMinutes)}
+                  </p>
                 </div>
               </CardContent>
             </Card>

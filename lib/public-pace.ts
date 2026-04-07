@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from 'next/cache'
+import { randomUUID } from 'node:crypto'
 
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -38,11 +39,21 @@ export type LeaderboardRow = {
   id: string
   checkpointLabel: string
   eventDate: string
-  teeTime: string
-  playerNames: string[]
-  actualStartAt: string
+  groupGgid: string | null
+  startedAt: string
+  finishedAt: string | null
   scannedAt: string
-  elapsedMinutes: number
+  elapsedMinutes: number | null
+}
+
+export type PaceTimingRun = {
+  id: string
+  event_date: string
+  group_ggid: string
+  started_at: string
+  finished_at: string | null
+  finished_checkpoint_id: string | null
+  continuation_token: string
 }
 
 type TeeSheetRow = {
@@ -323,6 +334,146 @@ export async function recordPaceScan({
   return data
 }
 
+export async function recordGgidPaceScan({
+  checkpoint,
+  event,
+  groupGgid,
+  userAgent,
+}: {
+  checkpoint: PaceCheckpoint
+  event: PaceEvent
+  groupGgid: string
+  userAgent: string | null
+}) {
+  noStore()
+  const supabase = createServiceClient()
+  const normalizedGgid = groupGgid.trim().toUpperCase()
+  const payload = {
+    checkpoint_id: checkpoint.id,
+    event_id: event.id,
+    event_date: event.event_date,
+    league: event.league,
+    golf_event_id: event.golf_event_id,
+    golf_round_id: event.golf_round_id,
+    foursome_key: normalizedGgid,
+    group_ggid: normalizedGgid,
+    user_agent: userAgent,
+  }
+
+  const { data, error } = await supabase
+    .from('public_pace_scans')
+    .upsert(payload, {
+      onConflict: 'checkpoint_id,event_date,foursome_key',
+      ignoreDuplicates: true,
+    })
+    .select('id')
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function startPaceTimingRun({
+  checkpoint,
+  event,
+  groupGgid,
+  userAgent,
+}: {
+  checkpoint: PaceCheckpoint
+  event: PaceEvent
+  groupGgid: string
+  userAgent: string | null
+}) {
+  noStore()
+  const supabase = createServiceClient()
+  const normalizedGgid = groupGgid.trim().toUpperCase()
+  const payload = {
+    checkpoint_id: checkpoint.id,
+    event_id: event.id,
+    event_date: event.event_date,
+    league: event.league,
+    golf_event_id: event.golf_event_id,
+    golf_round_id: event.golf_round_id,
+    foursome_key: normalizedGgid,
+    group_ggid: normalizedGgid,
+    started_at: new Date().toISOString(),
+    scanned_at: new Date().toISOString(),
+    continuation_token: randomUUID(),
+    user_agent: userAgent,
+  }
+
+  const { data, error } = await supabase
+    .from('public_pace_scans')
+    .upsert(payload, {
+      onConflict: 'checkpoint_id,event_date,foursome_key',
+      ignoreDuplicates: true,
+    })
+    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .maybeSingle()
+
+  if (error) throw error
+  if (data) return data as PaceTimingRun
+
+  const { data: existing, error: existingError } = await supabase
+    .from('public_pace_scans')
+    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .eq('checkpoint_id', checkpoint.id)
+    .eq('event_date', event.event_date)
+    .eq('foursome_key', normalizedGgid)
+    .maybeSingle()
+
+  if (existingError) throw existingError
+  return existing as PaceTimingRun | null
+}
+
+export async function finishPaceTimingRun({
+  checkpoint,
+  finishToken,
+}: {
+  checkpoint: PaceCheckpoint
+  finishToken: string
+}) {
+  noStore()
+  const supabase = createServiceClient()
+  const finishedAt = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('public_pace_scans')
+    .update({
+      finished_at: finishedAt,
+      finished_checkpoint_id: checkpoint.id,
+    })
+    .eq('continuation_token', finishToken)
+    .is('finished_at', null)
+    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .maybeSingle()
+
+  if (error) throw error
+  if (data) return data as PaceTimingRun
+
+  const { data: existing, error: existingError } = await supabase
+    .from('public_pace_scans')
+    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .eq('continuation_token', finishToken)
+    .maybeSingle()
+
+  if (existingError) throw existingError
+  return existing as PaceTimingRun | null
+}
+
+export async function getPaceTimingRunByToken(finishToken: string) {
+  noStore()
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from('public_pace_scans')
+    .select('id, event_date, group_ggid, started_at, finished_at, finished_checkpoint_id, continuation_token')
+    .eq('continuation_token', finishToken)
+    .maybeSingle()
+
+  if (error) throw error
+  return data as PaceTimingRun | null
+}
+
 export async function getLeaderboardRows(limit = 25) {
   noStore()
   const supabase = createServiceClient()
@@ -331,16 +482,16 @@ export async function getLeaderboardRows(limit = 25) {
     .select(`
       id,
       event_date,
-      tee_time,
-      actual_start_at,
+      group_ggid,
+      started_at,
+      finished_at,
       scanned_at,
-      player_names,
       public_pace_checkpoints (
         label
       )
     `)
     .order('event_date', { ascending: false })
-    .order('scanned_at', { ascending: true })
+    .order('finished_at', { ascending: true, nullsFirst: false })
     .limit(limit)
 
   if (error?.code === 'PGRST205') return []
@@ -351,11 +502,18 @@ export async function getLeaderboardRows(limit = 25) {
       id: row.id,
       checkpointLabel: row.public_pace_checkpoints?.label || 'Checkpoint',
       eventDate: row.event_date,
-      teeTime: row.tee_time,
-      playerNames: row.player_names || [],
-      actualStartAt: row.actual_start_at,
+      groupGgid: row.group_ggid,
+      startedAt: row.started_at,
+      finishedAt: row.finished_at,
       scannedAt: row.scanned_at,
-      elapsedMinutes: (Date.parse(row.scanned_at) - Date.parse(row.actual_start_at)) / 60000,
+      elapsedMinutes: row.finished_at && row.started_at
+        ? (Date.parse(row.finished_at) - Date.parse(row.started_at)) / 60000
+        : null,
     }))
-    .sort((a, b) => a.elapsedMinutes - b.elapsedMinutes) as LeaderboardRow[]
+    .sort((a, b) => {
+      if (a.elapsedMinutes === null && b.elapsedMinutes === null) return Date.parse(a.scannedAt) - Date.parse(b.scannedAt)
+      if (a.elapsedMinutes === null) return 1
+      if (b.elapsedMinutes === null) return -1
+      return a.elapsedMinutes - b.elapsedMinutes
+    }) as LeaderboardRow[]
 }

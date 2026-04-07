@@ -1,20 +1,28 @@
 'use server'
 
 import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import {
-  fetchLiveFoursomes,
+  finishPaceTimingRun,
   getActivePaceEvent,
   getCheckpointByToken,
-  recordPaceScan,
+  startPaceTimingRun,
 } from '@/lib/public-pace'
 
+function normalizeGgid(value: FormDataEntryValue | null) {
+  if (typeof value !== 'string') return ''
+  return value.trim().toUpperCase().replace(/\s+/g, '')
+}
+
+const paceRunCookieName = 'public_pace_run'
+
 export async function confirmPaceScan(token: string, formData: FormData) {
-  const foursomeKey = String(formData.get('foursomeKey') || '')
+  const groupGgid = normalizeGgid(formData.get('groupGgid'))
   const checkpoint = await getCheckpointByToken(token)
 
-  if (!checkpoint || !foursomeKey) {
+  if (!checkpoint || !groupGgid) {
     redirect(`/scan/${token}?status=invalid`)
   }
 
@@ -23,25 +31,48 @@ export async function confirmPaceScan(token: string, formData: FormData) {
     redirect(`/scan/${token}?status=no-event`)
   }
 
-  let foursomes
-  try {
-    foursomes = await fetchLiveFoursomes(event, checkpoint)
-  } catch {
-    redirect(`/scan/${token}?status=lookup-error`)
-  }
-  const foursome = foursomes.find((candidate) => candidate.key === foursomeKey)
-
-  if (!foursome) {
-    redirect(`/scan/${token}?status=stale`)
-  }
-
   const headerStore = await headers()
-  await recordPaceScan({
+  const timingRun = await startPaceTimingRun({
     checkpoint,
     event,
-    foursome,
+    groupGgid,
     userAgent: headerStore.get('user-agent'),
   })
 
-  redirect(`/scan/${token}?status=recorded`)
+  if (!timingRun?.continuation_token) {
+    redirect(`/scan/${token}?status=invalid`)
+  }
+
+  const cookieStore = await cookies()
+  cookieStore.set(paceRunCookieName, timingRun.continuation_token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/scan',
+    maxAge: 60 * 60 * 6,
+  })
+
+  redirect(`/scan/${token}?status=started`)
+}
+
+export async function finishPaceScan(token: string) {
+  const checkpoint = await getCheckpointByToken(token)
+  const cookieStore = await cookies()
+  const finishToken = cookieStore.get(paceRunCookieName)?.value
+
+  if (!checkpoint || !finishToken) {
+    redirect(`/scan/${token}?status=invalid`)
+  }
+
+  const timingRun = await finishPaceTimingRun({
+    checkpoint,
+    finishToken,
+  })
+
+  if (!timingRun) {
+    redirect(`/scan/${token}?status=invalid-finish`)
+  }
+
+  cookieStore.delete(paceRunCookieName)
+  redirect(`/scan/${token}?status=finished`)
 }
