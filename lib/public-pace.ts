@@ -487,7 +487,7 @@ export async function getLeaderboardRows(limit = 25) {
       started_at,
       finished_at,
       scanned_at,
-      public_pace_checkpoints (
+      public_pace_checkpoints!public_pace_scans_checkpoint_id_fkey (
         label
       )
     `)
