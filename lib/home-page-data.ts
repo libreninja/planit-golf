@@ -19,6 +19,21 @@ type HomeEvent = {
   }[]
 }
 
+type HomeProfile = {
+  id: string
+  display_name: string | null
+  member_id: string | null
+  invite_id: string | null
+  is_admin: boolean
+  is_system_admin: boolean
+  registrations_paused: boolean
+  membership_revoked: boolean
+  member?: {
+    id: string
+    league: League | null
+  } | null
+}
+
 export async function loadHomePageData(timer?: RequestTimer) {
   const supabase = await createClient()
   const serviceClient = createServiceClient()
@@ -45,8 +60,20 @@ export async function loadHomePageData(timer?: RequestTimer) {
       ? user.user_metadata.invite_token
       : null
 
-  const profileSelect =
-    'id, display_name, member_id, invite_id, is_admin, is_system_admin, registrations_paused, membership_revoked'
+  const profileSelect = `
+    id,
+    display_name,
+    member_id,
+    invite_id,
+    is_admin,
+    is_system_admin,
+    registrations_paused,
+    membership_revoked,
+    member:members!profiles_member_id_fkey (
+      id,
+      league
+    )
+  `
 
   const profileResult: any = await measure(
     'profile',
@@ -58,9 +85,10 @@ export async function loadHomePageData(timer?: RequestTimer) {
         .maybeSingle(),
     'load profile',
   )
-  const profile = profileResult.data
+  const profile = profileResult.data as HomeProfile | null
 
   let resolvedProfile = profile
+  let memberLeague = profile?.member?.league ?? null
 
   if (!resolvedProfile && user.email) {
     await measure(
@@ -89,9 +117,10 @@ export async function loadHomePageData(timer?: RequestTimer) {
           .maybeSingle(),
       'refetch profile after invite init',
     )
-    const createdProfile = createdProfileResult.data
+    const createdProfile = createdProfileResult.data as HomeProfile | null
 
     resolvedProfile = createdProfile
+    memberLeague = createdProfile?.member?.league ?? null
   }
 
   if ((!resolvedProfile || !resolvedProfile.member_id || !resolvedProfile.invite_id) && user.email) {
@@ -149,12 +178,12 @@ export async function loadHomePageData(timer?: RequestTimer) {
       () =>
         serviceClient
           .from('members')
-          .select('id')
+          .select('id, league')
           .eq('email', user.email.toLowerCase())
           .maybeSingle(),
       'load admin member by email',
     )
-    const member = adminMemberResult.data
+    const member = adminMemberResult.data as { id: string; league?: League | null } | null
 
     if (member) {
       await measure(
@@ -182,6 +211,7 @@ export async function loadHomePageData(timer?: RequestTimer) {
         registrations_paused: resolvedProfile?.registrations_paused ?? false,
         membership_revoked: resolvedProfile?.membership_revoked ?? false,
       }
+      memberLeague = member.league ?? memberLeague
     }
   }
 
@@ -202,7 +232,7 @@ export async function loadHomePageData(timer?: RequestTimer) {
   }
 
   const [memberResult, defaultPrefsResult, eventPrefsResult] = await Promise.all([
-    resolvedProfile?.member_id
+    resolvedProfile?.member_id && !memberLeague
       ? measure(
           'member',
           () =>
@@ -234,7 +264,8 @@ export async function loadHomePageData(timer?: RequestTimer) {
       'load event preferences',
     ),
   ])
-  const member = (memberResult as any).data
+  const member = ((memberResult as any).data || null) as { id: string; league: League | null } | null
+  memberLeague = memberLeague ?? member?.league ?? null
   const defaultPrefs = (defaultPrefsResult as any).data
   const eventPrefs = (eventPrefsResult as any).data
 
@@ -254,26 +285,26 @@ export async function loadHomePageData(timer?: RequestTimer) {
     .order('event_date', { ascending: true })
 
   let nextRunEventDate: string | null = null
-  if (member?.league) {
-    eventsQuery = eventsQuery.eq('league', member.league)
+  if (memberLeague) {
+    eventsQuery = eventsQuery.eq('league', memberLeague)
   } else {
     eventsQuery = eventsQuery.gte('event_date', new Date().toISOString().split('T')[0])
   }
 
   const [eventsResult, latestRun] = await Promise.all([
     measure('events', () => eventsQuery, 'load upcoming events'),
-    member?.league
+    memberLeague
       ? measure(
           'latest_run',
-          () => getLatestRegistrationRunStatus(serviceClient, member.league as League),
+          () => getLatestRegistrationRunStatus(serviceClient, memberLeague as League),
           'load latest registration run status',
         )
       : Promise.resolve(null),
   ])
   const allEvents = ((eventsResult as any).data || []) as HomeEvent[]
 
-  if (member?.league) {
-    const fallbackDate = getNextRunEventDate(member.league as League)
+  if (memberLeague) {
+    const fallbackDate = getNextRunEventDate(memberLeague as League)
     const eventsForLeague = allEvents.map((event) => event.event_date).sort()
 
     if (!latestRun) {
@@ -287,12 +318,12 @@ export async function loadHomePageData(timer?: RequestTimer) {
   }
 
   const events =
-    member?.league && nextRunEventDate
+    memberLeague && nextRunEventDate
       ? allEvents.filter((event) => event.event_date >= nextRunEventDate)
       : allEvents.filter(
           (event) =>
             event.event_date >=
-            getNextRunEventDate((member?.league as League | undefined) || 'mens'),
+            getNextRunEventDate(memberLeague || 'mens'),
         )
 
   return {
