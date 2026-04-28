@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { PreferenceForm } from "@/components/preference-form"
-import { getNextRunEventDate, getNextRunEventDateFromStatus } from "@/lib/registration-schedule"
+import { getLatestRegistrationRunStatus, getNextRunEventDate } from "@/lib/registration-schedule"
 import { ensureInviteLinkForUser } from "@/lib/invite-linking"
 import { createServiceClient } from "@/lib/supabase/service"
 import { createClient } from "@/lib/supabase/server"
@@ -175,14 +175,25 @@ export default async function Home() {
     eventsQuery = eventsQuery.gte("event_date", new Date().toISOString().split("T")[0])
   }
 
-  const { data: allEvents } = await eventsQuery
+  const [{ data: allEvents }, latestRun] = await Promise.all([
+    eventsQuery,
+    member?.league
+      ? getLatestRegistrationRunStatus(serviceClient, member.league as 'mens' | 'womens')
+      : Promise.resolve(null),
+  ])
 
   if (member?.league) {
-    nextRunEventDate = await getNextRunEventDateFromStatus(
-      serviceClient,
-      member.league as 'mens' | 'womens',
-      allEvents || [],
-    )
+    const fallbackDate = getNextRunEventDate(member.league as 'mens' | 'womens')
+    const eventsForLeague = (allEvents || []).map((event) => event.event_date).sort()
+
+    if (!latestRun) {
+      nextRunEventDate = fallbackDate
+    } else if (latestRun.status !== "completed") {
+      nextRunEventDate = latestRun.event_date
+    } else {
+      nextRunEventDate =
+        eventsForLeague.find((eventDate) => eventDate > latestRun.event_date) || fallbackDate
+    }
   }
 
   const events = member?.league && nextRunEventDate
