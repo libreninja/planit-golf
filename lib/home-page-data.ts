@@ -44,12 +44,30 @@ export async function loadHomePageData(timer?: RequestTimer) {
     description?: string,
   ) => (timer ? timer.measure(name, run, description) : run())
 
-  const authResult: any = await measure(
+  const authClaimsResult: any = await measure(
     'auth',
-    () => supabase.auth.getUser(),
-    'supabase auth.getUser',
+    () => supabase.auth.getClaims(),
+    'supabase auth.getClaims',
   )
-  const user = authResult.data.user
+  const claims = authClaimsResult.data?.claims
+  let user =
+    claims?.sub
+      ? ({
+          id: claims.sub,
+          email: typeof claims.email === 'string' ? claims.email : null,
+          user_metadata: claims.user_metadata || {},
+          app_metadata: claims.app_metadata || {},
+        } as any)
+      : null
+
+  if (!user) {
+    const authUserFallback: any = await measure(
+      'auth_fallback',
+      () => supabase.auth.getUser(),
+      'fallback to supabase auth.getUser',
+    )
+    user = authUserFallback.data.user
+  }
 
   if (!user) {
     redirect('/login')
