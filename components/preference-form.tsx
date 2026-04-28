@@ -296,6 +296,29 @@ export function PreferenceForm({
     setBaselineEventOverrides(nextInitialEventOverrides)
   }, [defaultPrefs, eventPrefs, eventDemandCounts])
 
+  const refreshPreferences = useEffectEvent(async () => {
+    const response = await fetch('/api/member-preferences', {
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to load member preferences')
+    }
+
+    const payload = await response.json() as {
+      defaultPrefs?: DefaultPrefs | null
+      eventPrefs?: EventPref[]
+    }
+
+    const nextDefaultTimes = payload.defaultPrefs?.tee_time_preferences || []
+    const nextEventOverrides = buildInitialEventOverrides(payload.eventPrefs || [])
+
+    setBaselineDefaultTimes(nextDefaultTimes)
+    setBaselineEventOverrides(nextEventOverrides)
+    setDefaultTimes(nextDefaultTimes)
+    setEventOverrides(nextEventOverrides)
+  })
+
   const refreshDemandCounts = useEffectEvent(async () => {
     if (events.length === 0) {
       setBaseDemandCounts({})
@@ -322,6 +345,7 @@ export function PreferenceForm({
   useEffect(() => {
     const supabase = createBrowserClient()
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
+    let preferenceRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
     const scheduleRefresh = () => {
       if (refreshTimer) {
@@ -335,17 +359,39 @@ export function PreferenceForm({
       }, 150)
     }
 
+    const schedulePreferenceRefresh = () => {
+      if (preferenceRefreshTimer) {
+        clearTimeout(preferenceRefreshTimer)
+      }
+
+      preferenceRefreshTimer = setTimeout(() => {
+        void refreshPreferences().catch((error) => {
+          console.error(error)
+        })
+      }, 150)
+    }
+
+    schedulePreferenceRefresh()
     scheduleRefresh()
 
     const channel = supabase
       .channel(`member-demand:${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'default_preferences' }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_preferences' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'default_preferences' }, () => {
+        schedulePreferenceRefresh()
+        scheduleRefresh()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_preferences' }, () => {
+        schedulePreferenceRefresh()
+        scheduleRefresh()
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, scheduleRefresh)
       .subscribe()
 
     return () => {
+      if (preferenceRefreshTimer) {
+        clearTimeout(preferenceRefreshTimer)
+      }
       if (refreshTimer) {
         clearTimeout(refreshTimer)
       }
