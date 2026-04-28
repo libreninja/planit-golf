@@ -287,11 +287,6 @@ export function PreferenceForm({
   const [membershipRevoked, setMembershipRevoked] = useState(profile?.membership_revoked === true)
   const [savingRegistrationSettings, setSavingRegistrationSettings] = useState(false)
   const [confirmingRevoke, setConfirmingRevoke] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   useEffect(() => {
     const nextInitialDefaultTimes = defaultPrefs?.tee_time_preferences || []
@@ -325,8 +320,6 @@ export function PreferenceForm({
   })
 
   useEffect(() => {
-    if (!mounted) return
-
     const supabase = createBrowserClient()
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -342,6 +335,8 @@ export function PreferenceForm({
       }, 150)
     }
 
+    scheduleRefresh()
+
     const channel = supabase
       .channel(`member-demand:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'default_preferences' }, scheduleRefresh)
@@ -356,11 +351,7 @@ export function PreferenceForm({
       }
       void supabase.removeChannel(channel)
     }
-  }, [mounted, user.id, events, refreshDemandCounts])
-
-  if (!mounted) {
-    return null
-  }
+  }, [user.id, events])
 
   const demandCounts = getAdjustedDemandCounts({
     baseCounts: baseDemandCounts,
