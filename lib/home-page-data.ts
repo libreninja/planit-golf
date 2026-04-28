@@ -60,6 +60,27 @@ export async function loadHomePageData(timer?: RequestTimer) {
       ? user.user_metadata.invite_token
       : null
 
+  const defaultPrefsPromise = measure(
+    'default_prefs',
+    () =>
+      supabase
+        .from('default_preferences')
+        .select('tee_time_preferences')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    'load default preferences',
+  )
+
+  const eventPrefsPromise = measure(
+    'event_prefs',
+    () =>
+      supabase
+        .from('event_preferences')
+        .select('event_id, tee_time_preferences, skip_registration')
+        .eq('user_id', user.id),
+    'load event preferences',
+  )
+
   const profileSelect = `
     id,
     display_name,
@@ -244,25 +265,8 @@ export async function loadHomePageData(timer?: RequestTimer) {
           'load member league',
         )
       : Promise.resolve({ data: null }),
-    measure(
-      'default_prefs',
-      () =>
-        supabase
-          .from('default_preferences')
-          .select('tee_time_preferences')
-          .eq('user_id', user.id)
-          .maybeSingle(),
-      'load default preferences',
-    ),
-    measure(
-      'event_prefs',
-      () =>
-        supabase
-          .from('event_preferences')
-          .select('event_id, tee_time_preferences, skip_registration')
-          .eq('user_id', user.id),
-      'load event preferences',
-    ),
+    defaultPrefsPromise,
+    eventPrefsPromise,
   ])
   const member = ((memberResult as any).data || null) as { id: string; league: League | null } | null
   memberLeague = memberLeague ?? member?.league ?? null
