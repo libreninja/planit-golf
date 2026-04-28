@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { GripVertical, Shield, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -8,6 +8,8 @@ import { deleteEventPreference, saveDefaultPreferences, saveEventRegistrationOve
 import { AdminSectionCard } from '@/components/admin-section-card'
 import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
+import type { EventDemandCounts } from '@/lib/member-demand'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -50,7 +52,7 @@ interface PreferenceFormProps {
   events: Event[]
   defaultPrefs: DefaultPrefs | null
   eventPrefs: EventPref[]
-  eventDemandCounts: Record<string, Record<string, number>>
+  eventDemandCounts: EventDemandCounts
 }
 
 type EditorState =
@@ -61,6 +63,81 @@ type EditorState =
 type EventOverrideState = {
   times: string[]
   skipRegistration: boolean
+}
+
+function buildInitialEventOverrides(eventPrefs: EventPref[]): Record<string, EventOverrideState> {
+  const overrides: Record<string, EventOverrideState> = {}
+  for (const eventPref of eventPrefs) {
+    overrides[eventPref.event_id] = {
+      times: eventPref.tee_time_preferences,
+      skipRegistration: eventPref.skip_registration === true,
+    }
+  }
+  return overrides
+}
+
+function getEffectiveTimes(
+  defaultTimes: string[],
+  override: EventOverrideState | undefined,
+): string[] {
+  if (!override) {
+    return defaultTimes
+  }
+
+  return override.skipRegistration ? [] : override.times
+}
+
+function sameTimes(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((time, index) => time === right[index])
+}
+
+function getAdjustedDemandCounts({
+  baseCounts,
+  events,
+  initialDefaultTimes,
+  initialEventOverrides,
+  defaultTimes,
+  eventOverrides,
+}: {
+  baseCounts: EventDemandCounts
+  events: Event[]
+  initialDefaultTimes: string[]
+  initialEventOverrides: Record<string, EventOverrideState>
+  defaultTimes: string[]
+  eventOverrides: Record<string, EventOverrideState>
+}): EventDemandCounts {
+  const adjustedCounts: EventDemandCounts = { ...baseCounts }
+
+  for (const event of events) {
+    const initialOverride = initialEventOverrides[event.id]
+    const currentOverride = eventOverrides[event.id]
+    const initialTimes = getEffectiveTimes(initialDefaultTimes, initialOverride).slice(0, 3)
+    const currentTimes = getEffectiveTimes(defaultTimes, currentOverride).slice(0, 3)
+
+    if (
+      initialOverride?.skipRegistration === currentOverride?.skipRegistration &&
+      sameTimes(initialTimes, currentTimes)
+    ) {
+      continue
+    }
+
+    const availableSlots = new Set(event.event_time_slots.map((slot) => slot.time_slot))
+    const nextCounts = { ...(baseCounts[event.id] || {}) }
+
+    for (const time of initialTimes) {
+      if (!availableSlots.has(time)) continue
+      nextCounts[time] = Math.max(0, (nextCounts[time] || 0) - 1)
+    }
+
+    for (const time of currentTimes) {
+      if (!availableSlots.has(time)) continue
+      nextCounts[time] = (nextCounts[time] || 0) + 1
+    }
+
+    adjustedCounts[event.id] = nextCounts
+  }
+
+  return adjustedCounts
 }
 
 function formatDate(dateStr: string) {
@@ -181,6 +258,8 @@ export function PreferenceForm({
   eventDemandCounts,
 }: PreferenceFormProps) {
   const router = useRouter()
+  const initialDefaultTimes = defaultPrefs?.tee_time_preferences || []
+  const initialEventOverrides = buildInitialEventOverrides(eventPrefs)
   const allTeeTimes = Array.from(
     new Set(
       events.flatMap((event) =>
@@ -192,18 +271,13 @@ export function PreferenceForm({
     ),
   )
 
-  const [defaultTimes, setDefaultTimes] = useState<string[]>(defaultPrefs?.tee_time_preferences || [])
-  const [demandCounts, setDemandCounts] = useState<Record<string, Record<string, number>>>(eventDemandCounts)
-  const [eventOverrides, setEventOverrides] = useState<Record<string, EventOverrideState>>(() => {
-    const overrides: Record<string, EventOverrideState> = {}
-    for (const eventPref of eventPrefs) {
-      overrides[eventPref.event_id] = {
-        times: eventPref.tee_time_preferences,
-        skipRegistration: eventPref.skip_registration === true,
-      }
-    }
-    return overrides
-  })
+  const [baseDemandCounts, setBaseDemandCounts] = useState<EventDemandCounts>(eventDemandCounts)
+  const [baselineDefaultTimes, setBaselineDefaultTimes] = useState<string[]>(initialDefaultTimes)
+  const [baselineEventOverrides, setBaselineEventOverrides] = useState<Record<string, EventOverrideState>>(
+    initialEventOverrides,
+  )
+  const [defaultTimes, setDefaultTimes] = useState<string[]>(initialDefaultTimes)
+  const [eventOverrides, setEventOverrides] = useState<Record<string, EventOverrideState>>(() => initialEventOverrides)
   const [editor, setEditor] = useState<EditorState>(null)
   const [draftTimes, setDraftTimes] = useState<string[]>([])
   const [savingEditor, setSavingEditor] = useState(false)
@@ -220,38 +294,82 @@ export function PreferenceForm({
   }, [])
 
   useEffect(() => {
-    setDemandCounts(eventDemandCounts)
-  }, [eventDemandCounts])
+    const nextInitialDefaultTimes = defaultPrefs?.tee_time_preferences || []
+    const nextInitialEventOverrides = buildInitialEventOverrides(eventPrefs)
+    setBaseDemandCounts(eventDemandCounts)
+    setBaselineDefaultTimes(nextInitialDefaultTimes)
+    setBaselineEventOverrides(nextInitialEventOverrides)
+  }, [defaultPrefs, eventPrefs, eventDemandCounts])
 
-  useEffect(() => {
-    if (!mounted || events.length === 0) return
+  const refreshDemandCounts = useEffectEvent(async () => {
+    if (events.length === 0) {
+      setBaseDemandCounts({})
+      setBaselineDefaultTimes(defaultTimes)
+      setBaselineEventOverrides(eventOverrides)
+      return
+    }
 
-    const controller = new AbortController()
     const eventIds = events.map((event) => event.id).join(',')
-
-    void fetch(`/api/member-demand?eventIds=${encodeURIComponent(eventIds)}`, {
-      signal: controller.signal,
+    const response = await fetch(`/api/member-demand?eventIds=${encodeURIComponent(eventIds)}`, {
       cache: 'no-store',
     })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Unable to load demand counts')
-        return response.json() as Promise<{ eventDemandCounts?: Record<string, Record<string, number>> }>
-      })
-      .then((payload) => {
-        setDemandCounts(payload.eventDemandCounts || {})
-      })
-      .catch((error) => {
-        if ((error as Error).name !== 'AbortError') {
-          console.error(error)
-        }
-      })
 
-    return () => controller.abort()
-  }, [mounted, events, defaultTimes, eventOverrides])
+    if (!response.ok) {
+      throw new Error('Unable to load demand counts')
+    }
+
+    const payload = await response.json() as { eventDemandCounts?: EventDemandCounts }
+    setBaseDemandCounts(payload.eventDemandCounts || {})
+    setBaselineDefaultTimes(defaultTimes)
+    setBaselineEventOverrides(eventOverrides)
+  })
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const supabase = createBrowserClient()
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer)
+      }
+
+      refreshTimer = setTimeout(() => {
+        void refreshDemandCounts().catch((error) => {
+          console.error(error)
+        })
+      }, 150)
+    }
+
+    const channel = supabase
+      .channel(`member-demand:${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'default_preferences' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_preferences' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, scheduleRefresh)
+      .subscribe()
+
+    return () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer)
+      }
+      void supabase.removeChannel(channel)
+    }
+  }, [mounted, user.id, events, refreshDemandCounts])
 
   if (!mounted) {
     return null
   }
+
+  const demandCounts = getAdjustedDemandCounts({
+    baseCounts: baseDemandCounts,
+    events,
+    initialDefaultTimes: baselineDefaultTimes,
+    initialEventOverrides: baselineEventOverrides,
+    defaultTimes,
+    eventOverrides,
+  })
 
   const getEventPreferences = (eventId: string): EventOverrideState => eventOverrides[eventId] || { times: defaultTimes, skipRegistration: false }
   const visibleEvents = showChangedOnly

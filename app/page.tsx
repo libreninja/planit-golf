@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { PreferenceForm } from "@/components/preference-form"
 import { getNextRunEventDate, getNextRunEventDateFromStatus } from "@/lib/registration-schedule"
 import { ensureInviteLinkForUser } from "@/lib/invite-linking"
+import { getEventDemandCounts } from "@/lib/member-demand"
 import { createServiceClient } from "@/lib/supabase/service"
 import { createClient } from "@/lib/supabase/server"
 import { isConfiguredSystemAdminEmail } from "@/lib/system-admin"
@@ -189,6 +190,11 @@ export default async function Home() {
     ? (allEvents || []).filter((event) => event.event_date >= nextRunEventDate)
     : (allEvents || []).filter((event) => event.event_date >= getNextRunEventDate((member?.league as 'mens' | 'womens' | undefined) || 'mens'))
 
+  const eventDemandCounts =
+    member?.league && events.length > 0
+      ? await getEventDemandCounts(serviceClient, member.league, events.map((event) => event.id))
+      : {}
+
   return (
     <PreferenceForm
       user={user}
@@ -196,7 +202,7 @@ export default async function Home() {
       events={events || []}
       defaultPrefs={defaultPrefs}
       eventPrefs={eventPrefs || []}
-      eventDemandCounts={{}}
+      eventDemandCounts={eventDemandCounts}
     />
   )
 }
