@@ -5,7 +5,7 @@
 1. Go to [https://supabase.com](https://supabase.com) and sign in (or create an account)
 2. Click **"New Project"**
 3. Fill in the details:
-   - **Name**: e.g., "Trip HQ" or "bigdeal"
+   - **Name**: e.g., "planit.golf"
    - **Database Password**: Choose a strong password (save it securely!)
    - **Region**: Choose the region closest to you/your users
 4. Click **"Create new project"** (takes 1-2 minutes)
@@ -46,11 +46,11 @@ supabase db push
 2. Set **Site URL** to your production domain (or `http://localhost:3000` for local dev)
 3. Add these **Redirect URLs**:
    - `http://localhost:3000/auth/callback` (for local dev - REQUIRED)
-   - `http://localhost:3000/trips` (for local dev)
+   - `http://localhost:3000/auth/callback` (for local dev)
    - `http://localhost:3000/invite/*` (for local dev)
    - `http://localhost:3000/admin/*` (for local dev)
    - `https://planit.golf/auth/callback` (for production - REQUIRED)
-   - `https://planit.golf/trips` (for production)
+   - `https://planit.golf/auth/callback` (for production)
    - `https://planit.golf/invite/*` (for production)
    - `https://planit.golf/admin/*` (for production)
 
@@ -68,12 +68,13 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
-# Postmark (Optional - if not set, invite links will be shown in UI for manual sharing)
-# Get from postmarkapp.com if you want automated email sending
-POSTMARK_SERVER_TOKEN=your-postmark-token
-
-# Email
+# Email (optional - if unset, invite links can still be shared manually)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
 FROM_EMAIL=invites@planit.golf
+REPLY_TO_EMAIL=invites@planit.golf
 APP_URL=http://localhost:3000
 ```
 
@@ -107,10 +108,9 @@ APP_URL=http://localhost:3000
 ## Next Steps
 
 After Supabase is set up:
-1. (Optional) Set up Postmark for automated email sending, or skip and use invite links from the UI
+1. (Optional) Set up SMTP for automated email sending, or skip and use invite links from the UI
 2. Deploy to Vercel
 3. Update environment variables in Vercel
 4. Update Supabase redirect URLs to production domain
 
-**Note:** If you don't set up Postmark, the app will still work! Invite links will be displayed in the admin UI so you can copy and share them manually via text, email, or any other method.
-
+**Note:** If you don't set up SMTP, the app will still work. Invite links will be displayed in the admin UI so you can copy and share them manually via text, email, or any other method.

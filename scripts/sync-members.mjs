@@ -354,7 +354,7 @@ async function main() {
     for (const entry of profileSync.missingProfiles.slice(0, 10)) {
       const labels = []
       if (entry.is_system_admin) labels.push("system")
-      if (entry.is_admin) labels.push("bigdeal")
+      if (entry.is_admin) labels.push("admin")
       console.log(`- ${entry.display_name} <${entry.email}> [${labels.join(", ")}]`)
     }
   }

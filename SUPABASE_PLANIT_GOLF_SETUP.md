@@ -27,7 +27,7 @@ This guide will help you configure Supabase Auth to send all emails from planit.
 
 2. Set **Site URL**:
    - Production: `https://planit.golf`
-   - Local dev: `http://localhost:5173` (or your Vite dev port)
+   - Local dev: `http://localhost:3000`
 
 3. Add **Redirect URLs**:
    - `https://planit.golf/login` (production)
@@ -190,4 +190,3 @@ Once configured, users will:
 - See planit.golf branding in all emails
 - Never see Supabase mentioned anywhere
 - Have a seamless sign-in experience
-

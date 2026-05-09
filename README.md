@@ -1,24 +1,23 @@
 # planit.golf
 
-A cloud-hosted, invite-only golf trip planning web app. Built with React + Vite, Supabase, and deployed on Vercel.
+A Next.js and Supabase web app for Interbay Golf Club tee-time preferences, event companions, public pace tools, and lightweight admin operations.
 
 ## Features
 
-- **Magic Link Authentication** - No passwords required
-- **Invite-Only Access** - Users can only see trips they've been invited to
-- **RSVP Management** - Guests can RSVP with arrival/departure details
-- **Payment Tracking** - Report payments and admin verification
-- **Admin Dashboard** - Create trips, send invites, manage roster
-- **Email Notifications** - Invites and reminders via Postmark
+- **Good to Go** - invite-gated league tee-time preference collection
+- **IGC event companion** - public event shell, local Golf Genius imports, leaderboard, feed, and logistics
+- **Public pace board** - QR-driven pace timing and leaderboard
+- **Admin dashboard** - roster sync, invites, registration runs, and operational tools
+- **Email notifications** - invite delivery through SMTP when configured
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js App Router
 - **Language**: TypeScript
 - **Database**: Supabase (PostgreSQL with RLS)
 - **Auth**: Supabase Auth (Magic Links)
 - **Styling**: Tailwind CSS + shadcn/ui
-- **Email**: Postmark
+- **Email**: SMTP via Nodemailer
 - **Deployment**: Vercel
 
 ## Setup
@@ -27,7 +26,7 @@ A cloud-hosted, invite-only golf trip planning web app. Built with React + Vite,
 
 - Node.js 18+
 - Supabase account
-- Postmark account (optional - for email sending)
+- SMTP credentials (optional - for email sending)
 - Vercel account (for deployment)
 
 ### Environment Variables
@@ -40,19 +39,23 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Postmark (Optional - if not set, invite links will be shown in UI for manual sharing)
-POSTMARK_SERVER_TOKEN=your_postmark_token
+# Golf Genius
+GOLF_GENIUS_API_KEY=your_golf_genius_api_key
+GOLF_GENIUS_BASE_URL=https://www.golfgenius.com
 
-# Email
+# Email (optional - if unset, invite links can still be shared manually)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_password
 FROM_EMAIL=invites@planit.golf
+REPLY_TO_EMAIL=invites@planit.golf
 APP_URL=https://planit.golf
 ```
 
 ### Database Setup
 
-1. Run the migrations in `supabase/migrations/`:
-   - `001_initial_schema.sql` - Creates all tables
-   - `002_rls_policies.sql` - Sets up Row Level Security
+1. Run the migrations in `supabase/migrations/` in filename order.
 
 2. Create a Storage bucket named `qr-codes` with public read access
 
@@ -60,15 +63,15 @@ APP_URL=https://planit.golf
    - Enable email magic links
    - Set Site URL to your production domain
    - Add redirect URLs:
-     - `/trips`
      - `/invite/*`
      - `/admin/*`
+     - `/auth/callback`
 
 ### Installation
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ## Deployment
@@ -90,16 +93,18 @@ npm run dev
 ```
 app/
   (auth)/          # Public auth routes
-  (member)/        # Member-facing routes
   (admin)/         # Admin routes
+  igc/             # IGC event companion routes
+  scan/            # Public QR scan routes
   api/             # API routes
 components/
   ui/              # shadcn/ui components
-  trips/           # Trip-related components
+  igc/             # IGC event companion components
   admin/           # Admin components
   auth/            # Auth components
 lib/
   supabase/        # Supabase clients
+  igc/             # IGC data access and Golf Genius sync
   email/           # Email utilities
   validations/     # Zod schemas
 supabase/
@@ -109,11 +114,11 @@ supabase/
 ## Security
 
 - All database access is protected by Row Level Security (RLS)
-- Admin routes check `created_by = auth.uid()`
+- Admin routes check `profiles.is_admin` / `profiles.is_system_admin`
 - Service role key only used in server routes
+- Golf Genius credentials are server-side only
 - Invite tokens are cryptographically secure
 
 ## License
 
 Private project
-
