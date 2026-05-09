@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getEventSeriesBySlug, getEditionsForSeries } from '@/lib/events/series';
+import { getEventSeriesBySlug } from '@/lib/events/series';
+import { getEditionsForSeries } from '@/lib/events/editions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, CalendarDays } from 'lucide-react';
