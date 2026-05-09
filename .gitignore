@@ -41,5 +41,8 @@ next-env.d.ts
 # supabase local metadata
 supabase/.temp/
 
+# git worktrees
+.worktrees/
+
 # local roster sync overrides
 scripts/member-overrides.json
