@@ -444,6 +444,12 @@ export function PreferenceForm({
   const handleSaveEditor = async () => {
     if (!editor) return
 
+    // Client-side validation: can't save empty event preferences
+    if (editor.type === 'event' && draftTimes.length === 0) {
+      alert('Please select at least one tee time, or click "Use defaults" to fall back to your default preferences.')
+      return
+    }
+
     setSavingEditor(true)
     try {
       if (editor.type === 'defaults') {
