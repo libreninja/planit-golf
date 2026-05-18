@@ -1,18 +1,38 @@
 -- IGC League tables for weekly leaderboard and blog content
 -- Stores processed Golf Genius data for live display
 
--- Weekly player performances
+-- Events table (for selecting/viewing specific events)
+CREATE TABLE igc_league_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    league_key TEXT NOT NULL,
+    week_number INTEGER NOT NULL,
+    gg_event_id TEXT NOT NULL,
+    event_name TEXT NOT NULL,
+    event_date DATE NOT NULL,
+    course_name TEXT,
+    status TEXT DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'live', 'finalized')),
+    flights_finalized BOOLEAN DEFAULT false,
+    finalized_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(league_key, week_number)
+);
+
+-- Weekly player performances (now with flight support)
 CREATE TABLE igc_league_performances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     league_key TEXT NOT NULL, -- 'mens_tuesday' or 'womens_wednesday'
     week_number INTEGER NOT NULL,
+    event_id UUID REFERENCES igc_league_events(id) ON DELETE CASCADE,
     player_name TEXT NOT NULL,
     member_card_id TEXT,
+    flight TEXT CHECK (flight IN ('A', 'B', 'C')), -- Only assigned after finalized
     event_name TEXT NOT NULL,
     event_date DATE,
     double_bogeys INTEGER DEFAULT 0,
     birdies INTEGER DEFAULT 0,
-    weekly_position INTEGER NOT NULL,
+    weekly_position INTEGER NOT NULL, -- Overall position before flights
+    flight_position INTEGER, -- Position within flight (once assigned)
     ranking_change INTEGER, -- positive = improved
     net_scores INTEGER[], -- nullable array for hole-by-hole
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -54,17 +74,26 @@ CREATE TABLE igc_league_standings (
 );
 
 -- Indexes
+CREATE INDEX idx_league_events_league ON igc_league_events(league_key);
+CREATE INDEX idx_league_events_date ON igc_league_events(event_date);
 CREATE INDEX idx_league_performances_league ON igc_league_performances(league_key);
 CREATE INDEX idx_league_performances_week ON igc_league_performances(week_number);
+CREATE INDEX idx_league_performances_event ON igc_league_performances(event_id);
 CREATE INDEX idx_league_performances_player ON igc_league_performances(player_name);
+CREATE INDEX idx_league_performances_flight ON igc_league_performances(flight);
 CREATE INDEX idx_league_standings_league ON igc_league_standings(league_key);
 
 -- RLS
+ALTER TABLE igc_league_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE igc_league_performances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE igc_league_blog_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE igc_league_standings ENABLE ROW LEVEL SECURITY;
 
--- Public can view performances and standings
+-- Public can view events, performances and standings
+CREATE POLICY "Public can view league events"
+    ON igc_league_events FOR SELECT
+    USING (true);
+
 CREATE POLICY "Public can view league performances"
     ON igc_league_performances FOR SELECT
     USING (true);
@@ -92,6 +121,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER league_events_updated_at
+    BEFORE UPDATE ON igc_league_events
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER league_performances_updated_at
     BEFORE UPDATE ON igc_league_performances

@@ -16,10 +16,23 @@ export interface IGCLeagueConfig {
   categoryId: string; // Men's or Women's league
   seasonPointsCategoryId: string;
   name: string;
+  hasFlights: boolean; // Men's league has 3 flights
+}
+
+export interface IGCEvent {
+  id: string;
+  week_number: number;
+  event_name: string;
+  event_date: string;
+  course_name?: string;
+  status: 'upcoming' | 'live' | 'finalized';
+  flights_finalized: boolean;
 }
 
 export interface IGCLeaderboardEntry {
   rank: number;
+  flight?: 'A' | 'B' | 'C';
+  flight_position?: number;
   player_name: string;
   total_points: number;
   events_played: number;
@@ -29,11 +42,16 @@ export interface IGCLeaderboardEntry {
 
 export interface IGCWeeklyResult {
   week: number;
+  event_date?: string;
   player_name: string;
   position: number;
+  flight?: 'A' | 'B' | 'C';
+  flight_position?: number;
   points_earned?: number;
   double_bogeys: number;
   birdies: number;
+  net_scores?: (number | null)[];
+  ranking_change?: number;
 }
 
 // League configurations
@@ -43,15 +61,72 @@ export const IGC_LEAGUES: Record<string, IGCLeagueConfig> = {
     categoryId: process.env.IGC_MENS_CATEGORY_ID || "",
     seasonPointsCategoryId: process.env.IGC_MENS_POINTS_CATEGORY_ID || "",
     name: "Men's Tuesday League",
+    hasFlights: true,
   },
   womens_wednesday: {
     seasonId: process.env.IGC_WOMENS_SEASON_ID || "",
     categoryId: process.env.IGC_WOMENS_CATEGORY_ID || "",
     seasonPointsCategoryId: process.env.IGC_WOMENS_POINTS_CATEGORY_ID || "",
     name: "Women's Wednesday League",
+    hasFlights: false,
   },
 };
 
+// Get all events for a league (for the dropdown selector)
+export async function getLeagueEvents(
+  leagueKey: string
+): Promise<IGCEvent[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("igc_league_events")
+    .select("*")
+    .eq("league_key", leagueKey)
+    .order("event_date", { ascending: false });
+
+  if (error) throw error;
+
+  return (
+    data?.map((e) => ({
+      id: e.id,
+      week_number: e.week_number,
+      event_name: e.event_name,
+      event_date: e.event_date,
+      course_name: e.course_name,
+      status: e.status,
+      flights_finalized: e.flights_finalized,
+    })) || []
+  );
+}
+
+// Get specific event by week number
+export async function getLeagueEvent(
+  leagueKey: string,
+  weekNumber: number
+): Promise<IGCEvent | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("igc_league_events")
+    .select("*")
+    .eq("league_key", leagueKey)
+    .eq("week_number", weekNumber)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    week_number: data.week_number,
+    event_name: data.event_name,
+    event_date: data.event_date,
+    course_name: data.course_name,
+    status: data.status,
+    flights_finalized: data.flights_finalized,
+  };
+}
+
+// Get season leaderboard (overall points)
 export async function getLeagueLeaderboard(
   leagueKey: string
 ): Promise<IGCLeaderboardEntry[]> {
@@ -75,6 +150,76 @@ export async function getLeagueLeaderboard(
   }));
 }
 
+// Get weekly results with flight support
+export async function getLeagueWeeklyResults(
+  leagueKey: string,
+  weekNumber?: number
+): Promise<IGCWeeklyResult[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("igc_league_performances")
+    .select("*")
+    .eq("league_key", leagueKey);
+
+  if (weekNumber) {
+    query = query.eq("week_number", weekNumber);
+  }
+
+  const { data, error } = await query
+    .order("flight", { ascending: true, nullsFirst: false })
+    .order("flight_position", { ascending: true })
+    .order("weekly_position", { ascending: true });
+
+  if (error) throw error;
+
+  return (
+    data?.map((p) => ({
+      week: p.week_number,
+      event_date: p.event_date,
+      player_name: p.player_name,
+      position: p.weekly_position,
+      flight: p.flight || undefined,
+      flight_position: p.flight_position || undefined,
+      double_bogeys: p.double_bogeys || 0,
+      birdies: p.birdies || 0,
+      net_scores: p.net_scores,
+    })) || []
+  );
+}
+
+// Get weekly results grouped by flight (for finalized events)
+export async function getLeagueWeeklyResultsByFlight(
+  leagueKey: string,
+  weekNumber: number
+): Promise<Record<string, IGCWeeklyResult[]>> {
+  const results = await getLeagueWeeklyResults(leagueKey, weekNumber);
+
+  // Check if flights are assigned
+  const hasFlights = results.some((r) => r.flight);
+
+  if (!hasFlights) {
+    // Return all results under a single "Overall" key
+    return { Overall: results };
+  }
+
+  // Group by flight
+  const grouped: Record<string, IGCWeeklyResult[]> = {
+    A: [],
+    B: [],
+    C: [],
+  };
+
+  for (const result of results) {
+    if (result.flight) {
+      grouped[result.flight].push(result);
+    }
+  }
+
+  return grouped;
+}
+
+// Sync weekly data from GG
 export async function syncLeagueWeeklyReport(
   leagueKey: string
 ): Promise<WeeklyReport> {
@@ -93,12 +238,30 @@ export async function syncLeagueWeeklyReport(
   // Store in database for caching
   const serviceClient = createServiceClient();
 
-  // Upsert weekly performances
+  // Upsert events first
   for (const perf of report.performances) {
+    const { data: eventData } = await serviceClient
+      .from("igc_league_events")
+      .upsert(
+        {
+          league_key: leagueKey,
+          week_number: perf.week_number,
+          event_name: perf.event_name,
+          event_date: perf.event_date,
+          status: 'finalized', // Assuming sync happens after round completes
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "league_key,week_number" }
+      )
+      .select()
+      .single();
+
+    // Upsert weekly performances
     await serviceClient.from("igc_league_performances").upsert(
       {
         league_key: leagueKey,
         week_number: perf.week_number,
+        event_id: eventData?.id,
         player_name: perf.player_name,
         member_card_id: perf.member_card_id,
         event_name: perf.event_name,
@@ -119,36 +282,36 @@ export async function syncLeagueWeeklyReport(
   return report;
 }
 
-export async function getLeagueWeeklyResults(
+// Assign flights after round is finalized (admin only)
+export async function assignFlights(
   leagueKey: string,
-  weekNumber?: number
-): Promise<IGCWeeklyResult[]> {
-  const supabase = await createClient();
+  weekNumber: number,
+  flightAssignments: Record<string, 'A' | 'B' | 'C'>
+): Promise<void> {
+  const serviceClient = createServiceClient();
 
-  let query = supabase
-    .from("igc_league_performances")
-    .select("*")
-    .eq("league_key", leagueKey);
-
-  if (weekNumber) {
-    query = query.eq("week_number", weekNumber);
+  // Update each player with their flight
+  for (const [playerName, flight] of Object.entries(flightAssignments)) {
+    await serviceClient
+      .from("igc_league_performances")
+      .update({
+        flight,
+        updated_at: new Date().toISOString()
+      })
+      .eq("league_key", leagueKey)
+      .eq("week_number", weekNumber)
+      .eq("player_name", playerName);
   }
 
-  const { data, error } = await query.order("week_number", {
-    ascending: false,
-  });
-
-  if (error) throw error;
-
-  return (
-    data?.map((p) => ({
-      week: p.week_number,
-      player_name: p.player_name,
-      position: p.weekly_position,
-      double_bogeys: p.double_bogeys || 0,
-      birdies: p.birdies || 0,
-    })) || []
-  );
+  // Mark event as flights finalized
+  await serviceClient
+    .from("igc_league_events")
+    .update({
+      flights_finalized: true,
+      finalized_at: new Date().toISOString(),
+    })
+    .eq("league_key", leagueKey)
+    .eq("week_number", weekNumber);
 }
 
 export async function getLeagueBlogContent(
