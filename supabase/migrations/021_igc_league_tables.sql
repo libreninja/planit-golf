@@ -1,10 +1,13 @@
 -- IGC League tables for weekly leaderboard and blog content
 -- Stores processed Golf Genius data for live display
 
+-- Clean up old test data from igc_events (remove bogus entries)
+DELETE FROM igc_events WHERE name ILIKE '%bandon%' OR name ILIKE '%test%' OR slug ILIKE '%test%';
+
 -- Events table (for selecting/viewing specific events)
 CREATE TABLE igc_league_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    league_key TEXT NOT NULL,
+    league_key TEXT NOT NULL CHECK (league_key IN ('mens', 'womens')),
     week_number INTEGER NOT NULL,
     gg_event_id TEXT NOT NULL,
     event_name TEXT NOT NULL,

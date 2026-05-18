@@ -10,7 +10,7 @@ interface LeaguePageProps {
 }
 
 export default async function LeaguePage({ searchParams }: LeaguePageProps) {
-  const { league = 'mens_tuesday', week } = await searchParams;
+  const { league = 'mens', week } = await searchParams;
 
   const config = IGC_LEAGUES[league];
   if (!config) {
@@ -53,18 +53,18 @@ export default async function LeaguePage({ searchParams }: LeaguePageProps) {
         <div className="mb-8">
           <div className="mb-6 flex gap-2">
             <Button
-              variant={league === 'mens_tuesday' ? 'default' : 'outline'}
+              variant={league === 'mens' ? 'default' : 'outline'}
               size="sm"
               asChild
             >
-              <Link href="/igc/league?league=mens_tuesday">Men's Tuesday</Link>
+              <Link href="/igc/league?league=mens">Men's League</Link>
             </Button>
             <Button
-              variant={league === 'womens_wednesday' ? 'default' : 'outline'}
+              variant={league === 'womens' ? 'default' : 'outline'}
               size="sm"
               asChild
             >
-              <Link href="/igc/league?league=womens_wednesday">Women's Wednesday</Link>
+              <Link href="/igc/league?league=womens">Women's League</Link>
             </Button>
           </div>
 

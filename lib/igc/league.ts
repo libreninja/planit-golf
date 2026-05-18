@@ -56,18 +56,18 @@ export interface IGCWeeklyResult {
 
 // League configurations
 export const IGC_LEAGUES: Record<string, IGCLeagueConfig> = {
-  mens_tuesday: {
+  mens: {
     seasonId: process.env.IGC_MENS_SEASON_ID || "",
     categoryId: process.env.IGC_MENS_CATEGORY_ID || "",
     seasonPointsCategoryId: process.env.IGC_MENS_POINTS_CATEGORY_ID || "",
-    name: "Men's Tuesday League",
+    name: "Men's League",
     hasFlights: true,
   },
-  womens_wednesday: {
+  womens: {
     seasonId: process.env.IGC_WOMENS_SEASON_ID || "",
     categoryId: process.env.IGC_WOMENS_CATEGORY_ID || "",
     seasonPointsCategoryId: process.env.IGC_WOMENS_POINTS_CATEGORY_ID || "",
-    name: "Women's Wednesday League",
+    name: "Women's League",
     hasFlights: false,
   },
 };
