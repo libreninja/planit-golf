@@ -16,6 +16,7 @@
     "sync:members": "node scripts/sync-members.mjs",
     "sync:events:dry": "node scripts/sync-events.mjs --dry-run",
     "sync:events": "node scripts/sync-events.mjs",
+    "sync:league": "node scripts/sync-igc-league.mjs",
     "generate:public-pace-qr": "node scripts/generate-public-pace-qr.mjs"
   },
   "dependencies": {

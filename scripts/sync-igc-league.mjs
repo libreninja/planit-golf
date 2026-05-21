@@ -71,7 +71,7 @@ async function ggRequest(endpoint, queryParams = {}) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`GG API error (${response.status}): ${errorText}`);
+    throw new Error(`GG API error (${response.status}): ${errorText.slice(0, 200)}`);
   }
 
   return response.json();
@@ -92,10 +92,10 @@ async function syncLeague() {
     return;
   }
 
-  // Filter and sort events
-  const leagueDay = leagueKey === 'mens' ? 'Tuesday' : 'Wednesday';
+  // Filter and sort events - look for Mens/Womens league events
+  const leagueFilter = leagueKey === 'mens' ? 'mens' : 'womens';
   const events = eventsResponse
-    .filter(e => e.event?.name?.toLowerCase().includes(leagueDay.toLowerCase()))
+    .filter(e => e.event?.name?.toLowerCase().includes(leagueFilter))
     .sort((a, b) => {
       const dateA = new Date(a.event.start_date || a.event.date || 0);
       const dateB = new Date(b.event.start_date || b.event.date || 0);
@@ -104,71 +104,73 @@ async function syncLeague() {
 
   console.log(`  Found ${events.length} events`);
 
-  // Process each event
-  let weekNumber = 0;
+  // Process each event (GG structure: 1 event per league season with multiple rounds)
   for (const eventWrapper of events) {
-    weekNumber++;
     const event = eventWrapper.event;
 
-    console.log(`  Processing week ${weekNumber}: ${event.name}`);
+    console.log(`  Processing event: ${event.name}`);
 
+    // Get rounds for this event
+    const roundsResponse = await ggRequest(`/events/${event.id}/rounds`);
+    if (!Array.isArray(roundsResponse) || roundsResponse.length === 0) {
+      console.log(`    No rounds found`);
+      continue;
+    }
+
+    // Filter to points rounds - GG API returns rounds wrapped in {round: {...}}
+    const pointsRounds = roundsResponse.filter(r => {
+      const name = r.round?.name?.toLowerCase() || '';
+      return !name.includes('preseason') &&
+             !name.includes('fun week') &&
+             !name.includes('horse race') &&
+             !name.includes('no points') &&
+             name.includes('points');
+    }).map(r => r.round);
+
+    // Sort by round index to ensure correct week order
+    pointsRounds.sort((a, b) => (a.index || 0) - (b.index || 0));
+
+    // Get courses for par data
+    let parData = [];
     try {
-      // Upsert event
-      const { data: eventData, error: eventError } = await supabase
-        .from('igc_league_events')
-        .upsert({
-          league_key: leagueKey,
-          week_number: weekNumber,
-          gg_event_id: event.id,
-          event_name: event.name,
-          event_date: event.start_date || event.date,
-          status: 'finalized', // Assuming we're syncing completed events
-        }, { onConflict: 'league_key,week_number' })
-        .select()
-        .single();
-
-      if (eventError) {
-        console.error(`    Error saving event: ${eventError.message}`);
-        continue;
+      const coursesData = await ggRequest(`/events/${event.id}/courses`);
+      if (coursesData?.courses?.[0]?.tees?.[0]?.hole_data?.par) {
+        parData = coursesData.courses[0].tees[0].hole_data.par;
       }
+    } catch {
+      // Par data not critical
+    }
 
-      // Get rounds for this event
-      const roundsResponse = await ggRequest(`/events/${event.id}/rounds`);
-      if (!Array.isArray(roundsResponse) || roundsResponse.length === 0) {
-        console.log(`    No rounds found`);
-        continue;
-      }
+    // Process each points round as its own week
+    let weekNumber = 0;
+    for (const round of pointsRounds) {
+      weekNumber++;
+      console.log(`    Processing week ${weekNumber}: ${round.name}`);
 
-      // Filter to points rounds
-      const pointsRounds = roundsResponse.filter(r => {
-        const name = r.round?.name?.toLowerCase() || '';
-        return !name.includes('preseason') &&
-               !name.includes('fun week') &&
-               !name.includes('horse race') &&
-               !name.includes('no points') &&
-               name.includes('points');
-      });
-
-      // Get courses for par data
-      let parData = [];
       try {
-        const coursesData = await ggRequest(`/events/${event.id}/courses`);
-        if (coursesData?.courses?.[0]?.tees?.[0]?.hole_data?.par) {
-          parData = coursesData.courses[0].tees[0].hole_data.par;
+        // Upsert event for this week
+        const { data: eventData, error: eventError } = await supabase
+          .from('igc_league_events')
+          .upsert({
+            league_key: leagueKey,
+            week_number: weekNumber,
+            gg_event_id: event.id,
+            event_name: round.name,
+            event_date: round.date,
+            status: round.status === 'completed' ? 'finalized' : 'upcoming',
+          }, { onConflict: 'league_key,week_number' })
+          .select()
+          .single();
+
+        if (eventError) {
+          console.error(`      Error saving event: ${eventError.message}`);
+          continue;
         }
-      } catch {
-        // Par data not critical
-      }
-
-      // Process each points round
-      for (const roundWrapper of pointsRounds) {
-        const round = roundWrapper.round;
-
-        // Get tournaments
+        // Get tournaments for this round
         const tournamentsResponse = await ggRequest(`/events/${event.id}/rounds/${round.id}/tournaments`);
         if (!Array.isArray(tournamentsResponse) || tournamentsResponse.length === 0) continue;
 
-        // Find individual tournament (not team)
+        // Find individual tournament (not team) - tournaments wrapped in {event: {...}}
         const individualTournament = tournamentsResponse.find(t => {
           const name = t.event?.name?.toLowerCase() || '';
           return !name.includes('team') && !name.includes('cup');
@@ -176,10 +178,11 @@ async function syncLeague() {
 
         if (!individualTournament) continue;
 
-        // Get results
-        const results = await ggRequest(`/events/${event.id}/rounds/${round.id}/tournaments/${individualTournament.event.id}/results`, {
-          format: 'json'
-        });
+        const tournamentId = individualTournament.event?.id;
+        if (!tournamentId) continue;
+
+        // Get results (GG API uses .json suffix, not /results)
+        const results = await ggRequest(`/events/${event.id}/rounds/${round.id}/tournaments/${tournamentId}.json`);
 
         if (!results?.event?.scopes) continue;
 
@@ -189,8 +192,10 @@ async function syncLeague() {
 
           for (const aggregate of scope.aggregates) {
             const netScores = aggregate.net_scores || [];
-            const memberCardIds = aggregate.member_card_ids || [];
-            const position = parseInt(aggregate.position) || 0;
+            // Extract member_card_id from member_cards array
+            const memberCardId = aggregate.member_cards?.[0]?.member_card_id_str;
+            // Use rank field for position (position field is like "--" or "T1")
+            const position = parseInt(aggregate.rank) || 0;
 
             // Calculate stats
             let doubleBogeys = 0;
@@ -215,9 +220,9 @@ async function syncLeague() {
                 week_number: weekNumber,
                 event_id: eventData.id,
                 player_name: aggregate.name,
-                member_card_id: memberCardIds[0]?.member_card_id_str,
-                event_name: event.name,
-                event_date: event.start_date || event.date || round.date,
+                member_card_id: memberCardId,
+                event_name: round.name,
+                event_date: round.date,
                 double_bogeys: doubleBogeys,
                 birdies: birdies,
                 weekly_position: position,
@@ -225,11 +230,11 @@ async function syncLeague() {
               }, { onConflict: 'league_key,week_number,player_name' });
           }
         }
-      }
 
-      console.log(`    Synced week ${weekNumber}`);
-    } catch (error) {
-      console.error(`    Error processing event: ${error.message}`);
+        console.log(`      Synced ${round.name}`);
+      } catch (error) {
+        console.error(`      Error processing round: ${error.message}`);
+      }
     }
   }
 

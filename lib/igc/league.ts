@@ -231,7 +231,7 @@ export async function syncLeagueWeeklyReport(
   const report = await generateWeeklyLeagueReport({
     season_id: config.seasonId,
     category_id: config.categoryId,
-    event_name_filter: config.name.includes("Tuesday") ? "Tuesday" : "Wednesday",
+    event_name_filter: config.name.includes("Men") ? "mens" : "womens",
     season_points_category_id: config.seasonPointsCategoryId,
   });
 
