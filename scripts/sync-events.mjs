@@ -10,9 +10,7 @@ const REPO_ROOT = path.join(__dirname, "..")
 const GIDIOT_DIR = "/Users/jbizzle/dev/gidiot"
 const GIDIOT_ENV_PATH = path.join(GIDIOT_DIR, ".env")
 const GIDIOT_EVENTS_PATH = path.join(GIDIOT_DIR, "dist/tools/events.js")
-const GIDIOT_TEE_SHEETS_PATH = path.join(GIDIOT_DIR, "dist/tools/teeSheets.js")
 const ROUNDS_JSON_PATH = "/Users/jbizzle/projects/while-supplies-last/src/data/rounds.json"
-const GOLF_GENIUS_CONFIG_PATH = "/Users/jbizzle/projects/while-supplies-last/config/default.json"
 const LOCAL_ENV_PATH = path.join(REPO_ROOT, ".env.local")
 
 const LEAGUE_EVENT_PATTERNS = {
@@ -21,6 +19,17 @@ const LEAGUE_EVENT_PATTERNS = {
 }
 
 const COURSE_NAME = "Interbay Golf Center"
+
+// Static time slots - same for every week
+const STATIC_TIME_SLOTS = [
+  "8:30 AM", "8:37 AM", "8:45 AM", "8:52 AM",
+  "9:00 AM", "9:07 AM", "9:15 AM", "9:22 AM", "9:30 AM",
+  "2:00 PM", "2:07 PM", "2:15 PM", "2:22 PM", "2:30 PM", "2:37 PM", "2:45 PM",
+  "3:00 PM", "3:07 PM", "3:15 PM", "3:22 PM", "3:30 PM", "3:37 PM", "3:45 PM",
+  "4:00 PM", "4:07 PM", "4:15 PM", "4:22 PM", "4:30 PM", "4:37 PM", "4:45 PM",
+  "5:00 PM", "5:07 PM", "5:15 PM", "5:22 PM", "5:30 PM", "5:37 PM", "5:45 PM",
+  "6:00 PM", "6:07 PM", "6:15 PM"
+]
 
 async function loadEnvFile(filePath) {
   try {
@@ -56,10 +65,6 @@ function getSupabaseClient() {
   return createClient(supabaseUrl, serviceRoleKey)
 }
 
-function normalizeTime(value) {
-  return value.trim().replace(/\s+/g, " ")
-}
-
 function getToday() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -84,67 +89,6 @@ async function fetchLeagueEvents() {
   }
 
   return result
-}
-
-async function fetchRoundTimeSlots({ eventId, roundId }) {
-  const { getTeeSheet } = await import(GIDIOT_TEE_SHEETS_PATH)
-  const teeSheetResponse = await getTeeSheet({ event_id: eventId, round_id: roundId })
-  const rows = Array.isArray(teeSheetResponse) ? teeSheetResponse : []
-
-  return Array.from(
-    new Set(
-      rows
-        .map((row) => row.pairing_group?.tee_time || row.tee_time || null)
-        .filter(Boolean)
-        .map(normalizeTime)
-    )
-  )
-}
-
-async function fetchReservationPageSlotsByLeague(golfGeniusConfig) {
-  const slotsByLeague = new Map()
-
-  for (const [league, config] of Object.entries(golfGeniusConfig?.golfGenius?.leagues || {})) {
-    const url = `https://${config.baseUrl}/leagues/${config.leagueId}/widgets/players_choose_tee_times/login?page_id=${config.pageId}&shared=false`
-
-    try {
-      const response = await fetch(url, {
-        headers: config.headers || {},
-      })
-      const html = await response.text()
-      const slots = Array.from(
-        new Set(
-          Array.from(html.matchAll(/<td[^>]*class=['"][^'"]*\btee-at\b[^'"]*['"][^>]*>(.*?)<\/td>/gsi))
-            .map((match) => normalizeTime(match[1].replace(/<[^>]+>/g, " ")))
-            .filter(Boolean)
-        )
-      )
-
-      if (slots.length > 0) {
-        slotsByLeague.set(league, slots)
-      }
-    } catch {
-      // Fall back to tee sheet-derived canonical slots for this league.
-    }
-  }
-
-  return slotsByLeague
-}
-
-function chooseCanonicalSlotsByLeague(rounds, reservationSlotsByLeague) {
-  const canonical = new Map()
-
-  for (const [league, slots] of reservationSlotsByLeague.entries()) {
-    canonical.set(league, slots)
-  }
-
-  for (const round of rounds) {
-    if (!canonical.has(round.league) && round.timeSlots.length > 0) {
-      canonical.set(round.league, round.timeSlots)
-    }
-  }
-
-  return canonical
 }
 
 async function upsertEvent(supabase, eventPayload, timeSlots, { dryRun }) {
@@ -201,7 +145,6 @@ async function main() {
   await loadEnvFile(LOCAL_ENV_PATH)
 
   const roundsJson = await loadJson(ROUNDS_JSON_PATH)
-  const golfGeniusConfig = await loadJson(GOLF_GENIUS_CONFIG_PATH)
   const leagueEvents = await fetchLeagueEvents()
   const supabase = getSupabaseClient()
   const today = getToday()
@@ -214,39 +157,14 @@ async function main() {
           league,
           eventDate,
           roundId: round.id,
+          golfEventId: leagueEvents[league].id || leagueEvents[league].event_id,
         }))
     )
     .sort((a, b) => a.eventDate.localeCompare(b.eventDate))
 
-  const roundsWithSlots = []
-
-  for (const round of futureRounds) {
-    const golfEvent = leagueEvents[round.league]
-    const timeSlots = await fetchRoundTimeSlots({
-      eventId: golfEvent.id || golfEvent.event_id,
-      roundId: round.roundId,
-    })
-
-    roundsWithSlots.push({
-      ...round,
-      golfEventId: golfEvent.id || golfEvent.event_id,
-      timeSlots,
-    })
-  }
-
-  const reservationSlotsByLeague = await fetchReservationPageSlotsByLeague(golfGeniusConfig)
-  const canonicalSlotsByLeague = chooseCanonicalSlotsByLeague(roundsWithSlots, reservationSlotsByLeague)
   const summary = []
 
-  for (const round of roundsWithSlots) {
-    const canonicalSlots = canonicalSlotsByLeague.get(round.league) || []
-    const resolvedTimeSlots =
-      canonicalSlots.length > round.timeSlots.length
-        ? canonicalSlots
-        : round.timeSlots.length > 0
-          ? round.timeSlots
-          : canonicalSlots
-
+  for (const round of futureRounds) {
     const result = await upsertEvent(
       supabase,
       {
@@ -258,7 +176,7 @@ async function main() {
         golf_event_id: round.golfEventId,
         golf_round_id: round.roundId,
       },
-      resolvedTimeSlots,
+      STATIC_TIME_SLOTS,
       { dryRun }
     )
 
