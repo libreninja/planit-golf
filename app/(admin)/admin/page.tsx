@@ -47,6 +47,9 @@ export default async function AdminPage() {
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <HelpModal mode="admin" />
             <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
+              <Link href="/admin/scouting">Seattle Cup Scouting</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
               <Link href="/">Back</Link>
             </Button>
             <form action={signOut}>

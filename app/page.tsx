@@ -2,10 +2,52 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FeaturedEvent } from '@/components/events/featured-event';
 import { getCurrentEdition } from '@/lib/events/editions';
+import { createClient } from '@/lib/supabase/server';
+import {
+  hasScoutingAccess,
+  ensureCapabilityInviteClaimed,
+} from '@/lib/scouting-access';
+
+// Lightweight, non-redirecting probe of what a signed-in user can reach. Mirrors
+// the "can access without invite" condition used by the tee-time preferences page
+// (lib/home-page-data.ts) without running that page's invite-claim/redirect
+// logic, so the homepage never bounces a visitor.
+async function getUserAccess() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { signedIn: false as const, teeTime: false, scouting: false };
+  }
+
+  // Just-confirmed scouting invite: claim the entitlement if a token is still
+  // sitting in user_metadata, then fall through to the normal access check.
+  await ensureCapabilityInviteClaimed(user);
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('member_id, invite_id, is_system_admin, membership_revoked')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const teeTime = Boolean(
+    profile?.member_id &&
+      (profile?.invite_id || profile?.is_system_admin) &&
+      !profile?.membership_revoked,
+  );
+  const scouting = await hasScoutingAccess(user.id);
+
+  return { signedIn: true as const, teeTime, scouting, email: user.email };
+}
 
 export default async function Home() {
   // Get featured event (IGC current edition)
-  const featuredEvent = await getCurrentEdition('igc');
+  const [featuredEvent, access] = await Promise.all([
+    getCurrentEdition('igc'),
+    getUserAccess(),
+  ]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -16,9 +58,15 @@ export default async function Home() {
             planit.golf
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10">
-              <Link href="/login">Member Login</Link>
-            </Button>
+            {access.signedIn ? (
+              <span className="text-sm text-background/80">
+                {access.email}
+              </span>
+            ) : (
+              <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10">
+                <Link href="/login">Member Login</Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -46,8 +94,22 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Navigation */}
-        <nav className="mt-8 flex gap-4">
+        {/* Navigation — access-aware. Only the tools you can actually open are
+            shown; everything is plain language (no internal product/architecture
+            names beyond the league a captain would recognize). */}
+        <nav className="mt-8 flex flex-wrap gap-4">
+          {access.signedIn && access.teeTime && (
+            <Button asChild variant="default">
+              <Link href="/igc/league/tee-time-preferences">
+                Interbay League Tee Time Preferences
+              </Link>
+            </Button>
+          )}
+          {access.signedIn && access.scouting && (
+            <Button asChild variant="default">
+              <Link href="/igc/seattle-cup/scouting">Seattle Cup Scouting</Link>
+            </Button>
+          )}
           <Button asChild variant="outline">
             <Link href="/events">All Events</Link>
           </Button>
@@ -55,6 +117,13 @@ export default async function Home() {
             <Link href="/clubs">Clubs</Link>
           </Button>
         </nav>
+
+        {access.signedIn && !access.teeTime && !access.scouting && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            You&apos;re signed in, but no league tools are available for your account yet.
+            Ask your captain if you expected access to something.
+          </p>
+        )}
       </div>
     </main>
   );
