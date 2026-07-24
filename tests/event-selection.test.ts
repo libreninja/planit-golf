@@ -7,6 +7,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  eligibleWeeks,
   resolveStandingsEvent,
   selectDefaultEvent,
   toDateKey,
@@ -90,13 +91,16 @@ test('future empty event is NOT the default when recent results exist', () => {
   assert.equal(selected?.week_number, 17)
 })
 
-test('only future events -> next upcoming is the default (priority 3)', () => {
+test('only future events -> null (upcoming is NOT a results default)', () => {
+  // Upcoming/unplayed rounds are schedule, not results. With no active or
+  // completed-with-results round, there is no result to show — return null so
+  // the caller renders an honest empty state rather than a future empty week.
   const events = [
     ev(18, '2026-07-31'),
     ev(19, '2026-08-07'),
   ]
   const selected = selectDefaultEvent(events, new Set(), TODAY)
-  assert.equal(selected?.week_number, 18)
+  assert.equal(selected, null)
 })
 
 test('no events at all -> null (caller shows honest empty state)', () => {
@@ -104,13 +108,13 @@ test('no events at all -> null (caller shows honest empty state)', () => {
   assert.equal(selected, null)
 })
 
-test('completed events exist but none have results -> falls through to next upcoming', () => {
+test('completed events exist but none have results -> null (no upcoming fallback)', () => {
   const events = [
     ev(16, '2026-07-10'), // completed but no results
     ev(18, '2026-07-31'), // upcoming
   ]
   const selected = selectDefaultEvent(events, new Set(), TODAY)
-  assert.equal(selected?.week_number, 18)
+  assert.equal(selected, null)
 })
 
 test('explicit future selection is retained even with no results (no silent substitution)', () => {
@@ -154,4 +158,38 @@ test('multiple completed events -> most recent valid one selected', () => {
   const weeksWithResults = new Set([10, 11, 12, 13])
   const selected = selectDefaultEvent(events, weeksWithResults, TODAY)
   assert.equal(selected?.week_number, 13)
+})
+
+// eligibleWeeks: the weekly-results selector must list only an active scoring
+// round (today) plus completed rounds that have result data. Future/unplayed
+// rounds are excluded entirely.
+test('eligibleWeeks includes completed-with-results and active, excludes future', () => {
+  const events = [
+    ev(14, '2026-06-26'), // completed but no results -> excluded
+    ev(15, '2026-07-03'), // completed with results
+    ev(16, '2026-07-10'), // completed with results
+    ev(17, '2026-07-24'), // active today (no results yet)
+    ev(18, '2026-07-31'), // upcoming -> excluded
+  ]
+  const weeksWithResults = new Set([15, 16])
+  const weeks = eligibleWeeks(events, weeksWithResults, TODAY)
+  assert.deepEqual(weeks, [17, 16, 15]) // most-recent first
+})
+
+test('eligibleWeeks excludes future weeks even when none have results', () => {
+  const events = [
+    ev(18, '2026-07-31'),
+    ev(19, '2026-08-07'),
+  ]
+  const weeks = eligibleWeeks(events, new Set(), TODAY)
+  assert.deepEqual(weeks, [])
+})
+
+test('eligibleWeeks includes the active round even with no scored results', () => {
+  const events = [
+    ev(16, '2026-07-10'), // completed with results
+    ev(17, '2026-07-24'), // active today, no results yet
+  ]
+  const weeks = eligibleWeeks(events, new Set([16]), TODAY)
+  assert.deepEqual(weeks, [17, 16])
 })

@@ -33,8 +33,12 @@ export function toDateKey(value: string | null | undefined): string | null {
 //   2. MOST RECENT COMPLETED EVENT WITH RESULTS — the latest event before
 //      today that actually has scored results. A future event with no scoring
 //      must NOT become the default merely because it is chronologically next.
-//   3. NEXT UPCOMING — the earliest event on or after today.
-//   4. none — the caller renders an honest empty state.
+//   3. none — the caller renders an honest empty state.
+//
+// Upcoming/unplayed rounds are deliberately NOT a fallback default. They
+// belong on schedule / "Coming up" surfaces, not in a results-history view: a
+// future empty week is not a "result" and must not be presented as the current
+// league result just because it is next on the calendar.
 //
 // "Has results" is supplied by the caller as the set of week numbers that have
 // at least one row in igc_league_performances (real Golf Genius-derived
@@ -59,15 +63,31 @@ export function selectDefaultEvent<E extends SelectableEvent>(
     .sort(byDateDesc)
   if (completed.length > 0) return completed[0]
 
-  const upcoming = events
-    .filter((e) => {
-      const key = toDateKey(e.event_date)
-      return key !== null && key >= todayKey
-    })
-    .sort(byDateAsc)
-  if (upcoming.length > 0) return upcoming[0]
-
   return null
+}
+
+// The weeks that may appear in the weekly-results selector. Per the
+// information-architecture rule, this is ONLY:
+//   1. an active scoring round (event_date is today), if one exists — even if
+//      it has no scored results yet (live scoring may be in progress);
+//   2. completed rounds that actually have result data (in weeksWithResults).
+// Future/unplayed rounds are excluded entirely — they are schedule, not
+// results. Returns week numbers sorted most-recent first so the selector
+// reads as a "prior completed weeks" list with the latest on top.
+export function eligibleWeeks<E extends SelectableEvent>(
+  events: E[],
+  weeksWithResults: Set<number>,
+  today: string,
+): number[] {
+  const todayKey = toDateKey(today) ?? today
+  const eligible = new Set<number>()
+  for (const e of events) {
+    const key = toDateKey(e.event_date)
+    const isActive = key === todayKey
+    const hasResults = weeksWithResults.has(e.week_number)
+    if (isActive || hasResults) eligible.add(e.week_number)
+  }
+  return [...eligible].sort((a, b) => b - a)
 }
 
 // Resolve the event to display on a standings page, honoring an explicit week
