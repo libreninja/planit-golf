@@ -144,7 +144,7 @@ function Dashboard({
                           </div>
                           {item.prefState === 'not-set' ? (
                             <Button asChild size="sm" variant="default">
-                              <Link href="/igc/league/tee-time-preferences">
+                              <Link href="/igc/mens-league/tee-times">
                                 Set preferences
                               </Link>
                             </Button>

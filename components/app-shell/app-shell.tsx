@@ -45,43 +45,48 @@ type NavLink = { type: 'link'; label: string; href: string; level: number }
 type NavLabel = { type: 'label'; label: string; level: number }
 type NavItem = NavLink | NavLabel
 
-// Navigation mirrors the actual product relationships, in user/domain language:
+// Navigation mirrors the actual domain model, in user/domain language:
 //
+//   Home
 //   Interbay Golf Club
-//     Tuesday League
-//       League
-//       Tuesday League Tee Time Preferences
-//       Registration Admin            (admins)
-//     Seattle Cup
-//       Scouting                      (entitled)
-//       Scouting Access               (admins)
+//   MEN'S LEAGUE
+//     Standings
+//     Tee Times                    (users with the Men's League tee-time capability)
+//   WOMEN'S LEAGUE
+//     Standings
+//   SEATTLE CUP
+//     Scouting                     (entitled scouts)
 //
-// Tee-time preferences are part of the Tuesday League workflow, and the
-// registration admin (the former standalone "Admin" area) sits under Tuesday
-// League — not as a peer product-level destination. Scouting Access (the
-// former /admin/scouting invite manager) sits under Seattle Cup.
+// Men's League and Women's League are peer domain entities — neither is the
+// default, there is no Men's/Women's toggle, and each has its own direct route.
+// The recurring play day (Tuesday/Wednesday) is a schedule property of each
+// league, not its identity, so it does not appear in the navigation taxonomy.
+//
+// Registration admin and Scouting Access are NOT sidebar destinations: admin
+// functionality lives inside the workflow it administers (Men's League → Tee
+// Times shows the registration admin controls for admins; Scouting shows a
+// "Manage access" action for admins). The /admin and /admin/scouting routes
+// remain reachable directly and keep their own authorization boundaries.
 function buildNav(user: AppShellUser): NavItem[] {
   const items: NavItem[] = [
     { type: 'link', label: 'Home', href: '/', level: 0 },
     { type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 0 },
-    { type: 'label', label: 'Tuesday League', level: 1 },
-    { type: 'link', label: 'League', href: '/igc/league', level: 2 },
+    { type: 'label', label: "Men's League", level: 1 },
+    { type: 'link', label: 'Standings', href: '/igc/mens-league', level: 2 },
   ]
+  // Tee Times is currently a Men's League capability only. Gated by the same
+  // gtgAccess flag the Tee Times page enforces, so it only appears for users
+  // who can actually use the workflow. The architecture allows a future
+  // Women's League tee-times capability to appear under Women's League without
+  // restructuring — it is not hardcoded as Men's-only at the framework level.
   if (user.gtgAccess) {
-    items.push({ type: 'link', label: 'Tuesday League Tee Time Preferences', href: '/igc/league/tee-time-preferences', level: 2 })
+    items.push({ type: 'link', label: 'Tee Times', href: '/igc/mens-league/tee-times', level: 2 })
   }
-  if (user.isAdmin) {
-    items.push({ type: 'link', label: 'Registration Admin', href: '/admin', level: 2 })
-  }
-  // Only show the Seattle Cup group if there's something under it.
-  if (user.scouting || user.isAdmin) {
+  items.push({ type: 'label', label: "Women's League", level: 1 })
+  items.push({ type: 'link', label: 'Standings', href: '/igc/womens-league', level: 2 })
+  if (user.scouting) {
     items.push({ type: 'label', label: 'Seattle Cup', level: 1 })
-    if (user.scouting) {
-      items.push({ type: 'link', label: 'Scouting', href: '/igc/seattle-cup/scouting', level: 2 })
-    }
-    if (user.isAdmin) {
-      items.push({ type: 'link', label: 'Scouting Access', href: '/admin/scouting', level: 2 })
-    }
+    items.push({ type: 'link', label: 'Scouting', href: '/igc/seattle-cup/scouting', level: 2 })
   }
   return items
 }
@@ -111,24 +116,25 @@ function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/') return [{ label: 'Home' }]
   if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
   if (pathname === '/igc/league')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Tuesday League' }, { label: 'League' }]
-  if (pathname === '/igc/league/tee-time-preferences')
-    return [
-      { label: 'Interbay', href: '/igc' },
-      { label: 'Tuesday League' },
-      { label: 'Tee Time Preferences' },
-    ]
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Leagues' }]
+  if (pathname === '/igc/mens-league')
+    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }, { label: 'Standings' }]
+  if (pathname === '/igc/mens-league/tee-times')
+    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Times' }]
+  if (pathname === '/igc/womens-league')
+    return [{ label: 'Interbay', href: '/igc' }, { label: "Women's League" }, { label: 'Standings' }]
   if (pathname === '/igc/seattle-cup/scouting')
     return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Scouting' }]
   if (pathname.startsWith('/igc/seattle-cup/scouting/players'))
     return [
       { label: 'Interbay', href: '/igc' },
       { label: 'Seattle Cup', href: '/igc/seattle-cup/scouting' },
-      { label: 'Player' },
+      { label: 'Scouting' },
     ]
-  if (pathname === '/admin') return [{ label: 'Interbay', href: '/igc' }, { label: 'Tuesday League' }, { label: 'Registration Admin' }]
+  if (pathname === '/admin')
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Registration admin' }]
   if (pathname === '/admin/scouting')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Scouting Access' }]
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Manage access' }]
   return []
 }
 
@@ -238,16 +244,6 @@ function AccountMenu({ user }: { user: AppShellUser }) {
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             </div>
             <div className="py-1">
-              {user.isAdmin ? (
-                <Link
-                  href="/admin"
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-sm px-3 py-2 text-sm hover:bg-muted"
-                >
-                  Admin
-                </Link>
-              ) : null}
               <button
                 type="button"
                 role="menuitem"

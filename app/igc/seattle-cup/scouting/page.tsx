@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { requireScoutingAccess } from '@/lib/scouting-access'
+import { getAppShellUser } from '@/lib/app-shell/user'
 import * as ai from '@/lib/planit-ai/client'
 import { addCandidateAction } from './actions'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,11 @@ export default async function ScoutingBoardPage() {
   // Access gate FIRST: unauthorized users redirect to /login / / before any
   // planit-ai call is attempted (no backend access for the unauthorized).
   const user = await requireScoutingAccess()
+  // Admin capability for the inline "Manage access" action. Ordinary scouts do
+  // not see it. The /admin/scouting destination preserves its own requireAdmin
+  // boundary, so this is a placement change only — no authorization weakening.
+  const shellUser = await getAppShellUser()
+  const canManageAccess = shellUser.isAdmin
 
   let board: ai.ScoutingBoardRow[] = []
   let distribution: { label: string; count: number }[] = []
@@ -49,9 +55,16 @@ export default async function ScoutingBoardPage() {
   return (
     <div>
       <div className="space-y-6 py-2">
-        <div>
-          <h1 className="font-display text-2xl leading-none">Seattle Cup · Scouting</h1>
-          <p className="mt-1 text-xs text-muted-foreground">2026 candidates · {board.length} players</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-2xl leading-none">Seattle Cup · Scouting</h1>
+            <p className="mt-1 text-xs text-muted-foreground">2026 candidates · {board.length} players</p>
+          </div>
+          {canManageAccess ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/scouting">Manage access</Link>
+            </Button>
+          ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
           Signed in as {user.email}. Candidate board data is Golf Genius standings + GHIN/GG handicaps. Scouting notes are

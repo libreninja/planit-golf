@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 
 interface LeagueLeaderboardProps {
-  leagueKey: string;
+  // Base route for this league's standings, e.g. "/igc/mens-league". The week
+  // selector navigates to `${basePath}?week=N`.
+  basePath: string;
   events: IGCEvent[];
   results: IGCWeeklyResult[];
   selectedEvent: IGCEvent | null;
@@ -18,7 +20,7 @@ interface LeagueLeaderboardProps {
 }
 
 export function LeagueLeaderboard({
-  leagueKey,
+  basePath,
   events,
   results,
   selectedEvent,
@@ -29,7 +31,7 @@ export function LeagueLeaderboard({
   const [selectedFlight, setSelectedFlight] = useState('overall');
 
   const handleSelectWeek = (week: number) => {
-    router.push(`/igc/league?league=${leagueKey}&week=${week}`);
+    router.push(`${basePath}?week=${week}`);
   };
 
   const formatDate = (dateStr?: string) => {

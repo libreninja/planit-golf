@@ -204,7 +204,7 @@ export async function getDashboardData(input: {
         id: `prefs-${item.id}`,
         kind: 'prefs',
         label: `Set tee-time preferences for ${item.dateLabel} at ${item.course}`,
-        href: '/igc/league/tee-time-preferences',
+        href: '/igc/mens-league/tee-times',
       })
     }
     if (needsAttention.filter((n) => n.kind === 'prefs').length >= 3) break

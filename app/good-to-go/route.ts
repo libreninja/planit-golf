@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // invite-gated access. See production rollout plan (Phase 1).
 export function GET(req: NextRequest) {
   const url = req.nextUrl.clone()
-  url.pathname = '/igc/league/tee-time-preferences'
+  url.pathname = '/igc/mens-league/tee-times'
   url.search = ''
   return NextResponse.redirect(url, 307)
 }

@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, MapPin, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getIgcEventsIndex, type IgcEventSummary } from '@/lib/igc/data'
+import { pacificToday } from '@/lib/pacific-time'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,25 +30,6 @@ function formatDateRange(event: IgcEventSummary) {
   }).format(end)
 
   return `${startLabel} - ${endLabel}`
-}
-
-// Pacific-tz calendar today (YYYY-MM-DD). The companion tables store dates,
-// not instants, so we compare against the Pacific calendar day — the same
-// convention lib/registration-schedule uses for the league.
-function pacificToday(): string {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-  const parts = Object.fromEntries(
-    formatter
-      .formatToParts(new Date())
-      .filter((p) => p.type !== 'literal')
-      .map((p) => [p.type, p.value]),
-  )
-  return `${parts.year}-${parts.month}-${parts.day}`
 }
 
 // Only treat an event as current/upcoming if its start date is today or later,

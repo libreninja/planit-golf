@@ -1,25 +1,10 @@
-import { PreferenceForm } from '@/components/preference-form'
-import { loadHomePageData } from '@/lib/home-page-data'
+import { redirect } from 'next/navigation'
 
-// Good to Go — the Interbay League tee-time preference workflow — re-homed
-// here from `/` when the homepage became the event-centric landing page. The
-// data flow and invite-gated access are unchanged: loadHomePageData still
-// resolves the profile, invite link, member league, and upcoming events, and
-// still redirects to /login, /invite/[token], or /stay-tuned exactly as it did
-// at `/` on main. Existing users see the same form. See the production rollout
-// plan (Phase 1) and docs/planit-golf-integration-discovery.md.
-export default async function TeeTimePreferencesPage() {
-  const { user, profile, events, defaultPrefs, eventPrefs } = await loadHomePageData()
-
-  return (
-    <PreferenceForm
-      user={user}
-      profile={profile}
-      events={events}
-      defaultPrefs={defaultPrefs}
-      eventPrefs={eventPrefs}
-      eventDemandCounts={{}}
-      embedded
-    />
-  )
+// Legacy /igc/league/tee-time-preferences. The Men's League tee-time
+// preference workflow now lives at /igc/mens-league/tee-times (under Men's
+// League, where it belongs). This route redirects so existing links and
+// bookmarks — including the /good-to-go compat route — keep working. The
+// destination preserves the full Good to Go data flow and invite-gated access.
+export default async function LegacyTeeTimePreferencesPage() {
+  redirect('/igc/mens-league/tee-times')
 }

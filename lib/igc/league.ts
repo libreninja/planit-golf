@@ -150,6 +150,26 @@ export async function getLeagueLeaderboard(
   }));
 }
 
+// The set of week numbers that actually have scored results (>=1 row in
+// igc_league_performances) for a league. Used to drive the default
+// event-selection rule from real source data rather than the unreliable
+// igc_league_events.status column (which the sync writes as 'finalized' for
+// every week it processes).
+export async function getLeagueWeeksWithResults(
+  leagueKey: string
+): Promise<Set<number>> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("igc_league_performances")
+    .select("week_number")
+    .eq("league_key", leagueKey);
+
+  if (error) throw error;
+
+  return new Set((data ?? []).map((p) => p.week_number as number));
+}
+
 // Get weekly results with flight support
 export async function getLeagueWeeklyResults(
   leagueKey: string,
