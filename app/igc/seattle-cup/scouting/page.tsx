@@ -47,22 +47,12 @@ export default async function ScoutingBoardPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="sticky top-0 z-30 border-b border-border bg-foreground text-background">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div>
-            <p className="font-display text-2xl leading-none">Seattle Cup · Scouting</p>
-            <p className="text-xs text-background/70">2026 candidates · {board.length} players</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
-              <Link href="/">Back</Link>
-            </Button>
-          </div>
+    <div>
+      <div className="space-y-6 py-2">
+        <div>
+          <h1 className="font-display text-2xl leading-none">Seattle Cup · Scouting</h1>
+          <p className="mt-1 text-xs text-muted-foreground">2026 candidates · {board.length} players</p>
         </div>
-      </div>
-
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-6">
         <p className="text-sm text-muted-foreground">
           Signed in as {user.email}. Candidate board data is Golf Genius standings + GHIN/GG handicaps. Scouting notes are
           attributable human observations — record who supplied each.
@@ -139,6 +129,6 @@ export default async function ScoutingBoardPage() {
           </section>
         )}
       </div>
-    </main>
+    </div>
   )
 }

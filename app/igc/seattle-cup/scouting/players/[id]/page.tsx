@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireScoutingAccess } from '@/lib/scouting-access'
 import * as ai from '@/lib/planit-ai/client'
@@ -65,20 +64,14 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
   if (!card) notFound()
 
   return (
-    <main className="min-h-screen">
-      <div className="sticky top-0 z-30 border-b border-border bg-foreground text-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <p className="font-display text-2xl leading-none">{card.displayName ?? 'Unknown player'}</p>
-          <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
-            <Link href="/igc/seattle-cup/scouting">← Board</Link>
-          </Button>
+    <div>
+      <div className="space-y-6 py-2">
+        <div>
+          <h1 className="font-display text-2xl leading-none">{card.displayName ?? 'Unknown player'}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            GHIN {card.ghinNumber ?? '—'} {card.email ? `· ${card.email}` : ''} · data as-of {card.provenance.asOf.slice(0, 10)}
+          </p>
         </div>
-      </div>
-
-      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
-        <p className="text-sm text-muted-foreground">
-          GHIN {card.ghinNumber ?? '—'} {card.email ? `· ${card.email}` : ''} · data as-of {card.provenance.asOf.slice(0, 10)}
-        </p>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Current league */}
@@ -258,6 +251,6 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
           </section>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

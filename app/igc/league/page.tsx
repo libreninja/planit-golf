@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import { IGC_LEAGUES, getLeagueEvents, getLeagueWeeklyResults, getLeagueEvent } from '@/lib/igc/league';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LeagueLeaderboard } from './league-leaderboard';
 
 interface LeaguePageProps {
@@ -35,21 +34,8 @@ export default async function LeaguePage({ searchParams }: LeaguePageProps) {
   const selectedWeek = weekNumber || selectedEvent?.week_number;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-foreground text-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="font-display text-2xl leading-none">
-            planit.golf
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/igc">IGC Home</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 py-8">
+    <div>
+      <div className="py-2">
         <div className="mb-8">
           <div className="mb-6 flex gap-2">
             <Button
@@ -82,7 +68,7 @@ export default async function LeaguePage({ searchParams }: LeaguePageProps) {
           selectedWeek={selectedWeek}
           hasFlights={config.hasFlights}
         />
-      </main>
+      </div>
     </div>
   );
 }

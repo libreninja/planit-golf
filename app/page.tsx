@@ -1,130 +1,172 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { FeaturedEvent } from '@/components/events/featured-event';
-import { getCurrentEdition } from '@/lib/events/editions';
-import { createClient } from '@/lib/supabase/server';
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { createClient } from '@/lib/supabase/server'
+import { ensureCapabilityInviteClaimed } from '@/lib/scouting-access'
+import { getAppShellUser } from '@/lib/app-shell/user'
 import {
-  hasScoutingAccess,
-  ensureCapabilityInviteClaimed,
-} from '@/lib/scouting-access';
+  getDashboardData,
+  type AttentionItem,
+  type ComingUpItem,
+} from '@/lib/app-shell/dashboard'
 
-// Lightweight, non-redirecting probe of what a signed-in user can reach. Mirrors
-// the "can access without invite" condition used by the tee-time preferences page
-// (lib/home-page-data.ts) without running that page's invite-claim/redirect
-// logic, so the homepage never bounces a visitor.
-async function getUserAccess() {
-  const supabase = await createClient();
+export const dynamic = 'force-dynamic'
+
+// Authenticated home — the member's dashboard. Coming Up shows real upcoming
+// league rounds with the member's tee-time preference state; Needs Attention
+// surfaces genuinely actionable items (preferences due, a pending scouting
+// invite). The page stays quiet when there is nothing to surface: no hero, no
+// "happening now" filler, no navigation cards that duplicate the rail.
+//
+// The scouting-invite safety net (ensureCapabilityInviteClaimed) is preserved
+// here exactly as the old homepage ran it, so a member who confirms a scouting
+// signup but lands on / before the /scouting-invite/[token] redirect still gets
+// their entitlement claimed.
+export default async function Home() {
+  const supabase = await createClient()
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
   if (!user) {
-    return { signedIn: false as const, teeTime: false, scouting: false };
+    return <SignInPrompt />
   }
 
-  // Just-confirmed scouting invite: claim the entitlement if a token is still
-  // sitting in user_metadata, then fall through to the normal access check.
-  await ensureCapabilityInviteClaimed(user);
+  // Claim a scouting invite left over from a just-confirmed signup before
+  // resolving access, so the freshly-granted entitlement is visible below.
+  await ensureCapabilityInviteClaimed(user)
+  const viewer = await getAppShellUser()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('member_id, invite_id, is_system_admin, membership_revoked')
-    .eq('id', user.id)
-    .maybeSingle();
+  const data = await getDashboardData({
+    userId: viewer.userId ?? '',
+    email: viewer.email ?? '',
+    league: viewer.league,
+    gtgAccess: viewer.gtgAccess,
+    hasScouting: viewer.scouting,
+  })
 
-  const teeTime = Boolean(
-    profile?.member_id &&
-      (profile?.invite_id || profile?.is_system_admin) &&
-      !profile?.membership_revoked,
-  );
-  const scouting = await hasScoutingAccess(user.id);
-
-  return { signedIn: true as const, teeTime, scouting, email: user.email };
+  return <Dashboard comingUp={data.comingUp} needsAttention={data.needsAttention} />
 }
 
-export default async function Home() {
-  // Get featured event (IGC current edition)
-  const [featuredEvent, access] = await Promise.all([
-    getCurrentEdition('igc'),
-    getUserAccess(),
-  ]);
+function SignInPrompt() {
+  return (
+    <div className="mx-auto max-w-md py-10">
+      <div className="rounded-md border border-border bg-card p-8 text-center">
+        <h1 className="font-display text-3xl">planit.golf</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          The private place to manage your Interbay golf season — tee-time
+          preferences, league rounds, and Seattle Cup scouting.
+        </p>
+        <Button asChild className="mt-6 w-full">
+          <Link href="/login">Sign in</Link>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+const BUCKET_LABEL: Record<ComingUpItem['relativeBucket'], string> = {
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  thisWeek: 'This week',
+  later: 'Coming up',
+}
+
+const BUCKET_ORDER: ComingUpItem['relativeBucket'][] = ['today', 'tomorrow', 'thisWeek', 'later']
+
+function PrefBadge({ state }: { state: ComingUpItem['prefState'] }) {
+  if (state === 'set') return <Badge variant="secondary">Preferences set</Badge>
+  if (state === 'cant-play') return <Badge variant="outline">Not playing</Badge>
+  return (
+    <Badge variant="default" className="bg-primary/90">
+      Set preferences
+    </Badge>
+  )
+}
+
+function Dashboard({
+  comingUp,
+  needsAttention,
+}: {
+  comingUp: ComingUpItem[]
+  needsAttention: AttentionItem[]
+}) {
+  const empty = comingUp.length === 0 && needsAttention.length === 0
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-foreground text-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="font-display text-2xl leading-none">
-            planit.golf
-          </Link>
-          <div className="flex items-center gap-2">
-            {access.signedIn ? (
-              <span className="text-sm text-background/80">
-                {access.email}
-              </span>
-            ) : (
-              <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10">
-                <Link href="/login">Member Login</Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
-        {/* Hero */}
-        <section className="mb-8">
-          <h1 className="mb-4 text-3xl font-semibold leading-tight sm:text-5xl">
-            Live Golf Events
-          </h1>
-          <p className="mb-6 max-w-2xl text-base leading-7 text-muted-foreground">
-            Follow tournaments, track standings, and stay connected with your golf community.
-          </p>
-          <FeaturedEvent event={featuredEvent} />
-        </section>
-
-        {/* Happening Now */}
+    <div className="space-y-10">
+      {needsAttention.length > 0 ? (
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Happening Now</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Placeholder cards - will populate with feed data */}
-            <div className="rounded-md border border-border bg-white/80 p-4">
-              <p className="text-sm text-muted-foreground">Live standings and updates coming soon...</p>
-            </div>
+          <h2 className="mb-3 text-xl font-semibold">Needs attention</h2>
+          <ul className="space-y-2">
+            {needsAttention.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  className="flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-muted"
+                >
+                  <span>{item.label}</span>
+                  <span className="text-muted-foreground">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {comingUp.length > 0 ? (
+        <section>
+          <h2 className="mb-3 text-xl font-semibold">Coming up</h2>
+          <div className="space-y-6">
+            {BUCKET_ORDER.map((bucket) => {
+              const items = comingUp.filter((i) => i.relativeBucket === bucket)
+              if (items.length === 0) return null
+              return (
+                <div key={bucket}>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {BUCKET_LABEL[bucket]}
+                  </h3>
+                  <ul className="space-y-2">
+                    {items.map((item) => (
+                      <li key={item.id}>
+                        <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-card px-4 py-3">
+                          <div className="min-w-0">
+                            <p className="font-medium">{item.dateLabel}</p>
+                            <p className="truncate text-sm text-muted-foreground">
+                              {item.course}
+                              {item.leagueLabel ? ` · ${item.leagueLabel}` : ''}
+                            </p>
+                            {item.registration ? (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Registration opens {item.registration.opensLabel}
+                              </p>
+                            ) : null}
+                          </div>
+                          {item.prefState === 'not-set' ? (
+                            <Button asChild size="sm" variant="default">
+                              <Link href="/igc/league/tee-time-preferences">
+                                Set preferences
+                              </Link>
+                            </Button>
+                          ) : (
+                            <PrefBadge state={item.prefState} />
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
           </div>
         </section>
+      ) : null}
 
-        {/* Navigation — access-aware. Only the tools you can actually open are
-            shown; everything is plain language (no internal product/architecture
-            names beyond the league a captain would recognize). */}
-        <nav className="mt-8 flex flex-wrap gap-4">
-          {access.signedIn && access.teeTime && (
-            <Button asChild variant="default">
-              <Link href="/igc/league/tee-time-preferences">
-                Interbay League Tee Time Preferences
-              </Link>
-            </Button>
-          )}
-          {access.signedIn && access.scouting && (
-            <Button asChild variant="default">
-              <Link href="/igc/seattle-cup/scouting">Seattle Cup Scouting</Link>
-            </Button>
-          )}
-          <Button asChild variant="outline">
-            <Link href="/events">All Events</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/clubs">Clubs</Link>
-          </Button>
-        </nav>
-
-        {access.signedIn && !access.teeTime && !access.scouting && (
-          <p className="mt-4 text-sm text-muted-foreground">
-            You&apos;re signed in, but no league tools are available for your account yet.
-            Ask your captain if you expected access to something.
-          </p>
-        )}
-      </div>
-    </main>
-  );
+      {empty ? (
+        <p className="text-sm text-muted-foreground">
+          Nothing on the schedule right now. Check back closer to your next round.
+        </p>
+      ) : null}
+    </div>
+  )
 }

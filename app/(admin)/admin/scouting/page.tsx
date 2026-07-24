@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { requireAdmin } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getIgcClubId, SCOUTING_FEATURE_KEY } from '@/lib/scouting-access'
@@ -52,17 +51,9 @@ export default async function ScoutingAdminPage() {
   const pendingInvites = (invites || []).filter((i) => i.status === 'pending')
 
   return (
-    <main className="min-h-screen">
-      <div className="sticky top-0 z-30 bg-foreground text-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <p className="font-display text-2xl leading-none">Seattle Cup Scouting · Access</p>
-          <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
-            <Link href="/admin">Back to admin</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-5xl space-y-8 px-4 py-6">
+    <div>
+      <div className="space-y-8 py-2">
+        <h1 className="text-xl font-semibold">Scouting access</h1>
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Invite a new captain */}
           <section className="rounded-md border border-border bg-white/80 p-4">
@@ -199,6 +190,6 @@ export default async function ScoutingAdminPage() {
           )}
         </section>
       </div>
-    </main>
+    </div>
   )
 }

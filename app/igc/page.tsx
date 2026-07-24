@@ -36,19 +36,8 @@ export default async function IgcPage() {
   const featuredEvent = events[0]
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="border-b border-border bg-foreground text-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="font-display text-2xl leading-none">
-            planit.golf
-          </Link>
-          <Button asChild variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background">
-            <Link href="/igc/events">Events</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
+    <div>
+      <div className="py-2">
         <section className="grid gap-5 sm:grid-cols-[1.1fr_0.9fr] sm:items-end">
           <div>
             <Badge className="rounded-md bg-primary/10 text-primary hover:bg-primary/10">
@@ -132,6 +121,6 @@ export default async function IgcPage() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   )
 }

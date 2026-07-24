@@ -19,6 +19,7 @@ export default async function TeeTimePreferencesPage() {
       defaultPrefs={defaultPrefs}
       eventPrefs={eventPrefs}
       eventDemandCounts={{}}
+      embedded
     />
   )
 }
