@@ -155,19 +155,76 @@ export async function getLeagueLeaderboard(
 // event-selection rule from real source data rather than the unreliable
 // igc_league_events.status column (which the sync writes as 'finalized' for
 // every week it processes).
+//
+// IMPORTANT: we CANNOT simply `select week_number from igc_league_performances`
+// and collect distinct values. A full league season is ~24 weeks × ~150
+// players ≈ 2300+ performance rows, and PostgREST silently caps SELECT
+// responses at 1000 rows server-side (an explicit `.limit(N)` does NOT raise
+// this cap — it is a hard server config). A capped query returns only the
+// first ~8 weeks, so the distinct-week set would silently exclude everything
+// after May and the default-event rule would resolve to a stale May week even
+// though July results exist in the table. This was the actual root cause of
+// the stale-default bug.
+//
+// So instead we read the (small, <30-row, well under the cap) list of week
+// numbers from igc_league_events, then existence-check each week against
+// igc_league_performances with a HEAD count query (head queries are not
+// row-capped — they return a count, not rows). This yields the true set of
+// weeks that have scored results, regardless of how many performance rows
+// the league has.
 export async function getLeagueWeeksWithResults(
   leagueKey: string
 ): Promise<Set<number>> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("igc_league_performances")
+  const { data: events, error: eventsError } = await supabase
+    .from("igc_league_events")
     .select("week_number")
-    .eq("league_key", leagueKey);
+    .eq("league_key", leagueKey)
+    .order("week_number", { ascending: true })
+    .limit(200);
 
-  if (error) throw error;
+  if (eventsError) throw eventsError;
 
-  return new Set((data ?? []).map((p) => p.week_number as number));
+  const weeks = (events ?? []).map((e) => e.week_number as number);
+  if (weeks.length === 0) return new Set();
+
+  const results = await Promise.all(
+    weeks.map((week) =>
+      supabase
+        .from("igc_league_performances")
+        .select("id", { count: "exact", head: true })
+        .eq("league_key", leagueKey)
+        .eq("week_number", week)
+        .then(({ count }) => (count ?? 0) > 0 ? week : null)
+    )
+  );
+
+  return new Set(results.filter((w): w is number => w != null));
+}
+
+// Provenance for the league data: the most recent time this league's
+// igc_league_events rows were touched by a sync. The sync CLI upserts every
+// event row on each run, and a BEFORE UPDATE trigger bumps updated_at to
+// NOW() on every upsert, so max(updated_at) across the league's event rows is
+// the last successful sync timestamp. Returns null when no events exist
+// (league has never been synced). Used to surface "Last synced from Golf
+// Genius: <timestamp>" on the standings pages.
+export async function getLeagueLastSyncedAt(
+  leagueKey: string
+): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("igc_league_events")
+    .select("updated_at")
+    .eq("league_key", leagueKey)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data?.updated_at ?? null;
 }
 
 // Get weekly results with flight support

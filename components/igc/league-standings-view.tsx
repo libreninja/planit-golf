@@ -3,12 +3,26 @@ import { notFound } from 'next/navigation'
 import {
   IGC_LEAGUES,
   getLeagueEvents,
+  getLeagueLastSyncedAt,
   getLeagueWeeklyResults,
   getLeagueWeeksWithResults,
 } from '@/lib/igc/league'
 import { resolveStandingsEvent } from '@/lib/igc/event-selection'
 import { pacificToday } from '@/lib/pacific-time'
 import { LeagueLeaderboard } from '@/app/igc/league/league-leaderboard'
+
+// Render the GG sync timestamp (a TIMESTAMPTZ string from updated_at) as a
+// readable Pacific date/time. Falls back to the raw value if parsing fails so
+// we never show a blank provenance line.
+function formatSyncedAt(value: string): string {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(d)
+}
 
 // Shared standings view for a single league. Men's and Women's League are peer
 // domain entities, each with its own direct route (/igc/mens-league,
@@ -33,9 +47,10 @@ export async function LeagueStandingsView({
   const weekNumber = week ? Number.parseInt(week, 10) : undefined
   const today = pacificToday()
 
-  const [events, weeksWithResults] = await Promise.all([
+  const [events, weeksWithResults, lastSyncedAt] = await Promise.all([
     getLeagueEvents(leagueKey),
     getLeagueWeeksWithResults(leagueKey),
+    getLeagueLastSyncedAt(leagueKey),
   ])
 
   const selectedEvent = resolveStandingsEvent(
@@ -64,6 +79,11 @@ export async function LeagueStandingsView({
           <p className="text-muted-foreground">
             Weekly standings and results for the {config.name.toLowerCase()}.
           </p>
+          {lastSyncedAt ? (
+            <p className="mt-2 text-xs text-muted-foreground/80">
+              Last synced from Golf Genius: {formatSyncedAt(lastSyncedAt)}
+            </p>
+          ) : null}
         </div>
 
         <LeagueLeaderboard

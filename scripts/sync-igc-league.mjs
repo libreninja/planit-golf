@@ -92,8 +92,12 @@ async function syncLeague() {
     return;
   }
 
-  // Filter and sort events - look for Mens/Womens league events
-  const leagueFilter = leagueKey === 'mens' ? 'mens' : 'womens';
+  // Filter and sort events - look for the Men's/Women's league season event.
+  // GG names them "IGC Mens League 2026" and "IGC Women's League 2026"; note
+  // the apostrophe in "Women's", so the filter for women's is "women" (a
+  // substring of "women's"), while men's uses "mens" (which is NOT a substring
+  // of "women's", so the two leagues never cross-match).
+  const leagueFilter = leagueKey === 'mens' ? 'mens' : 'women';
   const events = eventsResponse
     .filter(e => e.event?.name?.toLowerCase().includes(leagueFilter))
     .sort((a, b) => {
@@ -117,14 +121,27 @@ async function syncLeague() {
       continue;
     }
 
-    // Filter to points rounds - GG API returns rounds wrapped in {round: {...}}
+    // Filter to regular-season points rounds. GG API returns rounds wrapped in
+    // {round: {...}}. The two leagues NAME their points rounds differently:
+    //   - Men's: "Points Season - Week N"
+    //   - Women's: "Regular Season Week N"
+    // The old filter required the round name to include the literal "points",
+    // which kept the men's rounds but silently dropped ALL women's rounds
+    // ("Regular Season" has no "points" substring). So filter purely by
+    // EXCLUSION of known non-points rounds instead — this admits both naming
+    // conventions and keeps the league's own round order authoritative.
+    const NON_POINTS = [
+      'preseason',
+      'post season',
+      'postseason',
+      'club championship',
+      'fun week',
+      'horse race',
+      'no points',
+    ]
     const pointsRounds = roundsResponse.filter(r => {
       const name = r.round?.name?.toLowerCase() || '';
-      return !name.includes('preseason') &&
-             !name.includes('fun week') &&
-             !name.includes('horse race') &&
-             !name.includes('no points') &&
-             name.includes('points');
+      return !NON_POINTS.some(needle => name.includes(needle));
     }).map(r => r.round);
 
     // Sort by round index to ensure correct week order
@@ -181,57 +198,86 @@ async function syncLeague() {
         const tournamentId = individualTournament.event?.id;
         if (!tournamentId) continue;
 
-        // Get results (GG API uses .json suffix, not /results)
-        const results = await ggRequest(`/events/${event.id}/rounds/${round.id}/tournaments/${tournamentId}.json`);
+        // Fetch results (GG API uses .json suffix, not /results). GG sometimes
+        // returns the tournament scope with an EMPTY aggregates array on rapid
+        // sequential calls (throttling), even for a completed round that
+        // genuinely has results. For a completed round that is a real data loss
+        // (an entire week's standings silently missing), so retry a few times
+        // with a short pause before accepting an empty result. Upcoming rounds
+        // legitimately have no aggregates yet, so they don't retry.
+        const resultsUrl = `/events/${event.id}/rounds/${round.id}/tournaments/${tournamentId}.json`;
+        const isCompleted = round.status === 'completed';
+        let aggregates = [];
+        for (let attempt = 1; attempt <= 4; attempt++) {
+          const results = await ggRequest(resultsUrl);
+          const scoped = (results?.event?.scopes || []).flatMap((s) => s.aggregates || []);
+          aggregates = scoped.filter((a) => a && a.name);
+          if (aggregates.length > 0) break;
+          if (!isCompleted) break;
+          if (attempt < 4) await new Promise((r) => setTimeout(r, 750 * attempt));
+        }
 
-        if (!results?.event?.scopes) continue;
+        if (aggregates.length === 0) {
+          console.log(`      No aggregates${isCompleted ? ' after retries' : ''} for ${round.name}`);
+          continue;
+        }
 
         // Process player results
-        for (const scope of results.event.scopes) {
-          if (!scope.aggregates) continue;
+        let upserted = 0;
+        let firstError = null;
+        for (const aggregate of aggregates) {
+          const netScores = aggregate.net_scores || [];
+          // Extract member_card_id from member_cards array
+          const memberCardId = aggregate.member_cards?.[0]?.member_card_id_str;
+          // Use rank field for position (position field is like "--" or "T1")
+          const position = parseInt(aggregate.rank) || 0;
 
-          for (const aggregate of scope.aggregates) {
-            const netScores = aggregate.net_scores || [];
-            // Extract member_card_id from member_cards array
-            const memberCardId = aggregate.member_cards?.[0]?.member_card_id_str;
-            // Use rank field for position (position field is like "--" or "T1")
-            const position = parseInt(aggregate.rank) || 0;
+          // Calculate stats
+          let doubleBogeys = 0;
+          let birdies = 0;
 
-            // Calculate stats
-            let doubleBogeys = 0;
-            let birdies = 0;
-
-            if (parData.length > 0) {
-              for (let i = 0; i < netScores.length && i < parData.length; i++) {
-                const netScore = netScores[i];
-                const par = parData[i];
-                if (netScore !== null && par !== null) {
-                  if (netScore >= par + 2) doubleBogeys++;
-                  if (netScore === par - 1) birdies++;
-                }
+          if (parData.length > 0) {
+            for (let i = 0; i < netScores.length && i < parData.length; i++) {
+              const netScore = netScores[i];
+              const par = parData[i];
+              if (netScore !== null && par !== null) {
+                if (netScore >= par + 2) doubleBogeys++;
+                if (netScore === par - 1) birdies++;
               }
             }
+          }
 
-            // Upsert performance
-            await supabase
-              .from('igc_league_performances')
-              .upsert({
-                league_key: leagueKey,
-                week_number: weekNumber,
-                event_id: eventData.id,
-                player_name: aggregate.name,
-                member_card_id: memberCardId,
-                event_name: round.name,
-                event_date: round.date,
-                double_bogeys: doubleBogeys,
-                birdies: birdies,
-                weekly_position: position,
-                net_scores: netScores,
-              }, { onConflict: 'league_key,week_number,player_name' });
+          // Upsert performance. Check the error — a silent upsert failure here
+          // means a whole week's results vanish from the standings with no
+          // signal, so surface the first error rather than swallowing it.
+          const { error: perfError } = await supabase
+            .from('igc_league_performances')
+            .upsert({
+              league_key: leagueKey,
+              week_number: weekNumber,
+              event_id: eventData.id,
+              player_name: aggregate.name,
+              member_card_id: memberCardId,
+              event_name: round.name,
+              event_date: round.date,
+              double_bogeys: doubleBogeys,
+              birdies: birdies,
+              weekly_position: position,
+              net_scores: netScores,
+            }, { onConflict: 'league_key,week_number,player_name' });
+
+          if (perfError) {
+            if (!firstError) firstError = perfError;
+          } else {
+            upserted++;
           }
         }
 
-        console.log(`      Synced ${round.name}`);
+        if (firstError) {
+          console.error(`      Upsert error for ${round.name}: ${firstError.message} (upserted ${upserted}/${aggregates.length})`);
+        }
+
+        console.log(`      Synced ${round.name} (${upserted} players)`);
       } catch (error) {
         console.error(`      Error processing round: ${error.message}`);
       }
