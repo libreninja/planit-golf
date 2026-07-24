@@ -49,19 +49,22 @@ export default async function Home() {
 }
 
 function SignInPrompt() {
+  // Deliberately minimal public landing — rendered with NO application shell
+  // (AppShell hides itself for anonymous viewers). One wordmark, one line of
+  // context, one Sign In action. Nothing else.
   return (
-    <div className="mx-auto max-w-md py-10">
-      <div className="rounded-md border border-border bg-card p-8 text-center">
-        <h1 className="font-display text-3xl">planit.golf</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The private place to manage your Interbay golf season — tee-time
-          preferences, league rounds, and Seattle Cup scouting.
+    <main className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md text-center">
+        <h1 className="font-display text-4xl">planit.golf</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          The private place to manage your Interbay golf season — Tuesday league
+          tee-time preferences, league rounds, and Seattle Cup scouting.
         </p>
-        <Button asChild className="mt-6 w-full">
+        <Button asChild className="mt-6 w-full sm:w-auto">
           <Link href="/login">Sign in</Link>
         </Button>
       </div>
-    </div>
+    </main>
   )
 }
 

@@ -537,7 +537,7 @@ export function PreferenceForm({
     <main className={embedded ? undefined : 'min-h-screen'}>
       {embedded ? (
         <div className="flex items-center justify-between pb-2">
-          <h1 className="text-xl font-semibold">Tee Time Preferences</h1>
+          <h1 className="text-xl font-semibold">Tuesday League Tee Time Preferences</h1>
           <HelpModal mode="member" />
         </div>
       ) : (

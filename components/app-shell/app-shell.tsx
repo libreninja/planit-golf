@@ -6,9 +6,11 @@
 // bar (the rail owns context), no notification bell, and no global help affordance
 // — contextual help stays co-located with the surface that needs it.
 //
-// The shell hides itself entirely on auth/invite/public routes (login, signup,
-// invite accept, marketing/event-browse surfaces that keep their own headers),
-// so those pages render unchanged.
+// The shell is AUTHENTICATED-ONLY. It must not render until authentication has
+// resolved to a real signed-in viewer — an anonymous visitor on / sees a
+// deliberately minimal public landing (no rail, no top bar, no breadcrumb, no
+// account controls), not an empty app frame. It also hides itself on
+// auth/invite/public/event-browse routes, which keep their own page chrome.
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -49,7 +51,7 @@ function buildNav(user: AppShellUser): NavItem[] {
   items.push({ type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 1 })
   items.push({ type: 'link', label: 'League', href: '/igc/league', level: 2 })
   if (user.gtgAccess) {
-    items.push({ type: 'link', label: 'Tee Time Preferences', href: '/igc/league/tee-time-preferences', level: 2 })
+    items.push({ type: 'link', label: 'Tuesday League Tee Time Preferences', href: '/igc/league/tee-time-preferences', level: 2 })
   }
   if (user.scouting) {
     items.push({ type: 'link', label: 'Seattle Cup', href: '/igc/seattle-cup/scouting', level: 2 })
@@ -76,7 +78,7 @@ function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/igc/league/tee-time-preferences')
     return [
       { label: 'Interbay', href: '/igc' },
-      { label: 'Tee Time Preferences' },
+      { label: 'Tuesday League Tee Time Preferences' },
     ]
   if (pathname === '/igc/seattle-cup/scouting')
     return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }]
@@ -237,7 +239,10 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
   const pathname = usePathname() || '/'
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  if (!isShellVisible(pathname)) {
+  // The shell is authenticated-only. An anonymous visitor never gets the app
+  // frame — / renders its own minimal public landing. Public/invite/event-browse
+  // routes are also hidden so they keep their own page chrome.
+  if (!user.signedIn || !isShellVisible(pathname)) {
     return <>{children}</>
   }
 
