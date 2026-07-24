@@ -56,10 +56,7 @@ function SignInPrompt() {
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <h1 className="font-display text-4xl">planit.golf</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          The private place to manage your Interbay golf season — Tuesday league
-          tee-time preferences, league rounds, and Seattle Cup scouting.
-        </p>
+        <p className="mt-3 text-base text-muted-foreground">Plan golf. Play golf.</p>
         <Button asChild className="mt-6 w-full sm:w-auto">
           <Link href="/login">Sign in</Link>
         </Button>
