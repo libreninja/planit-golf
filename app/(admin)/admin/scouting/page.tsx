@@ -40,6 +40,25 @@ export default async function ScoutingAdminPage() {
       : { data: [] }
   const profileById = new Map((profiles || []).map((p) => [p.id as string, p]))
 
+  // All known PlanIt accounts, for the "grant to an existing account" selector.
+  // Excludes anyone who already has ACTIVE scouting access (granting again is a
+  // no-op). With a small population a plain <select> is sufficient — no
+  // generalized user-directory infrastructure.
+  const { data: allProfilesRaw } = await service
+    .from('profiles')
+    .select('id, email, display_name')
+    .order('display_name', { ascending: true, nullsFirst: false })
+  const activeScoutingUserIds = new Set(
+    (entitlementsRaw || [])
+      .filter((e) => e.status === 'active')
+      .map((e) => e.user_id as string),
+  )
+  const grantableProfiles = ((allProfilesRaw || []) as {
+    id: string
+    email: string | null
+    display_name: string | null
+  }[]).filter((p) => p.email && !activeScoutingUserIds.has(p.id))
+
   const { data: invites } = await service
     .from('capability_invites')
     .select('id, email, display_name, status, created_at, claimed_at')
@@ -53,7 +72,7 @@ export default async function ScoutingAdminPage() {
   return (
     <div>
       <div className="space-y-8 py-2">
-        <h1 className="text-xl font-semibold">Scouting access</h1>
+        <h1 className="text-xl font-semibold">Scouting Access</h1>
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Invite a new captain */}
           <section className="rounded-md border border-border bg-white/80 p-4">
@@ -84,19 +103,36 @@ export default async function ScoutingAdminPage() {
           <section className="rounded-md border border-border bg-white/80 p-4">
             <h2 className="mb-1 text-lg font-semibold">Grant to an existing account</h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              For someone who already has a PlanIt account (e.g. an existing IGC member). No email,
-              no re-registration. Grants the scouting entitlement only.
+              For someone who already has a PlanIt account. No invite email, no
+              re-registration — grants the scouting entitlement only. Accounts
+              that already have active access are not listed.
             </p>
-            <form action={grantScoutingByEmail} className="space-y-2">
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="existing@example.com"
-                className="w-full rounded-md border border-border px-3 py-2"
-              />
-              <Button type="submit" size="sm">Grant access</Button>
-            </form>
+            {grantableProfiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No existing accounts are available to grant to. Everyone with an
+                account already has active scouting access, or no accounts exist
+                yet — use “Invite a captain” for someone new.
+              </p>
+            ) : (
+              <form action={grantScoutingByEmail} className="space-y-2">
+                <select
+                  name="email"
+                  required
+                  defaultValue=""
+                  className="w-full rounded-md border border-border px-3 py-2"
+                >
+                  <option value="" disabled>
+                    Select an existing account…
+                  </option>
+                  {grantableProfiles.map((p) => (
+                    <option key={p.id} value={p.email ?? ''}>
+                      {p.display_name ?? '(no name)'} — {p.email}
+                    </option>
+                  ))}
+                </select>
+                <Button type="submit" size="sm">Grant access</Button>
+              </form>
+            )}
           </section>
         </div>
 

@@ -136,13 +136,6 @@ export function LeagueLeaderboard({
         </CardHeader>
 
         <CardContent>
-          {!flightsAssigned && hasFlights && (
-            <div className="mb-4 p-3 bg-amber-50 text-amber-800 rounded-md text-sm">
-              Flights have not been assigned yet. Scores are shown as they come
-              in.
-            </div>
-          )}
-
           {currentResults.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No results available for this event yet.

@@ -45,27 +45,64 @@ type NavLink = { type: 'link'; label: string; href: string; level: number }
 type NavLabel = { type: 'label'; label: string; level: number }
 type NavItem = NavLink | NavLabel
 
+// Navigation mirrors the actual product relationships, in user/domain language:
+//
+//   Interbay Golf Club
+//     Tuesday League
+//       League
+//       Tuesday League Tee Time Preferences
+//       Registration Admin            (admins)
+//     Seattle Cup
+//       Scouting                      (entitled)
+//       Scouting Access               (admins)
+//
+// Tee-time preferences are part of the Tuesday League workflow, and the
+// registration admin (the former standalone "Admin" area) sits under Tuesday
+// League — not as a peer product-level destination. Scouting Access (the
+// former /admin/scouting invite manager) sits under Seattle Cup.
 function buildNav(user: AppShellUser): NavItem[] {
-  const items: NavItem[] = [{ type: 'link', label: 'Home', href: '/', level: 0 }]
-  items.push({ type: 'label', label: 'Your Golf', level: 0 })
-  items.push({ type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 1 })
-  items.push({ type: 'link', label: 'League', href: '/igc/league', level: 2 })
+  const items: NavItem[] = [
+    { type: 'link', label: 'Home', href: '/', level: 0 },
+    { type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 0 },
+    { type: 'label', label: 'Tuesday League', level: 1 },
+    { type: 'link', label: 'League', href: '/igc/league', level: 2 },
+  ]
   if (user.gtgAccess) {
     items.push({ type: 'link', label: 'Tuesday League Tee Time Preferences', href: '/igc/league/tee-time-preferences', level: 2 })
   }
-  if (user.scouting) {
-    items.push({ type: 'link', label: 'Seattle Cup', href: '/igc/seattle-cup/scouting', level: 2 })
-  }
   if (user.isAdmin) {
-    items.push({ type: 'link', label: 'Admin', href: '/admin', level: 0 })
-    items.push({ type: 'link', label: 'Scouting access', href: '/admin/scouting', level: 1 })
+    items.push({ type: 'link', label: 'Registration Admin', href: '/admin', level: 2 })
+  }
+  // Only show the Seattle Cup group if there's something under it.
+  if (user.scouting || user.isAdmin) {
+    items.push({ type: 'label', label: 'Seattle Cup', level: 1 })
+    if (user.scouting) {
+      items.push({ type: 'link', label: 'Scouting', href: '/igc/seattle-cup/scouting', level: 2 })
+    }
+    if (user.isAdmin) {
+      items.push({ type: 'link', label: 'Scouting Access', href: '/admin/scouting', level: 2 })
+    }
   }
   return items
 }
 
-function isItemActive(href: string, pathname: string): boolean {
-  if (href === '/') return pathname === '/'
-  return pathname === href || pathname.startsWith(href + '/')
+// Exactly ONE destination may be active at a time. Parents are never given the
+// active style — hierarchy is conveyed only by indentation/typography. The
+// active item is the single link whose href is the longest prefix of the
+// current pathname (exact match, or pathname starts with href + '/'), so a
+// nested route highlights its own leaf, not its ancestors.
+function computeActiveHref(pathname: string, items: NavItem[]): string | null {
+  let best: string | null = null
+  for (const item of items) {
+    if (item.type !== 'link') continue
+    const matches =
+      pathname === item.href ||
+      (item.href !== '/' && pathname.startsWith(item.href + '/'))
+    if (matches && (best === null || item.href.length > best.length)) {
+      best = item.href
+    }
+  }
+  return best
 }
 
 type Crumb = { label: string; href?: string }
@@ -74,28 +111,30 @@ function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/') return [{ label: 'Home' }]
   if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
   if (pathname === '/igc/league')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'League' }]
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Tuesday League' }, { label: 'League' }]
   if (pathname === '/igc/league/tee-time-preferences')
     return [
       { label: 'Interbay', href: '/igc' },
-      { label: 'Tuesday League Tee Time Preferences' },
+      { label: 'Tuesday League' },
+      { label: 'Tee Time Preferences' },
     ]
   if (pathname === '/igc/seattle-cup/scouting')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }]
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Scouting' }]
   if (pathname.startsWith('/igc/seattle-cup/scouting/players'))
     return [
       { label: 'Interbay', href: '/igc' },
       { label: 'Seattle Cup', href: '/igc/seattle-cup/scouting' },
       { label: 'Player' },
     ]
-  if (pathname === '/admin') return [{ label: 'Admin' }]
+  if (pathname === '/admin') return [{ label: 'Interbay', href: '/igc' }, { label: 'Tuesday League' }, { label: 'Registration Admin' }]
   if (pathname === '/admin/scouting')
-    return [{ label: 'Admin', href: '/admin' }, { label: 'Scouting access' }]
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Scouting Access' }]
   return []
 }
 
 function NavList({ user, pathname, onNavigate }: { user: AppShellUser; pathname: string; onNavigate?: () => void }) {
   const items = buildNav(user)
+  const activeHref = computeActiveHref(pathname, items)
   return (
     <nav className="flex flex-col gap-0.5">
       {items.map((item, i) => {
@@ -103,13 +142,17 @@ function NavList({ user, pathname, onNavigate }: { user: AppShellUser; pathname:
           return (
             <p
               key={`label-${i}`}
-              className="px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              className={
+                'px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground ' +
+                (item.level === 1 ? 'pl-6' : '')
+              }
             >
               {item.label}
             </p>
           )
         }
-        const active = isItemActive(item.href, pathname)
+        const active = item.href === activeHref
+        const indent = item.level === 2 ? 'pl-9' : item.level === 1 ? 'pl-6' : ''
         return (
           <Link
             key={item.href}
@@ -117,10 +160,10 @@ function NavList({ user, pathname, onNavigate }: { user: AppShellUser; pathname:
             onClick={onNavigate}
             className={
               'block rounded-md px-3 py-2 text-sm transition-colors ' +
-              (item.level === 2 ? 'pl-6 ' : '') +
+              indent +
               (active
-                ? 'bg-accent font-medium text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground')
+                ? ' bg-accent font-medium text-foreground'
+                : ' text-muted-foreground hover:bg-muted hover:text-foreground')
             }
             aria-current={active ? 'page' : undefined}
           >

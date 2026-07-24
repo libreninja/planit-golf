@@ -37,7 +37,7 @@ export default async function AdminPage() {
     <div>
       <div className="space-y-6 py-2">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Admin</h1>
+          <h1 className="text-xl font-semibold">Registration Admin</h1>
           <HelpModal mode="admin" />
         </div>
         <AdminSectionCard title="System tools" defaultOpen={false} contentClassName="pt-0">

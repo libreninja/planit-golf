@@ -31,9 +31,39 @@ function formatDateRange(event: IgcEventSummary) {
   return `${startLabel} - ${endLabel}`
 }
 
+// Pacific-tz calendar today (YYYY-MM-DD). The companion tables store dates,
+// not instants, so we compare against the Pacific calendar day — the same
+// convention lib/registration-schedule uses for the league.
+function pacificToday(): string {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(new Date())
+      .filter((p) => p.type !== 'literal')
+      .map((p) => [p.type, p.value]),
+  )
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
+
+// Only treat an event as current/upcoming if its start date is today or later,
+// or it is actively running. Past events (including the seeded "Upcoming IGC
+// Event" companion shell from migration 014, dated 2026-05-30 with no Golf
+// Genius linkage) must not be presented as current.
+function isCurrentOrUpcoming(event: IgcEventSummary, today: string): boolean {
+  if (event.status === 'active') return true
+  return Boolean(event.starts_on) && event.starts_on! >= today
+}
+
 export default async function IgcPage() {
   const { setupRequired, community, events } = await getIgcEventsIndex()
-  const featuredEvent = events[0]
+  const today = pacificToday()
+  const currentEvents = events.filter((e) => isCurrentOrUpcoming(e, today))
+  const featuredEvent = currentEvents[0] ?? null
 
   return (
     <div>
@@ -80,46 +110,50 @@ export default async function IgcPage() {
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                {setupRequired ? 'Apply the IGC companion migration to create the first event shell.' : 'No IGC events are configured yet.'}
+                {setupRequired
+                  ? 'No Interbay companion events are configured yet.'
+                  : 'No current Interbay event right now.'}
               </p>
             )}
           </div>
         </section>
 
-        <section className="mt-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Events</h2>
-            <Button asChild variant="ghost" size="sm" className="gap-2">
-              <Link href="/igc/events">
-                View All
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
-          <div className="grid gap-3">
-            {events.map((event) => (
-              <Link
-                key={event.id}
-                href={`/igc/events/${event.slug}`}
-                className="grid gap-3 rounded-md border border-border bg-white/80 p-4 shadow-sm transition hover:border-primary/50 sm:grid-cols-[1fr_auto] sm:items-center"
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {formatDateRange(event)}
-                  </p>
-                  <h3 className="mt-1 text-xl font-semibold">{event.name}</h3>
-                  {event.description ? (
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  Open
+        {currentEvents.length > 0 ? (
+          <section className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Upcoming events</h2>
+              <Button asChild variant="ghost" size="sm" className="gap-2">
+                <Link href="/igc/events">
+                  View All
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+                </Link>
+              </Button>
+            </div>
+            <div className="grid gap-3">
+              {currentEvents.map((event) => (
+                <Link
+                  key={event.id}
+                  href={`/igc/events/${event.slug}`}
+                  className="grid gap-3 rounded-md border border-border bg-white/80 p-4 shadow-sm transition hover:border-primary/50 sm:grid-cols-[1fr_auto] sm:items-center"
+                >
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {formatDateRange(event)}
+                    </p>
+                    <h3 className="mt-1 text-xl font-semibold">{event.name}</h3>
+                    {event.description ? (
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                    Open
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   )
