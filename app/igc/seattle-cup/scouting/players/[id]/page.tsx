@@ -11,6 +11,7 @@ import {
   setAvailabilityAction,
 } from '../../actions'
 import { Button } from '@/components/ui/button'
+import { ScoutingUnavailable } from '@/components/scouting/scouting-unavailable'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,9 +41,27 @@ function NoteMeta({ n }: { n: ai.ScoutingNote }) {
 }
 
 export default async function PlayerCardPage({ params }: { params: Promise<{ id: string }> }) {
+  // Access gate FIRST: unauthorized users redirect before any planit-ai call.
   await requireScoutingAccess()
   const { id } = await params
-  const [card, categories] = await Promise.all([ai.getCard(id), ai.getNoteCategories()])
+
+  let card: ai.ScoutingCard | null = null
+  let categories: string[] = []
+  try {
+    ;[card, categories] = await Promise.all([ai.getCard(id), ai.getNoteCategories()])
+  } catch (err) {
+    // Unknown player id — the backend is fine, show the not-found page.
+    if (ai.isNotFound(err)) notFound()
+    if (ai.isBackendUnavailable(err)) {
+      console.warn('[scouting] backend unavailable:', (err as Error).message)
+      return <ScoutingUnavailable />
+    }
+    // Real defect: log loudly and re-throw so it stays visible.
+    console.error('[scouting] card load failed:', err)
+    throw err
+  }
+  // getCard may resolve to null when the backend returns a 200/null for a
+  // missing player (rather than 404) — preserve the not-found behavior.
   if (!card) notFound()
 
   return (

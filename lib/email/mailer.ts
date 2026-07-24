@@ -91,12 +91,13 @@ export async function sendScoutingInviteEmail(
         </p>
         <p style="font-size: 14px; color: #4b6358;">If the button misbehaves, paste this into your browser:</p>
         <p style="font-size: 14px;"><a href="${inviteUrl}">${inviteUrl}</a></p>
+        <p style="font-size: 13px; color: #4b6358;">If you don&apos;t see this email, check your spam or junk folder.</p>
         <hr style="border: 0; border-top: 1px solid #d6ddd8; margin: 24px 0;" />
         <p style="font-size: 13px; color: #4b6358;">
           This email was sent by planit.golf because a Seattle Cup captain invited you to the scouting workspace. If this is unexpected, you can ignore it.
         </p>
       </div>
     `,
-    text: `${greeting}\n\nYou've been invited to help scout and prepare Interbay Golf Club's 2026 Seattle Cup roster. Use this secure link to create your account or sign in: ${inviteUrl}\n\nThis email was sent by planit.golf because a Seattle Cup captain invited you to the scouting workspace.`,
+    text: `${greeting}\n\nYou've been invited to help scout and prepare Interbay Golf Club's 2026 Seattle Cup roster. Use this secure link to create your account or sign in: ${inviteUrl}\n\nIf you don't see this email, check your spam or junk folder.\n\nThis email was sent by planit.golf because a Seattle Cup captain invited you to the scouting workspace.`,
   })
 }

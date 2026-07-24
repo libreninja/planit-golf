@@ -3,6 +3,7 @@ import { requireScoutingAccess } from '@/lib/scouting-access'
 import * as ai from '@/lib/planit-ai/client'
 import { addCandidateAction } from './actions'
 import { Button } from '@/components/ui/button'
+import { ScoutingUnavailable } from '@/components/scouting/scouting-unavailable'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,12 +20,31 @@ function Hcap({ h }: { h: ai.ScoutingBoardRow['currentHandicap'] }) {
 }
 
 export default async function ScoutingBoardPage() {
+  // Access gate FIRST: unauthorized users redirect to /login / / before any
+  // planit-ai call is attempted (no backend access for the unauthorized).
   const user = await requireScoutingAccess()
-  const [board, distribution, addable] = await Promise.all([
-    ai.getBoard(),
-    ai.getDistribution(),
-    ai.getAddablePlayers(),
-  ])
+
+  let board: ai.ScoutingBoardRow[] = []
+  let distribution: { label: string; count: number }[] = []
+  let addable: ai.AddablePlayer[] = []
+  try {
+    ;[board, distribution, addable] = await Promise.all([
+      ai.getBoard(),
+      ai.getDistribution(),
+      ai.getAddablePlayers(),
+    ])
+  } catch (err) {
+    if (ai.isBackendUnavailable(err)) {
+      // Expected when PLANIT_AI_API_URL is unset/unreachable. Warn, don't
+      // alarm — this is the known not-yet-provisioned state.
+      console.warn('[scouting] backend unavailable:', (err as Error).message)
+      return <ScoutingUnavailable />
+    }
+    // Real defect: log loudly and re-throw so it stays visible (error page +
+    // server logs) rather than being masked as "temporarily unavailable".
+    console.error('[scouting] board load failed:', err)
+    throw err
+  }
 
   return (
     <main className="min-h-screen">

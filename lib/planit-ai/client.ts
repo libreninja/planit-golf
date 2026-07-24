@@ -76,6 +76,40 @@ export interface AddablePlayer {
   currentRank: number | null
 }
 
+// Error thrown by every planit-ai call that does not resolve cleanly. Carries
+// enough metadata for callers to distinguish the expected "backend not
+// reachable / not configured" case (which degrades to a friendly notice) from
+// real programming defects (which should surface so they stay visible in logs).
+export class PlanitAiError extends Error {
+  readonly status?: number
+  readonly unreachable?: boolean
+  constructor(message: string, opts?: { status?: number; unreachable?: boolean }) {
+    super(message)
+    this.name = 'PlanitAiError'
+    this.status = opts?.status
+    this.unreachable = opts?.unreachable
+  }
+}
+
+// True when the scouting backend could not be reached or explicitly reports it
+// is down. This is the expected, non-alarming state when PLANIT_AI_API_URL is
+// unset (BASE defaults to localhost:3001 → connection refused) or the backend
+// is not yet deployed/reachable. HTTP-level defects (4xx/500, JSON parse
+// failures) are NOT "unavailable" — callers let those throw so real defects
+// stay visible in server logs rather than being masked as "temporarily down".
+export function isBackendUnavailable(err: unknown): boolean {
+  if (!(err instanceof PlanitAiError)) return false
+  if (err.unreachable) return true
+  // 502/503/504 = gateway/upstream down = transient, treat as unavailable.
+  return err.status === 502 || err.status === 503 || err.status === 504
+}
+
+// True when the backend responded that the resource does not exist (e.g. an
+// unknown player id). Distinct from "unavailable" — the backend is fine.
+export function isNotFound(err: unknown): boolean {
+  return err instanceof PlanitAiError && err.status === 404
+}
+
 async function req<T = unknown>(path: string, opts: RequestInit = {}, actor?: string): Promise<T> {
   const headers: Record<string, string> = {
     ...(opts.headers as Record<string, string> | undefined),
@@ -84,14 +118,26 @@ async function req<T = unknown>(path: string, opts: RequestInit = {}, actor?: st
   if (actor) headers['x-planit-actor'] = actor
   if (opts.body) headers['content-type'] = 'application/json'
 
-  const res = await fetch(`${BASE}/api/scouting${path}`, {
-    ...opts,
-    headers,
-    cache: 'no-store',
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BASE}/api/scouting${path}`, {
+      ...opts,
+      headers,
+      cache: 'no-store',
+    })
+  } catch (e) {
+    // Network-level failure (DNS, connection refused, timeout) — no HTTP
+    // response was received. This is the expected state when the backend URL
+    // is unset or the service is not deployed/reachable.
+    throw new PlanitAiError(`planit-ai ${path} -> unreachable (${(e as Error).message})`, {
+      unreachable: true,
+    })
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`planit-ai ${path} -> ${res.status} ${text}`)
+    throw new PlanitAiError(`planit-ai ${path} -> ${res.status} ${text}`, {
+      status: res.status,
+    })
   }
   return res.json() as Promise<T>
 }

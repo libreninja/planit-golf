@@ -80,7 +80,9 @@ export function ScoutingSignUpForm({
       if (resendError) {
         setError(resendError.message)
       } else {
-        setNotice('You already started sign up. We resent the confirmation email.')
+        setNotice(
+          "You already started sign up. We resent the confirmation email. Check your spam or junk folder if it doesn't arrive — submit again to resend it."
+        )
       }
       setLoading(false)
       return
