@@ -27,6 +27,13 @@ export interface IGCEvent {
   course_name?: string;
   status: 'upcoming' | 'live' | 'finalized';
   flights_finalized: boolean;
+  // null exactly for team/side weeks (scrambles) the sync recorded as a
+  // schedule row with no individual tournament — the authoritative team-event
+  // signal, independent of event_name wording. Used to tag selector weeks and
+  // to render an honest team-event state instead of an empty individual table.
+  gg_tournament_id: string | null;
+  // GG event id, used to build the live-results poll URL for an active round.
+  gg_event_id: string | null;
 }
 
 export interface IGCLeaderboardEntry {
@@ -95,6 +102,8 @@ export async function getLeagueEvents(
       course_name: e.course_name,
       status: e.status,
       flights_finalized: e.flights_finalized,
+      gg_tournament_id: e.gg_tournament_id ?? null,
+      gg_event_id: e.gg_event_id ?? null,
     })) || []
   );
 }
@@ -123,6 +132,8 @@ export async function getLeagueEvent(
     course_name: data.course_name,
     status: data.status,
     flights_finalized: data.flights_finalized,
+    gg_tournament_id: data.gg_tournament_id ?? null,
+    gg_event_id: data.gg_event_id ?? null,
   };
 }
 

@@ -62,24 +62,30 @@ async function ggRequest(endpoint, queryParams = {}) {
 // Week N", since neither contains these needles).
 const NON_POINTS = ['preseason', 'post season', 'postseason', 'club championship', 'fun week', 'horse race', 'no points'];
 
-// Pick the league's INDIVIDUAL competition tournament. The league scores NET
-// (handicap), so prefer the net individual tournament ("Net Regular Season",
-// "Net Individual Play"). Exclude side/skill competitions ("Closest to the
-// Pin", "KP HOLE #n") and TEAM events ("Net Team Scramble", "Gross Team
-// Scramble") — team weeks are a separate result concern and their aggregates
-// are team strings, not individual scorecards, so storing them would pollute
-// the per-player performance table. When no individual tournament exists (a
-// scramble week), returns null so the caller records the schedule row only.
+// Pick the league's INDIVIDUAL competition tournaments. A league round is
+// modeled in Golf Genius as TWO individual tournaments — Gross and Net — each
+// scoped by flight (men's: "Gross/Net Regular Season" with Flight 1/2/3;
+// women's: "Gross/Net Individual Play" with a single Overall field). The SAME
+// player appears in both with an IDENTICAL hole-by-hole scorecard; only the
+// result (position, points, purse) differs. So we preserve BOTH competitions.
+// Side/skill comps ("Closest to the Pin", "KP HOLE #n") and TEAM events
+// ("Net/Gross Team Scramble") are excluded — team weeks have no individual
+// scorecards. When no individual tournament exists (a scramble week), both are
+// null and the caller records the schedule row only.
 function isSideOrTeamCompetition(name) {
   const n = name.toLowerCase();
   return n.includes('closest to the pin') || n.includes('kp hole') || n.includes('team') || n.includes('scramble');
 }
-function pickLeagueTournament(tournaments) {
+function competitionOf(tournamentName) {
+  return /gross/i.test(tournamentName) ? 'gross' : 'net';
+}
+function pickIndividualTournaments(tournaments) {
   const named = tournaments.map((t) => t.event).filter((e) => e && e.id && e.name);
-  const individual = named.filter((e) => !isSideOrTeamCompetition(e.name.toLowerCase()));
-  return individual.find((e) => e.name.toLowerCase().includes('net'))
-    || individual[0]
-    || null;
+  const individual = named.filter((e) => !isSideOrTeamCompetition(e.name));
+  const gross = individual.find((e) => /gross/i.test(e.name)) || null;
+  const net = individual.find((e) => /net/i.test(e.name))
+    || (individual.length === 1 ? individual[0] : null);
+  return { gross, net };
 }
 
 function parseNum(value) {
@@ -171,8 +177,16 @@ async function syncLeague() {
       handicapIndex: existing.handicapIndex || handicapIndex || null,
     });
   };
-  let lastSeasonPoints = null; // latest completed round's cumulative standings
-  let prevSeasonPoints = null; // the completed round before that
+  // Cumulative season points: GG's `event.season_points[].total_points` is the
+  // points awarded IN THAT ROUND (not a running total), and both the Gross and
+  // Net individual tournaments credit the SAME season_point_category. So the
+  // authoritative cumulative standings are the SUM of weekly total_points
+  // across every completed round and both competitions (no GG endpoint exposes
+  // the cumulative total directly). We accumulate per member_card_id as we
+  // process rounds; `cumBeforeLast` is the running sum frozen just before the
+  // last completed round, used to derive previous-rank movement.
+  const seasonCum = new Map(); // member_card_id -> cumulative total_points
+  let cumBeforeLast = null;     // Map snapshot before the final completed round
 
   for (const eventWrapper of events) {
     const event = eventWrapper.event;
@@ -221,57 +235,41 @@ async function syncLeague() {
       try {
         const tournamentsResponse = await ggRequest(`/events/${event.id}/rounds/${round.id}/tournaments`);
         if (!Array.isArray(tournamentsResponse) || tournamentsResponse.length === 0) continue;
-        const tournament = pickLeagueTournament(tournamentsResponse);
-        if (!tournament) {
-          // No individual competition (e.g. a scramble/team week). Record the
-          // schedule row but skip per-player performances so team aggregates
-          // don't pollute the individual-results table.
+        const { gross: grossT, net: netT } = pickIndividualTournaments(tournamentsResponse);
+        const isCompleted = round.status === 'completed';
+
+        // Team/scramble week: no individual tournaments. Record the schedule row
+        // with no tournament links and no per-player rows.
+        if (!grossT && !netT) {
           console.log(`      No individual tournament for ${round.name} (team/side event)`);
           await supabase.from('igc_league_events').upsert({
             league_key: leagueKey, week_number: weekNumber, gg_event_id: event.id,
-            gg_round_id: round.id, gg_tournament_id: null, event_name: round.name,
-            event_date: round.date, status: roundStatus(round),
-            results_released: round.settings?.results_released ?? null,
-          }, { onConflict: 'league_key,week_number' });
-          continue;
-        }
-        const tournamentId = tournament.id;
-
-        // Fetch results; retry completed rounds that return empty aggregates
-        // (GG intermittently throttles rapid sequential calls).
-        const resultsUrl = `/events/${event.id}/rounds/${round.id}/tournaments/${tournamentId}.json`;
-        const isCompleted = round.status === 'completed';
-        let results = null;
-        let hasAggregates = false;
-        for (let attempt = 1; attempt <= 4; attempt++) {
-          results = await ggRequest(resultsUrl);
-          hasAggregates = (results?.event?.scopes || []).some((s) => (s.aggregates || []).some((a) => a && a.name));
-          if (hasAggregates) break;
-          if (!isCompleted) break;
-          if (attempt < 4) await new Promise((r) => setTimeout(r, 750 * attempt));
-        }
-        if (!hasAggregates) {
-          console.log(`      No aggregates${isCompleted ? ' after retries' : ''} for ${round.name}`);
-          // Still upsert the event row (schedule) so future rounds are listed.
-          await supabase.from('igc_league_events').upsert({
-            league_key: leagueKey, week_number: weekNumber, gg_event_id: event.id,
-            gg_round_id: round.id, gg_tournament_id: tournamentId,
+            gg_round_id: round.id, gg_tournament_id: null,
+            gg_gross_tournament_id: null, gg_net_tournament_id: null,
             event_name: round.name, event_date: round.date, status: roundStatus(round),
             results_released: round.settings?.results_released ?? null,
-            scored_at: tournament.scored_at || null,
           }, { onConflict: 'league_key,week_number' });
           continue;
         }
 
-        // Upsert the event row with round + tournament links and scoring status.
+        // Snapshot the cumulative total before this completed round so the
+        // previous-round rank can be derived later (each completed round
+        // overwrites this, so after the loop it holds the sum through the
+        // second-to-last completed round).
+        if (isCompleted) cumBeforeLast = new Map(seasonCum);
+
+        // Upsert the event row linking BOTH tournaments. gg_tournament_id keeps
+        // the Net id (null for team weeks) so the existing gg_tournament_id IS
+        // NULL team-event detection keeps working.
         const { data: eventData, error: eventError } = await supabase
           .from('igc_league_events')
           .upsert({
             league_key: leagueKey, week_number: weekNumber, gg_event_id: event.id,
-            gg_round_id: round.id, gg_tournament_id: tournamentId,
+            gg_round_id: round.id, gg_tournament_id: netT?.id ?? null,
+            gg_gross_tournament_id: grossT?.id ?? null, gg_net_tournament_id: netT?.id ?? null,
             event_name: round.name, event_date: round.date, status: roundStatus(round),
             results_released: round.settings?.results_released ?? null,
-            scored_at: tournament.scored_at || null,
+            scored_at: netT?.scored_at || grossT?.scored_at || null,
           }, { onConflict: 'league_key,week_number' })
           .select().single();
         if (eventError) {
@@ -279,98 +277,139 @@ async function syncLeague() {
           continue;
         }
 
-        // Process player results, grouped by scope (each scope is a flight).
+        // Process Gross first, then Net. The hole-by-hole scorecard is identical
+        // across the two tournaments (one fact), so both upserts hit the same
+        // performance row; processing Net last means the legacy result columns
+        // (points/position/purse) on igc_league_performances hold the Net result
+        // — back-compat for the current UI until the gross/net redesign.
         let upserted = 0;
         let firstError = null;
-        for (const scope of results.event.scopes) {
-          const flightName = scope.name?.trim() || 'Overall';
-          for (const aggregate of (scope.aggregates || [])) {
-            if (!aggregate.name) continue;
-            const memberCardId = aggregate.member_cards?.[0]?.member_card_id_str || null;
-            if (memberCardId) {
-              mergeMember(memberCardId, { name: aggregate.name });
-            }
-            const netScores = aggregate.net_scores || [];
-            const grossScores = aggregate.gross_scores || [];
-            const toParNet = aggregate.to_par_net || [];
-            const toParGross = aggregate.to_par_gross || [];
-            const totals = aggregate.totals || {};
+        for (const tournament of [grossT, netT].filter(Boolean)) {
+          const competition = competitionOf(tournament.name);
+          const resultsUrl = `/events/${event.id}/rounds/${round.id}/tournaments/${tournament.id}.json`;
+          let results = null;
+          let hasAggregates = false;
+          for (let attempt = 1; attempt <= 4; attempt++) {
+            results = await ggRequest(resultsUrl);
+            hasAggregates = (results?.event?.scopes || []).some((s) => (s.aggregates || []).some((a) => a && a.name));
+            if (hasAggregates) break;
+            if (!isCompleted) break;
+            if (attempt < 4) await new Promise((r) => setTimeout(r, 750 * attempt));
+          }
+          if (!hasAggregates) {
+            console.log(`      No aggregates${isCompleted ? ' after retries' : ''} for ${tournament.name}`);
+            continue;
+          }
 
-            // Secondary birdie/double counts (still stored, not the primary view).
-            let doubleBogeys = 0, birdies = 0;
-            if (parData.length > 0) {
-              for (let i = 0; i < netScores.length && i < parData.length; i++) {
-                if (netScores[i] !== null && parData[i] !== null) {
-                  if (netScores[i] >= parData[i] + 2) doubleBogeys++;
-                  if (netScores[i] === parData[i] - 1) birdies++;
+          for (const scope of results.event.scopes) {
+            const flightName = scope.name?.trim() || 'Overall';
+            for (const aggregate of (scope.aggregates || [])) {
+              if (!aggregate.name) continue;
+              const memberCardId = aggregate.member_cards?.[0]?.member_card_id_str || null;
+              if (memberCardId) mergeMember(memberCardId, { name: aggregate.name });
+              const netScores = aggregate.net_scores || [];
+              const grossScores = aggregate.gross_scores || [];
+              const toParNet = aggregate.to_par_net || [];
+              const toParGross = aggregate.to_par_gross || [];
+              const totals = aggregate.totals || {};
+
+              // Secondary birdie/double counts (still stored, not the primary view).
+              let doubleBogeys = 0, birdies = 0;
+              if (parData.length > 0) {
+                for (let i = 0; i < netScores.length && i < parData.length; i++) {
+                  if (netScores[i] !== null && parData[i] !== null) {
+                    if (netScores[i] >= parData[i] + 2) doubleBogeys++;
+                    if (netScores[i] === parData[i] - 1) birdies++;
+                  }
                 }
               }
+
+              const parsedPosition = parsePosition(aggregate.position);
+
+              // The scorecard fact (one row per player-round) plus the legacy
+              // result columns (Net wins because it's processed last).
+              const { error: perfError } = await supabase
+                .from('igc_league_performances')
+                .upsert({
+                  league_key: leagueKey, week_number: weekNumber, event_id: eventData.id,
+                  player_name: aggregate.name, member_card_id: memberCardId,
+                  flight_name: flightName,
+                  position_label: aggregate.position ? String(aggregate.position) : null,
+                  flight_position: parsedPosition,
+                  points: parseNum(aggregate.points),
+                  gross_scores: grossScores, to_par_net: toParNet, to_par_gross: toParGross,
+                  net_total: parseIntOrNull(totalOut(totals, 'net_scores')),
+                  gross_total: parseIntOrNull(totalOut(totals, 'gross_scores')),
+                  to_par_net_total: parseIntOrNull(totalOut(totals, 'to_par_net')),
+                  to_par_gross_total: parseIntOrNull(totalOut(totals, 'to_par_gross')),
+                  purse: aggregate.purse || null,
+                  holes_completed: countCompletedHoles(grossScores.length ? grossScores : netScores),
+                  scorecard_status: aggregate.scorecard_statuses?.[0]?.status || null,
+                  event_name: round.name, event_date: round.date,
+                  double_bogeys: doubleBogeys, birdies: birdies,
+                  // weekly_position (legacy, NOT NULL): parsed position; unplaced
+                  // players get a large sentinel so they sort last, never atop a
+                  // flight. 0 is avoided so unplaced ≠ a real "1st".
+                  weekly_position: parsedPosition ?? 9999,
+                  net_scores: netScores,
+                }, { onConflict: 'league_key,week_number,player_name' });
+              if (perfError) { if (!firstError) firstError = perfError; } else { upserted++; }
+
+              // Competition-specific result membership (gross or net). The
+              // scorecard is NOT duplicated — it lives once in
+              // igc_league_performances; this row carries only the placement.
+              if (memberCardId) {
+                const { error: resError } = await supabase
+                  .from('igc_league_results')
+                  .upsert({
+                    league_key: leagueKey, week_number: weekNumber, event_id: eventData.id,
+                    member_card_id: memberCardId, player_name: aggregate.name,
+                    competition, flight_name: flightName,
+                    position_label: aggregate.position ? String(aggregate.position) : null,
+                    flight_position: parsedPosition,
+                    points: parseNum(aggregate.points),
+                    purse: aggregate.purse || null,
+                    synced_at: new Date().toISOString(),
+                  }, { onConflict: 'league_key,week_number,member_card_id,competition' });
+                if (resError) { if (!firstError) firstError = resError; }
+              }
             }
+          }
 
-            const parsedPosition = parsePosition(aggregate.position);
-            const { error: perfError } = await supabase
-              .from('igc_league_performances')
-              .upsert({
-                league_key: leagueKey, week_number: weekNumber, event_id: eventData.id,
-                player_name: aggregate.name, member_card_id: memberCardId,
-                flight_name: flightName,
-                position_label: aggregate.position ? String(aggregate.position) : null,
-                flight_position: parsedPosition,
-                points: parseNum(aggregate.points),
-                gross_scores: grossScores, to_par_net: toParNet, to_par_gross: toParGross,
-                net_total: parseIntOrNull(totalOut(totals, 'net_scores')),
-                gross_total: parseIntOrNull(totalOut(totals, 'gross_scores')),
-                to_par_net_total: parseIntOrNull(totalOut(totals, 'to_par_net')),
-                to_par_gross_total: parseIntOrNull(totalOut(totals, 'to_par_gross')),
-                purse: aggregate.purse || null,
-                holes_completed: countCompletedHoles(grossScores.length ? grossScores : netScores),
-                scorecard_status: aggregate.scorecard_statuses?.[0]?.status || null,
-                event_name: round.name, event_date: round.date,
-                double_bogeys: doubleBogeys, birdies: birdies,
-                // weekly_position (legacy, NOT NULL): parsed position; unplaced
-                // players get a large sentinel so they sort last, never atop a
-                // flight. 0 is avoided so unplaced ≠ a real "1st".
-                weekly_position: parsedPosition ?? 9999,
-                net_scores: netScores,
-              }, { onConflict: 'league_key,week_number,player_name' });
-
-            if (perfError) { if (!firstError) firstError = perfError; } else { upserted++; }
+          // Accumulate this round's weekly season_points into the cumulative
+          // map. Both competitions' season_points credit the same season
+          // category, so sum both. (Women's returns an empty array → no-op.)
+          if (isCompleted && Array.isArray(results.event.season_points)) {
+            for (const sp of results.event.season_points) {
+              if (!sp?.member_card_id) continue;
+              seasonCum.set(sp.member_card_id, (seasonCum.get(sp.member_card_id) || 0) + (Number(sp.total_points) || 0));
+            }
           }
         }
         if (firstError) {
           console.error(`      Upsert error for ${round.name}: ${firstError.message} (upserted ${upserted})`);
         }
-        console.log(`      Synced ${round.name} (${upserted} players)`);
-
-        // Capture cumulative season points embedded in this round's results.
-        // Each completed individual-points round's payload contains season_points
-        // AS OF that round; the latest such round = current standings and the
-        // one before = previous standings (authoritative rank movement). Only
-        // capture NON-EMPTY season_points — scramble/team weeks (and the women's
-        // league, which has no points system) return an empty array and would
-        // otherwise blank out the snapshot.
-        if (isCompleted && Array.isArray(results.event.season_points) && results.event.season_points.length > 0) {
-          prevSeasonPoints = lastSeasonPoints;
-          lastSeasonPoints = results.event.season_points;
-        }
+        console.log(`      Synced ${round.name} (${upserted} player-competitions)`);
       } catch (error) {
         console.error(`      Error processing round: ${error.message}`);
       }
     }
   }
 
-  // Remove stale performances from team/side weeks (e.g. scrambles) that a
-  // previous run stored before tournament selection excluded them. Such
-  // weeks now record a schedule row with no gg_tournament_id and no individual
-  // performances, so any leftover rows for those events are stale and would
+  // Remove stale per-player rows from team/side weeks (e.g. scrambles) that a
+  // previous run stored before tournament selection excluded them. Such weeks
+  // now record a schedule row with no gg_tournament_id and no individual rows,
+  // so any leftover performances/results for those events are stale and would
   // pollute events_played/wins. Done before the snapshot so stats are clean.
   const { data: teamEvents } = await supabase.from('igc_league_events')
     .select('id').eq('league_key', leagueKey).is('gg_tournament_id', null);
   if (teamEvents && teamEvents.length > 0) {
     const teamEventIds = teamEvents.map((e) => e.id);
-    const { error: delErr } = await supabase.from('igc_league_performances')
+    const { error: delPerf } = await supabase.from('igc_league_performances')
       .delete().in('event_id', teamEventIds);
-    console.log(`  Cleaned stale team-week performances: ${teamEventIds.length} event(s)${delErr ? ' (err: ' + delErr.message + ')' : ''}`);
+    const { error: delRes } = await supabase.from('igc_league_results')
+      .delete().in('event_id', teamEventIds);
+    console.log(`  Cleaned stale team-week rows: ${teamEventIds.length} event(s)${delPerf ? ' (perf err: ' + delPerf.message + ')' : ''}${delRes ? ' (res err: ' + delRes.message + ')' : ''}`);
   }
 
   // Persist the member-card cache (roster + every player who appeared in a
@@ -387,60 +426,76 @@ async function syncLeague() {
     console.log(`  Members cache: ${rows.length} (${memberError ? 'error: ' + memberError.message : 'ok'})`);
   }
 
-  // Build the season-points snapshot from the latest non-empty season_points.
-  // GG's `position` here is the player's finishing position in THAT ROUND (per
-  // flight), NOT their season rank, so the cumulative rank must be DERIVED by
-  // ranking `total_points` (descending, ties share the lower rank). The prior
-  // round's season_points is ranked the same way for previous_position (true
-  // rank movement). events_played counts weeks the member actually scored;
-  // wins counts weeks they finished 1st (parsed position === 1).
-  if (lastSeasonPoints && lastSeasonPoints.length > 0) {
-    console.log(`  Building season-points snapshot (${lastSeasonPoints.length} entries)...`);
+  // Build the cumulative season-points snapshot. total_points here is the SUM
+  // of every completed round's weekly event.season_points[].total_points across
+  // BOTH competitions (they share one season category) — the authoritative
+  // cumulative standings (GG exposes no cumulative endpoint). Rank is DERIVED by
+  // sorting cumulative total desc (competition ranking, ties share the lower
+  // rank); previous_position is the rank derived from the cumulative-through-
+  // second-to-last-round map. events_played counts weeks the member scored;
+  // wins counts flight wins across both competitions.
+  if (seasonCum.size > 0) {
+    console.log(`  Building cumulative season-points snapshot (${seasonCum.size} members)...`);
 
-    // events_played (weeks with a recorded score) + wins (parsed position 1)
-    // per member_card_id, from the stored weekly performances.
+    // Replace the league's snapshot wholesale: the cumulative set IS the
+    // authoritative standings, so delete any stale rows then upsert every
+    // member in seasonCum. (Avoids a large NOT-IN clause.)
+    await supabase.from('igc_league_season_points')
+      .delete().eq('league_key', leagueKey);
+
+    // events_played: weeks with a scored card per member.
     const { data: perfs } = await supabase
       .from('igc_league_performances')
-      .select('member_card_id, week_number, flight_position, gross_scores')
+      .select('member_card_id, week_number, gross_scores')
       .eq('league_key', leagueKey)
       .limit(100000);
-    const stats = new Map(); // member_card_id -> { events: Set, wins: number }
+    const eventsPlayed = new Map(); // member_card_id -> Set(week)
     for (const p of perfs || []) {
       if (!p.member_card_id) continue;
-      if (!stats.has(p.member_card_id)) stats.set(p.member_card_id, { events: new Set(), wins: 0 });
-      const s = stats.get(p.member_card_id);
-      const scored = Array.isArray(p.gross_scores) && p.gross_scores.some((x) => x !== null && x !== undefined);
-      if (scored) s.events.add(p.week_number);
-      if (p.flight_position === 1) s.wins += 1;
+      if (!eventsPlayed.has(p.member_card_id)) eventsPlayed.set(p.member_card_id, new Set());
+      if (Array.isArray(p.gross_scores) && p.gross_scores.some((x) => x !== null && x !== undefined)) {
+        eventsPlayed.get(p.member_card_id).add(p.week_number);
+      }
     }
 
-    const leaderTotal = Math.max(...lastSeasonPoints.map((s) => Number(s.total_points) || 0));
-    const currentRankById = rankByTotalPoints(lastSeasonPoints);
-    const prevRankById = prevSeasonPoints && prevSeasonPoints.length > 0
-      ? rankByTotalPoints(prevSeasonPoints) : new Map();
+    // wins: flight wins (flight_position 1) across both competitions.
+    const { data: winRows } = await supabase
+      .from('igc_league_results')
+      .select('member_card_id')
+      .eq('league_key', leagueKey)
+      .eq('flight_position', 1);
+    const wins = new Map();
+    for (const w of winRows || []) wins.set(w.member_card_id, (wins.get(w.member_card_id) || 0) + 1);
+
+    const leaderTotal = Math.max(...seasonCum.values());
+    const currentEntries = [...seasonCum.entries()].map(([id, t]) => ({ member_card_id: id, total_points: t }));
+    const currentRankById = rankByTotalPoints(currentEntries);
+    const prevRankById = cumBeforeLast && cumBeforeLast.size > 0
+      ? rankByTotalPoints([...cumBeforeLast.entries()].map(([id, t]) => ({ member_card_id: id, total_points: t })))
+      : new Map();
 
     let snapshotUpserted = 0;
-    for (const sp of lastSeasonPoints) {
-      const memberCardId = sp.member_card_id;
+    for (const [memberCardId, total] of seasonCum) {
       const info = memberInfo.get(memberCardId);
       const playerName = info?.name || null;
-      const s = stats.get(memberCardId);
-      const pointsBehind = (Number(sp.total_points) || 0) > 0
-        ? Math.max(0, leaderTotal - Number(sp.total_points))
-        : null;
+      const pointsBehind = total > 0 ? Math.max(0, leaderTotal - total) : null;
       const { error } = await supabase.from('igc_league_season_points').upsert({
         league_key: leagueKey, member_card_id: memberCardId, player_name: playerName,
         position: currentRankById.get(memberCardId) ?? null,
         previous_position: prevRankById.get(memberCardId) ?? null,
-        total_points: sp.total_points,
-        events_played: s?.events.size ?? 0, wins: s?.wins ?? 0,
+        total_points: total,
+        events_played: eventsPlayed.get(memberCardId)?.size ?? 0,
+        wins: wins.get(memberCardId) || 0,
         points_behind: pointsBehind, synced_at: new Date().toISOString(),
       }, { onConflict: 'league_key,member_card_id' });
       if (error) console.error(`      season_points upsert error ${memberCardId}: ${error.message}`);
       else snapshotUpserted++;
     }
-    console.log(`  Snapshot upserted: ${snapshotUpserted}`);
+    console.log(`  Snapshot upserted: ${snapshotUpserted} (leader total ${leaderTotal.toFixed(2)})`);
   } else {
+    // No cumulative points (e.g. women's league has no points system). Clear
+    // any stale snapshot defensively.
+    await supabase.from('igc_league_season_points').delete().eq('league_key', leagueKey);
     console.log('  No season_points captured (no completed individual-points rounds with season_points).');
   }
 
