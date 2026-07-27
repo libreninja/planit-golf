@@ -194,6 +194,24 @@ function isPartialRound(holesCompleted: number, totalHoles: number): boolean {
   return holesCompleted > 0 && holesCompleted < totalHoles;
 }
 
+// Trim every scorecard to the round's actual hole count. GG returns 18-slot
+// arrays with trailing nulls for the unplayed holes of a shorter course
+// (Interbay league rounds are 9 holes), so the course length is the largest
+// leading non-null prefix any player in the round reached — `holesCompleted`
+// on a finished card equals the course length. Trimming renders only the
+// holes that belong to the round (no 18-hole assumption) and makes the live
+// "thru"/"F" detection compare against the real course length. `recomputeLive`
+// re-derives the in-progress flag after trimming (live path); the completed-
+// round DB path passes false so finished cards stay "F".
+function trimToRoundHoleCount(scorecards: WeeklyScorecard[], recomputeLive: boolean): void {
+  const roundHoles = scorecards.reduce((m, c) => Math.max(m, c.holesCompleted), 0);
+  if (roundHoles <= 0) return;
+  for (const c of scorecards) {
+    if (c.holes.length > roundHoles) c.holes = c.holes.slice(0, roundHoles);
+    if (recomputeLive) c.isLive = isPartialRound(c.holesCompleted, roundHoles);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Season points (Men's) — from the persisted snapshot
 // ---------------------------------------------------------------------------
@@ -349,6 +367,11 @@ export async function getLeagueWeeklyResultsFromDB(
       holes,
     });
   }
+
+  // Render only the holes that belong to this round/course (Interbay plays 9;
+  // GG returns 18-slot arrays with trailing nulls). Completed rounds leave
+  // isLive=false so finished cards show "F".
+  trimToRoundHoleCount([...scorecardByKey.values()], false);
 
   // Group result memberships by flight, then competition (net before gross).
   // The `.order('competition')` is alphabetic but we re-key explicitly so the
@@ -590,9 +613,21 @@ export async function fetchLeagueLiveResults(
   const net = ids.netTournamentId ? await fetchTournament(ids.netTournamentId, "net") : null;
   if (!gross && !net) return null;
 
+  // Round-wide scorecard map: deduped by player key across the two tournament
+  // parses (the card is identical in Gross and Net — one fact). Trimming here
+  // once, round-wide, renders only the holes that belong to the course
+  // (Interbay plays 9; GG returns 18-slot arrays with trailing nulls) and
+  // recomputes the in-progress flag against the real course length.
+  const allScorecards = new Map<string, WeeklyScorecard>();
+  for (const source of [net?.scorecards, gross?.scorecards]) {
+    if (!source) continue;
+    for (const [key, card] of source) if (!allScorecards.has(key)) allScorecards.set(key, card);
+  }
+  trimToRoundHoleCount([...allScorecards.values()], true);
+  const anyLive = [...allScorecards.values()].some((c) => c.isLive);
+
   // Merge per flight. Scorecards are deduped across the two parses (identical
-  // data); net entries win the entry list ordering tiebreak neither way — we
-  // always emit [net, gross].
+  // data); we always emit competitions [net, gross].
   const flightNames = new Set<string>([
     ...(net?.entriesByFlight.keys() ?? []),
     ...(gross?.entriesByFlight.keys() ?? []),
@@ -600,7 +635,6 @@ export async function fetchLeagueLiveResults(
 
   const flights: WeeklyFlight[] = [];
   let anyPlayers = false;
-  let anyLive = false;
 
   for (const flightName of flightNames) {
     const netEntries = net?.entriesByFlight.get(flightName) ?? [];
@@ -608,14 +642,12 @@ export async function fetchLeagueLiveResults(
     const sortEntries = (es: WeeklyResultEntry[]) =>
       es.sort((a, b) => a.positionOrder - b.positionOrder || a.name.localeCompare(b.name));
 
-    // Dedupe scorecards across competitions for this flight (one per player).
+    // This flight's shared scorecards (one per player), drawn from the
+    // round-wide trimmed map.
     const scorecardMap = new Map<string, WeeklyScorecard>();
-    for (const source of [net?.scorecards, gross?.scorecards]) {
-      if (!source) continue;
-      for (const [key, card] of source) {
-        if (!scorecardMap.has(key)) scorecardMap.set(key, card);
-        if (card.isLive) anyLive = true;
-      }
+    for (const e of [...netEntries, ...grossEntries]) {
+      const card = allScorecards.get(e.key);
+      if (card && !scorecardMap.has(e.key)) scorecardMap.set(e.key, card);
     }
 
     const competitions: WeeklyCompetition[] = [];
