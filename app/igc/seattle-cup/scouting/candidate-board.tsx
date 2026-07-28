@@ -41,26 +41,40 @@ const STATE_OPTS: { value: string; label: string }[] = [
   { value: 'selected', label: 'Selected' },
 ]
 
-// Handicap range filtering. Plus handicaps exist: a +2.3 golfer is BETTER than a
-// 0.0 golfer, and the underlying numeric representation stores +2.3 as -2.3. So
-// the numeric range is monotonic in golf ability (lower numeric = better), and
-// we display standard golf notation to the user (+2.3 for -2.3). The range bounds
-// are derived from the candidate dataset so plus handicaps and players above 18
-// are all reachable; 18 is shown only as a soft reference mark, never an
-// eligibility cutoff (we do not hide >18 players or mark them out automatically).
+// Product default SELECTED range for the handicap filter: 0.0–18.0 (internal
+// 0 / 18). This is the DEFAULT VIEW FILTER shown on a clean load — it is NOT an
+// eligibility rule. It does not mark plus-handicap or >18 players Out, does not
+// label anyone ineligible, and does not remove anyone from the underlying
+// candidate pool. It is distinct from the slider's AVAILABLE extremes (lower
+// +5.0 / internal -5, upper dataset-derived): users can still drag Min into plus
+// territory, type +2.5, drag Max above 18, and reach the full +5→dataset-max
+// range. null bounds mean "use the product default" (0 for Min, 18 for Max) and
+// are omitted from the URL; explicit non-default bounds serialize and stay
+// shareable. 18.0 remains a soft reference mark, never a cutoff.
+const HCP_DEFAULT_MIN = 0
+const HCP_DEFAULT_MAX = 18
+
+// Plus handicaps exist: a +2.3 golfer is BETTER than a 0.0 golfer, and the
+// underlying numeric representation stores +2.3 as -2.3. So the numeric range is
+// monotonic in golf ability (lower numeric = better), and we display standard
+// golf notation to the user (+2.3 for -2.3). The slider's AVAILABLE bounds are
+// derived from the candidate dataset so plus handicaps and players above 18 are
+// all reachable; 18 is shown only as a soft reference mark, never an eligibility
+// cutoff (we do not hide >18 players or mark them out automatically).
 function formatHcp(v: number | null | undefined): string {
   if (v == null || !Number.isFinite(v)) return '—'
   if (v < 0) return `+${(-v).toFixed(1)}`
   return v.toFixed(1)
 }
 
-// Inclusive range match. null bounds are open-ended. A player with no handicap
-// value never matches an active range (they can't be placed on the numeric scale).
-function hcpInRange(v: number | null, min: number | null, max: number | null): boolean {
-  if (min == null && max == null) return true
+// Inclusive range match against RESOLVED bounds (callers pass the product
+// default when a bound is unset, so the default 0–18 view is a real filter, not
+// an open range). A player with no handicap value never matches an active range
+// (they can't be placed on the numeric scale).
+function hcpInRange(v: number | null, min: number, max: number): boolean {
   if (v == null || !Number.isFinite(v)) return false
-  if (min != null && v < min) return false
-  if (max != null && v > max) return false
+  if (v < min) return false
+  if (v > max) return false
   return true
 }
 
@@ -160,7 +174,7 @@ function HcpText({
   const [text, setText] = useState(formatHcp(value))
   const [focused, setFocused] = useState(false)
   // Re-sync the displayed (canonical) value when the prop changes and the user
-  // isn't mid-edit (e.g. the slider moved this bound, or Clear range reset it).
+  // isn't mid-edit (e.g. the slider moved this bound, or Reset range reset it).
   // Adjusting state during render (vs. in an effect) avoids a cascading re-render.
   const [prevValue, setPrevValue] = useState(value)
   if (!focused && value !== prevValue) {
@@ -560,14 +574,17 @@ export function CandidateBoard({
   function isVisible(r: ai.ScoutingBoardRow): boolean {
     if (leaving[r.playerId]) return false // leaving rows render separately
     if (fState !== 'all' && (states[r.playerId] ?? 'considering') !== fState) return false
-    if (!hcpInRange(r.currentHandicap.value, fHcpMin, fHcpMax)) return false
+    if (!hcpInRange(r.currentHandicap.value, fHcpMin ?? HCP_DEFAULT_MIN, fHcpMax ?? HCP_DEFAULT_MAX)) return false
     if (availSid && (availKind === 'can' || availKind === 'out') && !rowMatchesAvail(r.playerId)) return false
     return true
   }
 
   // Build the shareable URL from the CURRENT optimistic filter state, with an
-  // optional patch. `state==='considering'`, null hcp bounds, and empty avail are
-  // the defaults and are omitted from the URL.
+  // optional patch. `state==='considering'`, null hcp bounds (the product default
+  // 0–18), and empty avail are the defaults and are omitted from the URL — a
+  // clean scouting URL with no hcp params represents the 0–18 default. Explicit
+  // non-default hcp bounds (including the full +5→dataset-max range) serialize
+  // and stay canonical/shareable.
   function hrefWith(patch: FilterPatch = {}): string {
     const st = patch.state !== undefined ? patch.state : fState
     const hmin = patch.hcpMin !== undefined ? patch.hcpMin : fHcpMin
@@ -605,33 +622,38 @@ export function CandidateBoard({
   }
 
   // Handicap range bound setters, shared by the dual-thumb slider AND the Min/Max
-  // text inputs (one source of truth). Enforce Min <= Max, and treat a bound parked
-  // at its extreme as "no filter" (null) so the full range serializes to no URL param.
+  // text inputs (one source of truth). Enforce Min <= Max. A bound parked at the
+  // product default (0 for Min, 18 for Max) is stored as null so the default 0–18
+  // view serializes to no URL params; explicit non-default values (including the
+  // full +5→dataset-max range) serialize and stay shareable. Clearing a bound
+  // (empty input) also returns it to the product default.
   const setHcpMin = (v: number | null) => {
     if (v == null) {
       applyFilter({ hcpMin: null })
       return
     }
-    const max = fHcpMax ?? hcpBounds.hi
+    const max = fHcpMax ?? HCP_DEFAULT_MAX
     const clamped = Math.min(v, max)
-    applyFilter({ hcpMin: clamped === hcpBounds.lo ? null : clamped })
+    applyFilter({ hcpMin: clamped === HCP_DEFAULT_MIN ? null : clamped })
   }
   const setHcpMax = (v: number | null) => {
     if (v == null) {
       applyFilter({ hcpMax: null })
       return
     }
-    const min = fHcpMin ?? hcpBounds.lo
+    const min = fHcpMin ?? HCP_DEFAULT_MIN
     const clamped = Math.max(v, min)
-    applyFilter({ hcpMax: clamped === hcpBounds.hi ? null : clamped })
+    applyFilter({ hcpMax: clamped === HCP_DEFAULT_MAX ? null : clamped })
   }
 
-  // Handicap range bounds. The LOWER bound is a stable +5.0 (numeric -5) so the
-  // scouting range always reaches well into plus-handicap territory regardless of
-  // the current candidate data; the UPPER bound is derived from the dataset (so
-  // players above 18 stay reachable). Step 0.1 matches handicap precision. 18 is a
-  // soft reference mark on the scale, NOT an upper cutoff — players above 18 stay
-  // in the pool; no eligibility is changed.
+  // Handicap range AVAILABLE bounds (the slider's extremes — NOT the default
+  // selected range; the product default is 0–18, see HCP_DEFAULT_*). The LOWER
+  // bound is a stable +5.0 (numeric -5) so the range always reaches well into
+  // plus-handicap territory regardless of the current candidate data; the UPPER
+  // bound is derived from the dataset (so players above 18 stay reachable). Step
+  // 0.1 matches handicap precision. 18 is a soft reference mark on the scale,
+  // NOT an upper cutoff — players above 18 stay in the pool; no eligibility is
+  // changed.
   const hcpBounds = useMemo(() => {
     const vs = rows
       .map((r) => r.currentHandicap.value)
@@ -649,6 +671,10 @@ export function CandidateBoard({
     (fState !== 'considering' ? 1 : 0) +
     (fHcpMin != null || fHcpMax != null ? 1 : 0) +
     (fAvail ? 1 : 0)
+  // The handicap range is at the product default (0–18) when both bounds are
+  // unset (null = default). Drives the always-present "Reset range" control's
+  // disabled state so it can keep stable space without layout shift.
+  const atDefault = fHcpMin == null && fHcpMax == null
 
   // Shared per-row controls.
   const stateControl = (r: ai.ScoutingBoardRow) => {
@@ -856,9 +882,10 @@ export function CandidateBoard({
 
             {/* Handicap range: ONE compact control = a dual-thumb slider plus linked
                 Min/Max text inputs (same state, two-way sync). Plus handicaps are
-                negative numerics shown in golf notation (+2.3). Lower bound is a
-                stable +5.0; upper bound is dataset-derived so >18 players stay
-                reachable. 18 is a soft reference, NOT a cutoff. */}
+                negative numerics shown in golf notation (+2.3). The slider's
+                AVAILABLE range is +5.0 → dataset-max; the DEFAULT SELECTED range
+                is 0.0–18.0 (a view filter, not an eligibility rule). 18 is a soft
+                reference, NOT a cutoff. */}
             <div>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
@@ -867,14 +894,14 @@ export function CandidateBoard({
                 <div className="flex items-center gap-3">
                   <HcpText
                     label="Min"
-                    value={fHcpMin ?? hcpBounds.lo}
+                    value={fHcpMin ?? HCP_DEFAULT_MIN}
                     lo={hcpBounds.lo}
                     hi={hcpBounds.hi}
                     onCommit={setHcpMin}
                   />
                   <HcpText
                     label="Max"
-                    value={fHcpMax ?? hcpBounds.hi}
+                    value={fHcpMax ?? HCP_DEFAULT_MAX}
                     lo={hcpBounds.lo}
                     hi={hcpBounds.hi}
                     onCommit={setHcpMax}
@@ -889,8 +916,8 @@ export function CandidateBoard({
                 <div
                   className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-foreground/55"
                   style={{
-                    left: `${hcpPct(fHcpMin ?? hcpBounds.lo, hcpBounds.lo, hcpBounds.hi)}%`,
-                    right: `${100 - hcpPct(fHcpMax ?? hcpBounds.hi, hcpBounds.lo, hcpBounds.hi)}%`,
+                    left: `${hcpPct(fHcpMin ?? HCP_DEFAULT_MIN, hcpBounds.lo, hcpBounds.hi)}%`,
+                    right: `${100 - hcpPct(fHcpMax ?? HCP_DEFAULT_MAX, hcpBounds.lo, hcpBounds.hi)}%`,
                   }}
                 />
                 <input
@@ -898,7 +925,7 @@ export function CandidateBoard({
                   min={hcpBounds.lo}
                   max={hcpBounds.hi}
                   step={0.1}
-                  value={fHcpMin ?? hcpBounds.lo}
+                  value={fHcpMin ?? HCP_DEFAULT_MIN}
                   onChange={(e) => setHcpMin(Number(e.target.value))}
                   aria-label="Minimum handicap"
                   className={cn(RANGE_THUMB_CLS, 'z-10')}
@@ -908,24 +935,33 @@ export function CandidateBoard({
                   min={hcpBounds.lo}
                   max={hcpBounds.hi}
                   step={0.1}
-                  value={fHcpMax ?? hcpBounds.hi}
+                  value={fHcpMax ?? HCP_DEFAULT_MAX}
                   onChange={(e) => setHcpMax(Number(e.target.value))}
                   aria-label="Maximum handicap"
                   className={cn(RANGE_THUMB_CLS, 'z-20')}
                 />
               </div>
               <p className="mt-1.5 text-[10px] text-muted-foreground/70">
-                Plus handicaps use golf notation (e.g. +2.3). 18.0 is a Seattle Cup reference mark, not a cutoff — players above 18 stay in the pool.
+                Default view is 0.0–18.0. Plus handicaps use golf notation (e.g. +2.3). 18.0 is a Seattle Cup reference mark, not a cutoff — drag Max above 18 to see higher-handicap players.
               </p>
-              {(fHcpMin != null || fHcpMax != null) && (
-                <button
-                  type="button"
-                  onClick={() => applyFilter({ hcpMin: null, hcpMax: null })}
-                  className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
-                >
-                  Clear range
-                </button>
-              )}
+              {/* Reset range: always rendered so the control occupies stable
+                  space at all times and the panel geometry never shifts. Disabled
+                  (visually restrained) at the default 0–18 range; enabled
+                  (clearly actionable) when the range differs. Clicking returns
+                  Min/Max to the product default via the existing reset semantics. */}
+              <button
+                type="button"
+                disabled={atDefault}
+                onClick={() => applyFilter({ hcpMin: null, hcpMax: null })}
+                className={cn(
+                  'mt-1 text-xs',
+                  atDefault
+                    ? 'cursor-not-allowed text-muted-foreground/40'
+                    : 'text-muted-foreground underline hover:text-foreground'
+                )}
+              >
+                Reset range
+              </button>
             </div>
 
             {/* Availability: per session can play / out (single active filter). */}

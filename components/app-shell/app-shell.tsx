@@ -37,7 +37,10 @@ const HIDDEN_PREFIXES = [
   '/leaderboard',
 ]
 
-function isShellVisible(pathname: string): boolean {
+// Exported so the root loading boundary (app/loading.tsx) can hide itself on
+// the same auth/hidden routes the shell hides itself on, without duplicating
+// the prefix list.
+export function isShellVisible(pathname: string): boolean {
   return !HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') ? false : pathname.startsWith(p)))
 }
 
@@ -110,6 +113,94 @@ function computeActiveHref(pathname: string, items: NavItem[]): string | null {
   return best
 }
 
+// Conventional sidebar menuing. Destinations are rectangular rows (modest
+// corner radius), full sidebar width, with restrained vertical rhythm. The
+// active row is marked by a subtle background PLUS a thin left-edge accent bar
+// — it reads as a selected menu row, not a floating pill/capsule. Hover is a
+// quiet row-level background, subordinate to active. A pending navigation is
+// acknowledged immediately on click with a small leading pulsing dot, distinct
+// from both hover and the completed active state; it settles to active once the
+// route lands (pathname updates). Keyboard focus uses an inset ring (not
+// background alone). Section headings are non-clickable labels grouped above
+// their children with a hairline separator.
+function NavList({ user, pathname, onNavigate }: { user: AppShellUser; pathname: string; onNavigate?: () => void }) {
+  const items = buildNav(user)
+  const activeHref = computeActiveHref(pathname, items)
+  // The href of the destination most recently clicked, while its navigation is
+  // still in flight. Set immediately on click (instant acknowledgement) and
+  // cleared when the route lands (pathname changes). Adjusted during render
+  // (vs. in an effect) to avoid a cascading re-render — same pattern HcpText
+  // uses for its bound re-sync — and it also clears correctly on browser
+  // back/forward, where a pathname change happens without a click.
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+  const [prevPath, setPrevPath] = useState(pathname)
+  if (pathname !== prevPath) {
+    setPrevPath(pathname)
+    setPendingHref(null)
+  }
+
+  return (
+    <nav className="flex flex-col gap-0.5" aria-label="Primary">
+      {items.map((item, i) => {
+        if (item.type === 'label') {
+          // Section heading: a non-clickable label, separated from the group
+          // above by a hairline. Headings are flush-left; their destination
+          // children are indented beneath them.
+          return (
+            <p
+              key={`label-${i}`}
+              className="border-t border-border px-3 pt-5 pb-1 pl-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80"
+            >
+              {item.label}
+            </p>
+          )
+        }
+        const active = item.href === activeHref
+        const pending = !active && pendingHref === item.href
+        const pad = item.level === 2 ? 'pl-9' : 'pl-3'
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            // Acknowledge the click immediately: mark this row pending before
+            // letting Next.js start the navigation. Skip for modifier-clicks
+            // (open in new tab, etc.) and for the already-active destination.
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+              if (item.href !== activeHref) setPendingHref(item.href)
+              onNavigate?.()
+            }}
+            aria-current={active ? 'page' : undefined}
+            aria-busy={pending || undefined}
+            className={
+              'relative block rounded pr-3 py-2 text-sm transition-colors ' +
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ' +
+              pad +
+              (active
+                ? ' bg-accent font-medium text-accent-foreground'
+                : pending
+                  ? ' bg-foreground/[0.06] text-foreground/80'
+                  : ' text-muted-foreground hover:bg-muted/70 hover:text-foreground')
+            }
+          >
+            {/* Left-edge accent: a thin bar for the active row, a small pulsing
+                dot for a pending row. Both sit in the row's left gutter so they
+                never displace the label. */}
+            {active ? (
+              <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-foreground" />
+            ) : pending ? (
+              <span aria-hidden className="absolute inset-y-0 left-0 flex items-center pl-1.5">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/70" />
+              </span>
+            ) : null}
+            {item.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 type Crumb = { label: string; href?: string }
 
 function buildBreadcrumb(pathname: string): Crumb[] {
@@ -136,49 +227,6 @@ function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/admin/scouting')
     return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Manage access' }]
   return []
-}
-
-function NavList({ user, pathname, onNavigate }: { user: AppShellUser; pathname: string; onNavigate?: () => void }) {
-  const items = buildNav(user)
-  const activeHref = computeActiveHref(pathname, items)
-  return (
-    <nav className="flex flex-col gap-0.5">
-      {items.map((item, i) => {
-        if (item.type === 'label') {
-          return (
-            <p
-              key={`label-${i}`}
-              className={
-                'px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground ' +
-                (item.level === 1 ? 'pl-6' : '')
-              }
-            >
-              {item.label}
-            </p>
-          )
-        }
-        const active = item.href === activeHref
-        const indent = item.level === 2 ? 'pl-9' : item.level === 1 ? 'pl-6' : ''
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={
-              'block rounded-md px-3 py-2 text-sm transition-colors ' +
-              indent +
-              (active
-                ? ' bg-accent font-medium text-foreground'
-                : ' text-muted-foreground hover:bg-muted hover:text-foreground')
-            }
-            aria-current={active ? 'page' : undefined}
-          >
-            {item.label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
 }
 
 function Breadcrumb({ pathname }: { pathname: string }) {
