@@ -119,7 +119,7 @@ export async function getNextRunEventDateFromStatus(
     return fallbackDate
   }
 
-  if (latestRun.status !== 'completed') {
+  if (latestRun.status !== 'completed' && latestRun.status !== 'failed') {
     return latestRun.event_date
   }
 

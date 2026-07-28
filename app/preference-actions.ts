@@ -55,6 +55,11 @@ export async function saveEventRegistrationOverride(eventId: string, teeTimePref
 
   if (!user) throw new Error('Not authenticated')
 
+  // Validate: can't save empty preferences unless skipping registration
+  if (!skipRegistration && teeTimePreferences.length === 0) {
+    throw new Error('Please select at least one tee time or check "Can\'t play this week"')
+  }
+
   const { error } = await supabase.from('event_preferences').upsert(
     {
       user_id: user.id,

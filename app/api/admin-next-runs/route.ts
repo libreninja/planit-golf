@@ -144,7 +144,7 @@ export async function GET() {
         const profileRow = toArray(member.profiles)[0]
         const eventPreference = profileRow ? eventPrefMap.get(`${eventId}:${profileRow.id}`) : null
         const rawPreferences: string[] = profileRow
-          ? eventPreference?.tee_time_preferences || defaultPrefMap.get(profileRow.id) || []
+          ? (eventPreference?.tee_time_preferences?.length ? eventPreference.tee_time_preferences : defaultPrefMap.get(profileRow.id)) || []
           : []
         const uniquePreferences: string[] = []
 
