@@ -405,8 +405,11 @@ function AvailCell({
 // flow can be exercised in isolation (dev/test harness) without the server
 // action or auth. In production the real server actions are used by default.
 export type BoardActions = {
-  setCandidateState: (playerId: string, state: string) => Promise<void>
-  setAvailability: (playerId: string, sessionId: string, status: string) => Promise<void>
+  // `playerName` / `fromState` / `sessionLabel` are display hints the board has
+  // in scope; the server denormalizes them into activity metadata (not
+  // authoritative). Optional so dev/test mocks can ignore them.
+  setCandidateState: (playerId: string, state: string, playerName?: string | null, fromState?: string | null) => Promise<void>
+  setAvailability: (playerId: string, sessionId: string, status: string, playerName?: string | null, sessionLabel?: string | null) => Promise<void>
 }
 
 export function CandidateBoard({
@@ -467,6 +470,51 @@ export function CandidateBoard({
   useEffect(() => setFHcpMax(hcpMax), [hcpMax])
   useEffect(() => setFAvail(availFilter), [availFilter])
 
+  // Reconcile optimistic state with fresh server rows. The board's local
+  // state/avails are the display source of truth; without this, a server
+  // refresh triggered by ANOTHER captain's realtime activity would leave their
+  // remotely-changed players showing this viewer's stale local values. On a
+  // `rows` change we adopt the server value for every player EXCEPT ones the
+  // local viewer is mid-edit on (pending) or animating out (leaving) — those
+  // are preserved so the local user's own optimistic edit isn't fought. Refs
+  // hold the latest pending/leaving so this effect's deps stay on `rows` only
+  // (it doesn't need to re-run on every pending/leaving toggle).
+  const pendingRef = useRef(pending)
+  pendingRef.current = pending
+  const leavingRef = useRef(leaving)
+  leavingRef.current = leaving
+  const firstRows = useRef(true)
+  useEffect(() => {
+    // Skip the initial mount: states/avails were just initialized from these
+    // same rows, so reconciling is a no-op that would only cause an extra render.
+    if (firstRows.current) {
+      firstRows.current = false
+      return
+    }
+    setStates((prev) => {
+      const next = { ...prev }
+      for (const r of rows) {
+        if (leavingRef.current[r.playerId]) continue
+        if (pendingRef.current[cellKey(r.playerId)]) continue
+        next[r.playerId] = r.candidateState ?? 'considering'
+      }
+      return next
+    })
+    setAvails((prev) => {
+      const next = { ...prev }
+      for (const r of rows) {
+        if (leavingRef.current[r.playerId]) continue
+        const merged = { ...(next[r.playerId] ?? {}) }
+        for (const s of r.availability?.perSession ?? []) {
+          if (pendingRef.current[cellKey(r.playerId, s.sessionId)]) continue
+          merged[s.sessionId] = s.status ?? ''
+        }
+        next[r.playerId] = merged
+      }
+      return next
+    })
+  }, [rows])
+
   // Collapsible Filters panel. Default open (desktop); the collapsed header still
   // shows the active-filter count so active filtering is never hidden.
   const [filtersOpen, setFiltersOpen] = useState(true)
@@ -517,11 +565,12 @@ export function CandidateBoard({
     const prev = states[playerId] ?? 'considering'
     if (prev === newState || leaving[playerId]) return
     const key = cellKey(playerId)
+    const row = rows.find((r) => r.playerId === playerId)
     setStates((s) => ({ ...s, [playerId]: newState }))
     setPendingKey(key, true)
     setError(key, null)
     try {
-      await doSetCandidateState(playerId, newState)
+      await doSetCandidateState(playerId, newState, row?.displayName ?? null, prev)
     } catch {
       setStates((s) => ({ ...s, [playerId]: prev }))
       setError(key, "Couldn't save — reverted")
@@ -537,12 +586,14 @@ export function CandidateBoard({
     const prev = avails[playerId]?.[sessionId] ?? ''
     if (prev === newStatus || leaving[playerId]) return
     const key = cellKey(playerId, sessionId)
+    const row = rows.find((r) => r.playerId === playerId)
+    const session = sessions.find((s) => s.id === sessionId)
     setAvails((a) => ({ ...a, [playerId]: { ...(a[playerId] ?? {}), [sessionId]: newStatus } }))
     setPendingKey(key, true)
     setError(key, null)
     setOpenCell(null)
     try {
-      await doSetAvailability(playerId, sessionId, newStatus)
+      await doSetAvailability(playerId, sessionId, newStatus, row?.displayName ?? null, session?.format ?? null)
     } catch {
       setAvails((a) => ({ ...a, [playerId]: { ...(a[playerId] ?? {}), [sessionId]: prev } }))
       setError(key, "Couldn't save — reverted")

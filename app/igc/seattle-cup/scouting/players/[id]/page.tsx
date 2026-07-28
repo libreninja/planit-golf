@@ -85,6 +85,8 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
                 <form key={st} action={setCandidateStateAction} className="inline">
                   <input type="hidden" name="playerId" value={card.playerId} />
                   <input type="hidden" name="state" value={st} />
+                  <input type="hidden" name="playerName" value={card.displayName ?? ''} />
+                  <input type="hidden" name="fromState" value={card.candidateState} />
                   <Button type="submit" variant={active ? 'default' : 'outline'} size="sm">
                     {ROSTER_LABELS[st]}
                   </Button>
@@ -169,6 +171,7 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
             <h2 className="mb-2 text-sm font-semibold">Availability (2026 sessions)</h2>
             <AvailabilityEditor
               playerId={card.playerId}
+              playerName={card.displayName ?? ''}
               sessions={card.availability.sessions.map((s) => ({
                 sessionId: s.sessionId,
                 format: s.format,
@@ -191,6 +194,7 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
 
             <form action={createNoteAction} className="mb-4 space-y-2">
               <input type="hidden" name="playerId" value={card.playerId} />
+              <input type="hidden" name="playerName" value={card.displayName ?? ''} />
               <div className="flex flex-wrap gap-2">
                 <select name="category" className="rounded-md border border-border px-2 py-1 text-sm">
                   <option value="">Category (optional)</option>

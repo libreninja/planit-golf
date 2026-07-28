@@ -31,10 +31,12 @@ interface SessionField {
 
 export function AvailabilityEditor({
   playerId,
+  playerName,
   sessions,
   persisted,
 }: {
   playerId: string
+  playerName: string
   sessions: SessionField[]
   persisted: Record<string, string | null>
 }) {
@@ -58,8 +60,13 @@ export function AvailabilityEditor({
       .filter((s) => values[s.sessionId] !== saved[s.sessionId])
       .map((s) => ({ sessionId: s.sessionId, status: values[s.sessionId] }))
     if (changes.length === 0) return
+    // Display hints for the activity line: the player name + a sessionId -> label
+    // map (the session format, e.g. "Fourball"). Denormalized into activity
+    // metadata by the action; not authoritative domain data.
+    const sessionLabels: Record<string, string> = {}
+    for (const s of sessions) sessionLabels[s.sessionId] = s.format ?? 'Session'
     startTransition(async () => {
-      await setAvailabilityBatchAction(playerId, changes)
+      await setAvailabilityBatchAction(playerId, changes, playerName, sessionLabels)
       setSaved({ ...values })
     })
   }

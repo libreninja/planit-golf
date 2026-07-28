@@ -1,10 +1,12 @@
 'use client'
 
 // The shared authenticated application shell: a persistent left rail (global +
-// context navigation), a top bar (location/breadcrumb + account actions),
-// and a mobile drawer. There is intentionally no context switcher in the top
-// bar (the rail owns context), no notification bell, and no global help affordance
-// — contextual help stays co-located with the surface that needs it.
+// context navigation), a top bar (location/breadcrumb + account actions +
+// the activity inbox), and a mobile drawer. There is intentionally no context
+// switcher in the top bar (the rail owns context) and no global help
+// affordance — contextual help stays co-located with the surface that needs
+// it. The activity inbox is Seattle Cup scouting activity only in V1, shown for
+// users with the scouting entitlement (ActivityInbox).
 //
 // The shell is AUTHENTICATED-ONLY. It must not render until authentication has
 // resolved to a real signed-in viewer — an anonymous visitor on / sees a
@@ -18,6 +20,7 @@ import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/session-actions'
+import { ActivityInbox } from '@/components/app-shell/activity-inbox'
 import type { AppShellUser } from '@/lib/app-shell/user'
 
 // Routes that do NOT get the shell. Matched by exact path or path-prefix.
@@ -431,6 +434,9 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
               </span>
             </div>
             <div className="flex items-center gap-2">
+              {user.signedIn && user.scouting && user.userId ? (
+                <ActivityInbox userId={user.userId} />
+              ) : null}
               {user.signedIn ? (
                 <AccountMenu user={user} />
               ) : (
