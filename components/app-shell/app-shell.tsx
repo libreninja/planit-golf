@@ -202,6 +202,17 @@ function Breadcrumb({ pathname }: { pathname: string }) {
   )
 }
 
+// Compact current-context label for the mobile second header row. Drops the
+// leading club crumb (already implied by the rail) and joins the rest with " · ",
+// e.g. [Interbay, Seattle Cup, Scouting] -> "Seattle Cup · Scouting". This is a
+// presentation-only reduction of the desktop breadcrumb; it is not navigation
+// (no links) so existing nav behavior is unchanged.
+function compactContext(crumbs: Crumb[]): string {
+  if (crumbs.length === 0) return ''
+  if (crumbs.length === 1) return crumbs[0].label
+  return crumbs.slice(1).map((c) => c.label).join(' · ')
+}
+
 function AccountMenu({ user }: { user: AppShellUser }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
@@ -347,43 +358,49 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
 
       {/* Main column */}
       <div className="md:pl-60">
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              aria-label="Open menu"
-              className="rounded-md p-1 text-muted-foreground hover:bg-muted md:hidden"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            {/* On mobile the rail (and its brand) is hidden, so the top bar
-                carries the brand here; on desktop the breadcrumb takes over. */}
-            <span className="md:hidden">
-              <Brand />
-            </span>
-            <span className="hidden md:block">
-              <Breadcrumb pathname={pathname} />
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {crumbs.length > 0 ? (
+        {/* Sticky header block: a clean primary row (hamburger / brand / avatar)
+            that stays stable at phone widths, plus a mobile-only compact context
+            row beneath it. The full desktop breadcrumb is preserved at md+ where
+            it fits naturally; on mobile only the useful current context is shown. */}
+        <div className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
+          <header className="flex h-14 items-center justify-between gap-3 px-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                aria-label="Open menu"
+                className="rounded-md p-1 text-muted-foreground hover:bg-muted md:hidden"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              {/* On mobile the rail (and its brand) is hidden, so the top bar
+                  carries the brand here; on desktop the breadcrumb takes over. */}
               <span className="md:hidden">
+                <Brand />
+              </span>
+              <span className="hidden md:block">
                 <Breadcrumb pathname={pathname} />
               </span>
-            ) : null}
-            {user.signedIn ? (
-              <AccountMenu user={user} />
-            ) : (
-              <Button asChild size="sm" variant="outline">
-                <Link href="/login">Sign in</Link>
-              </Button>
-            )}
-          </div>
-        </header>
+            </div>
+            <div className="flex items-center gap-2">
+              {user.signedIn ? (
+                <AccountMenu user={user} />
+              ) : (
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+              )}
+            </div>
+          </header>
+          {/* Mobile-only compact context row. No links — presentation only. */}
+          {crumbs.length > 0 ? (
+            <div className="flex items-center px-4 pb-2 md:hidden">
+              <span className="text-xs font-medium text-foreground/80">{compactContext(crumbs)}</span>
+            </div>
+          ) : null}
+        </div>
 
-        <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-5xl px-4 pb-10 pt-8">{children}</main>
       </div>
     </div>
   )

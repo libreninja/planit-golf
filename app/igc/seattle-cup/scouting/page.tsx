@@ -5,56 +5,65 @@ import * as ai from '@/lib/planit-ai/client'
 import { addCandidateAction } from './actions'
 import { Button } from '@/components/ui/button'
 import { ScoutingUnavailable } from '@/components/scouting/scouting-unavailable'
+import { CandidateBoard } from './candidate-board'
 
 export const dynamic = 'force-dynamic'
 
-function Hcap({ h }: { h: ai.ScoutingBoardRow['currentHandicap'] }) {
-  const sourceLabel =
-    h.source === 'ghin' ? 'GHIN' : h.source === 'golf_genius' ? 'Golf Genius' : h.source === 'manual' ? 'manual' : h.source ?? '—'
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className="font-medium">{h.value != null ? h.value.toFixed(1) : '—'}</span>
-      <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{sourceLabel}</span>
-      {h.isStale && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">stale</span>}
-    </span>
-  )
-}
+type StateFilter = 'considering' | 'out' | 'selected' | 'all'
 
-export default async function ScoutingBoardPage() {
-  // Access gate FIRST: unauthorized users redirect to /login / / before any
-  // planit-ai call is attempted (no backend access for the unauthorized).
-  const user = await requireScoutingAccess()
-  // Admin capability for the inline "Manage access" action. Ordinary scouts do
-  // not see it. The /admin/scouting destination preserves its own requireAdmin
-  // boundary, so this is a placement change only — no authorization weakening.
+export default async function ScoutingBoardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string; hcpmin?: string; hcpmax?: string; avail?: string }>
+}) {
+  // Access gate FIRST: unauthorized users redirect before any planit-ai call.
+  await requireScoutingAccess()
   const shellUser = await getAppShellUser()
   const canManageAccess = shellUser.isAdmin
 
+  const sp = await searchParams
+  const stateFilter: StateFilter =
+    sp.state === 'out' || sp.state === 'selected' || sp.state === 'all' ? sp.state : 'considering'
+  // Handicap range (numeric, supports plus handicaps stored as negatives).
+  // Empty/invalid → null (open bound). Bounds derive from candidate data client-side.
+  const num = (v: string | undefined): number | null => {
+    if (v == null || v === '') return null
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  const hcpMin = num(sp.hcpmin)
+  const hcpMax = num(sp.hcpmax)
+  // avail = "<sessionId>:<can|out>"
+  const availFilter = sp.avail ?? ''
+
   let board: ai.ScoutingBoardRow[] = []
-  let distribution: { label: string; count: number }[] = []
   let addable: ai.AddablePlayer[] = []
+  let sessions: ai.ScoutingSession[] = []
   try {
-    ;[board, distribution, addable] = await Promise.all([
+    ;[board, addable, sessions] = await Promise.all([
       ai.getBoard(),
-      ai.getDistribution(),
       ai.getAddablePlayers(),
+      ai.getSessions(),
     ])
   } catch (err) {
     if (ai.isBackendUnavailable(err)) {
-      // Expected when PLANIT_AI_API_URL is unset/unreachable. Warn, don't
-      // alarm — this is the known not-yet-provisioned state.
       console.warn('[scouting] backend unavailable:', (err as Error).message)
       return <ScoutingUnavailable />
     }
-    // Real defect: log loudly and re-throw so it stays visible (error page +
-    // server logs) rather than being masked as "temporarily unavailable".
     console.error('[scouting] board load failed:', err)
     throw err
   }
 
+  // The board is rendered by a client component that owns optimistic state and
+  // per-session availability editing with immediate background persistence.
+  // All rows are passed unfiltered; the client applies the URL-driven filters
+  // (state tabs, handicap buckets, availability) so edits and the
+  // acknowledged-then-leave transition stay coherent with the active view.
   return (
     <div>
       <div className="space-y-6 py-2">
+        {/* Header: headline + candidate count. Manage access stays low-prominence
+            and admin-only. No provenance/observation explanation on the board. */}
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl leading-none">Seattle Cup · Scouting</h1>
@@ -66,60 +75,15 @@ export default async function ScoutingBoardPage() {
             </Button>
           ) : null}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Signed in as {user.email}. Candidate board data is Golf Genius standings + GHIN/GG handicaps. Scouting notes are
-          attributable human observations — record who supplied each.
-        </p>
 
-        {/* Distribution */}
-        {distribution.length > 0 && (
-          <section className="rounded-md border border-border bg-white/80 p-4">
-            <h2 className="mb-2 text-sm font-semibold">Handicap distribution</h2>
-            <div className="flex flex-wrap gap-4 text-sm">
-              {distribution.map((b) => (
-                <div key={b.label} className="flex items-center gap-1">
-                  <span className="font-medium">{b.count}</span>
-                  <span className="text-muted-foreground">{b.label}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Board */}
-        <section className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left">
-              <tr>
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Player</th>
-                <th className="px-3 py-2 text-right">Points</th>
-                <th className="px-3 py-2 text-right">Events</th>
-                <th className="px-3 py-2 text-right">Wins</th>
-                <th className="px-3 py-2">Handicap</th>
-                <th className="px-3 py-2">Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {board.map((r) => (
-                <tr key={r.playerId} className="border-t border-border hover:bg-muted/20">
-                  <td className="px-3 py-2 text-muted-foreground">{r.currentRank ?? '—'}</td>
-                  <td className="px-3 py-2">
-                    <Link href={`/igc/seattle-cup/scouting/players/${r.playerId}`} className="font-medium hover:underline">
-                      {r.displayName ?? 'Unknown'}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">GHIN {r.ghinNumber ?? '—'}</div>
-                  </td>
-                  <td className="px-3 py-2 text-right">{r.totalPoints != null ? r.totalPoints.toFixed(1) : '—'}</td>
-                  <td className="px-3 py-2 text-right">{r.numberOfEvents ?? '—'}</td>
-                  <td className="px-3 py-2 text-right">{r.numberOfWins ?? '—'}</td>
-                  <td className="px-3 py-2"><Hcap h={r.currentHandicap} /></td>
-                  <td className="px-3 py-2">{r.tags?.length ? r.tags.join(', ') : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <CandidateBoard
+          rows={board}
+          sessions={sessions}
+          stateFilter={stateFilter}
+          hcpMin={hcpMin}
+          hcpMax={hcpMax}
+          availFilter={availFilter}
+        />
 
         {/* Add candidate */}
         {addable.length > 0 && (

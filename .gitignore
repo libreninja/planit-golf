@@ -51,3 +51,4 @@ supabase/.temp/
 
 # local roster sync overrides
 scripts/member-overrides.json
+.vercel

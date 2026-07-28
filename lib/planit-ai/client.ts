@@ -10,6 +10,16 @@
 const BASE = process.env.PLANIT_AI_API_URL || 'http://localhost:3001'
 const SECRET = process.env.PLANIT_AI_API_SECRET || ''
 
+export interface ScoutingBoardAvailability {
+  perSession: { sessionId: string; status: string | null }[]
+  fullyAvailableCount: number
+  partiallyAvailableCount: number
+  unavailableCount: number
+  pendingCount: number
+  noResponseCount: number
+  responded: boolean
+}
+
 export interface ScoutingBoardRow {
   playerId: string
   displayName: string | null
@@ -23,7 +33,8 @@ export interface ScoutingBoardRow {
   topTenFinishes: number | null
   currentHandicap: { value: number | null; source: string | null; effectiveDate: string | null; isStale: boolean }
   stage?: string | null
-  availabilitySummary?: { fully: number; partial: number; unavailable: number; pending: number; none: number } | null
+  candidateState: string
+  availability: ScoutingBoardAvailability
   tags?: string[]
 }
 
@@ -67,6 +78,7 @@ export interface ScoutingCard {
   }
   notes: ScoutingNote[]
   tags: string[]
+  candidateState: string
   provenance: { asOf: string; sources: string[] }
 }
 
@@ -168,6 +180,12 @@ export function removeTag(playerId: string, tag: string, actor: string) {
 }
 export function setAvailability(playerId: string, sessionId: string, status: string, actor: string) {
   return req(`/players/${encodeURIComponent(playerId)}/availability`, { method: 'PUT', body: JSON.stringify({ sessionId, status }) }, actor)
+}
+export function clearAvailability(playerId: string, sessionId: string, actor: string) {
+  return req(`/players/${encodeURIComponent(playerId)}/availability`, { method: 'DELETE', body: JSON.stringify({ sessionId }) }, actor)
+}
+export function setCandidateState(playerId: string, state: string, actor: string) {
+  return req(`/players/${encodeURIComponent(playerId)}/candidate-state`, { method: 'PUT', body: JSON.stringify({ state }) }, actor)
 }
 export function addCaptainCandidate(sourceMemberCardId: string, actor: string) {
   return req('/candidates', { method: 'POST', body: JSON.stringify({ sourceMemberCardId }) }, actor)

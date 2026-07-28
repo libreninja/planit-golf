@@ -5,22 +5,20 @@ import {
   createNoteAction,
   updateNoteAction,
   deleteNoteAction,
-  addTagAction,
-  removeTagAction,
-  setAvailabilityAction,
+  setCandidateStateAction,
 } from '../../actions'
+import { AvailabilityEditor } from './availability-editor'
 import { Button } from '@/components/ui/button'
 import { ScoutingUnavailable } from '@/components/scouting/scouting-unavailable'
 
 export const dynamic = 'force-dynamic'
 
-const AVAIL_OPTIONS: { value: string; label: string }[] = [
-  { value: 'fully_available', label: 'Fully available' },
-  { value: 'partially_available', label: 'Partially available' },
-  { value: 'unavailable', label: 'Unavailable' },
-  { value: 'response_pending', label: 'Response pending' },
-  { value: 'no_response', label: 'No response' },
-]
+const ROSTER_STATES = ['considering', 'out', 'selected'] as const
+const ROSTER_LABELS: Record<(typeof ROSTER_STATES)[number], string> = {
+  considering: 'Considering',
+  out: 'Out',
+  selected: 'Selected',
+}
 
 function HcapSource({ source }: { source: string | null }) {
   if (source === 'ghin') return <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800">GHIN</span>
@@ -72,6 +70,29 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
             GHIN {card.ghinNumber ?? '—'} {card.email ? `· ${card.email}` : ''} · data as-of {card.provenance.asOf.slice(0, 10)}
           </p>
         </div>
+
+        {/* Roster state: captain decision, shared across scouts. Low-friction —
+            one click changes state. Independent of availability. */}
+        <section className="rounded-md border border-border bg-white/80 p-4">
+          <h2 className="mb-1 text-sm font-semibold">Roster state</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Captain decision, shared across scouts. Independent of availability.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {ROSTER_STATES.map((st) => {
+              const active = card.candidateState === st
+              return (
+                <form key={st} action={setCandidateStateAction} className="inline">
+                  <input type="hidden" name="playerId" value={card.playerId} />
+                  <input type="hidden" name="state" value={st} />
+                  <Button type="submit" variant={active ? 'default' : 'outline'} size="sm">
+                    {ROSTER_LABELS[st]}
+                  </Button>
+                </form>
+              )
+            })}
+          </div>
+        </section>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Current league */}
@@ -143,26 +164,21 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
             )}
           </section>
 
-          {/* Availability */}
+          {/* Availability: one form, four session fields, one Save button. */}
           <section className="rounded-md border border-border bg-white/80 p-4 md:col-span-2">
             <h2 className="mb-2 text-sm font-semibold">Availability (2026 sessions)</h2>
-            <div className="space-y-2">
-              {card.availability.sessions.map((s) => (
-                <form key={s.sessionId} action={setAvailabilityAction} className="flex flex-wrap items-center gap-3">
-                  <input type="hidden" name="playerId" value={card.playerId} />
-                  <input type="hidden" name="sessionId" value={s.sessionId} />
-                  <div className="min-w-[220px]">
-                    <div className="text-sm">{s.format ?? 'Session'} <span className="text-xs text-muted-foreground">{s.date ?? ''}</span></div>
-                    <div className="text-xs text-muted-foreground">{s.course ?? ''}</div>
-                  </div>
-                  <select name="status" defaultValue={s.status ?? ''} className="rounded-md border border-border px-2 py-1 text-sm">
-                    {!s.status && <option value="">— set —</option>}
-                    {AVAIL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <Button type="submit" variant="outline" size="sm">Save</Button>
-                </form>
-              ))}
-            </div>
+            <AvailabilityEditor
+              playerId={card.playerId}
+              sessions={card.availability.sessions.map((s) => ({
+                sessionId: s.sessionId,
+                format: s.format,
+                date: s.date,
+                course: s.course,
+              }))}
+              persisted={Object.fromEntries(
+                card.availability.sessions.map((s) => [s.sessionId, s.status ?? null])
+              )}
+            />
           </section>
 
           {/* Notes */}
@@ -218,28 +234,8 @@ export default async function PlayerCardPage({ params }: { params: Promise<{ id:
             </div>
           </section>
 
-          {/* Tags */}
-          <section className="rounded-md border border-border bg-white/80 p-4 md:col-span-2">
-            <h2 className="mb-2 text-sm font-semibold">Tags</h2>
-            <div className="mb-3 flex flex-wrap gap-2">
-              {card.tags.map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-sm">
-                  {t}
-                  <form action={removeTagAction} className="inline">
-                    <input type="hidden" name="playerId" value={card.playerId} />
-                    <input type="hidden" name="tag" value={t} />
-                    <button type="submit" className="text-muted-foreground hover:text-red-700">×</button>
-                  </form>
-                </span>
-              ))}
-              {card.tags.length === 0 && <span className="text-sm text-muted-foreground">No tags.</span>}
-            </div>
-            <form action={addTagAction} className="flex gap-2">
-              <input type="hidden" name="playerId" value={card.playerId} />
-              <input name="tag" type="text" placeholder="add tag (max 40)" className="rounded-md border border-border px-3 py-1 text-sm" />
-              <Button type="submit" variant="outline" size="sm">Add tag</Button>
-            </form>
-          </section>
+          {/* Tags UI is intentionally hidden (item 2). The tag data model, API,
+              and server actions are preserved for future re-enablement. */}
 
           <section className="rounded-md border border-border bg-white/80 p-4 md:col-span-2">
             <h2 className="mb-2 text-sm font-semibold">Honest gaps</h2>
