@@ -32,7 +32,12 @@ yarn-error.log*
 .env
 
 # vercel
-.vercel
+# Keep the project link (repo.json — project id, name, org id; no secrets) so
+# every worktree/clone is pre-linked to the nextjs-boilerplate project and a
+# `vercel link` (which can leave stale per-worktree state) isn't required.
+# Ignore everything else Vercel writes locally: build output and env pulls.
+.vercel/*
+!.vercel/repo.json
 
 # typescript
 *.tsbuildinfo
@@ -46,3 +51,4 @@ supabase/.temp/
 
 # local roster sync overrides
 scripts/member-overrides.json
+.vercel

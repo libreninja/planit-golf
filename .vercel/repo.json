@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_jYKeHFnoeXhi30uhvtjAD1H1jQL2",
+      "name": "nextjs-boilerplate",
+      "directory": ".",
+      "orgId": "team_2OwWZEiWXYEgSrbbyaqfrRNg"
+    }
+  ]
+}

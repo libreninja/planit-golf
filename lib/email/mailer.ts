@@ -58,3 +58,46 @@ export async function sendInviteEmail(inviteToken: string, email: string) {
     text: `Welcome to Good to Go. The first rule of Good to Go is we don't talk about Good to Go. You're in for the IGC 2026 league. Use this secure link to create your account or sign in: ${inviteUrl}\n\nThis email was sent by planit.golf because an administrator invited you to Good to Go for the IGC 2026 league.`,
   })
 }
+
+// Seattle Cup scouting invite. Points to the dedicated capability-invite accept
+// route (NOT the GTG /invite/[token] flow, which is members-anchored). See
+// docs/access-onboarding-design-addendum.md and task #20.
+export async function sendScoutingInviteEmail(
+  inviteToken: string,
+  email: string,
+  displayName?: string | null
+) {
+  if (!transport) {
+    console.warn('SMTP email is not configured - skipping email send')
+    return { skipped: true }
+  }
+
+  const appUrl = process.env.APP_URL || 'http://localhost:3000'
+  const inviteUrl = `${appUrl}/scouting-invite/${inviteToken}`
+  const greeting = displayName ? `Hi ${displayName},` : 'Hi,'
+
+  await transport.sendMail({
+    from: fromEmail,
+    replyTo: replyToEmail,
+    to: email,
+    subject: 'You’re invited: Seattle Cup scouting (planit.golf)',
+    html: `
+      <div style="font-family: Georgia, serif; line-height: 1.6; color: #14281d;">
+        <h2 style="margin: 0 0 16px;">Seattle Cup scouting.</h2>
+        <p>${greeting}</p>
+        <p>You&apos;ve been invited to help scout and prepare Interbay Golf Club&apos;s <strong>2026 Seattle Cup</strong> roster. This is the private place to review candidate players, record scouting notes, and track availability.</p>
+        <p style="margin: 24px 0;">
+          <a href="${inviteUrl}" style="background-color: #0f5132; color: white; padding: 12px 24px; text-decoration: none; border-radius: 9999px; display: inline-block; font-weight: 600;">Open scouting</a>
+        </p>
+        <p style="font-size: 14px; color: #4b6358;">If the button misbehaves, paste this into your browser:</p>
+        <p style="font-size: 14px;"><a href="${inviteUrl}">${inviteUrl}</a></p>
+        <p style="font-size: 13px; color: #4b6358;">If you don&apos;t see this email, check your spam or junk folder.</p>
+        <hr style="border: 0; border-top: 1px solid #d6ddd8; margin: 24px 0;" />
+        <p style="font-size: 13px; color: #4b6358;">
+          This email was sent by planit.golf because a Seattle Cup captain invited you to the scouting workspace. If this is unexpected, you can ignore it.
+        </p>
+      </div>
+    `,
+    text: `${greeting}\n\nYou've been invited to help scout and prepare Interbay Golf Club's 2026 Seattle Cup roster. Use this secure link to create your account or sign in: ${inviteUrl}\n\nIf you don't see this email, check your spam or junk folder.\n\nThis email was sent by planit.golf because a Seattle Cup captain invited you to the scouting workspace.`,
+  })
+}

@@ -53,6 +53,11 @@ interface PreferenceFormProps {
   defaultPrefs: DefaultPrefs | null
   eventPrefs: EventPref[]
   eventDemandCounts: EventDemandCounts
+  // When true the form is rendered inside the shared application shell: it
+  // drops its own branded sticky header (the shell provides chrome and
+  // navigation) and renders as a plain region. Contextual help (HelpModal)
+  // stays co-located so members can still open guidance.
+  embedded?: boolean
 }
 
 type EditorState =
@@ -256,6 +261,7 @@ export function PreferenceForm({
   defaultPrefs,
   eventPrefs,
   eventDemandCounts,
+  embedded = false,
 }: PreferenceFormProps) {
   const router = useRouter()
   const initialDefaultTimes = defaultPrefs?.tee_time_preferences || []
@@ -528,41 +534,54 @@ export function PreferenceForm({
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="sticky top-0 z-30 bg-foreground text-background">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="order-1 text-left">
-            <p className="font-display text-2xl leading-none">Good to Go</p>
-          </div>
-          <div className="order-2 flex flex-wrap items-center gap-2 sm:justify-end">
-            <span className="mr-auto text-xs text-background/70 sm:mr-0 sm:order-2">
-              {profile?.display_name || user.email}
-            </span>
-            <div className="flex flex-wrap items-center gap-2 sm:order-3">
-              <HelpModal mode="member" />
-              {profile?.is_admin || profile?.is_system_admin ? (
-                <Button variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background" onClick={() => router.push('/admin')}>
-                  <Shield className="mr-2 h-4 w-4" />
-                  Admin
+    <main className={embedded ? undefined : 'min-h-screen'}>
+      {embedded ? (
+        <div className="flex items-center justify-between pb-2">
+          <h1 className="text-xl font-semibold">Tee Times</h1>
+          <HelpModal mode="member" />
+        </div>
+      ) : (
+        <div className="sticky top-0 z-30 bg-foreground text-background">
+          <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="order-1 text-left">
+              <p className="font-display text-2xl leading-none">Good to Go</p>
+            </div>
+            <div className="order-2 flex flex-wrap items-center gap-2 sm:justify-end">
+              <span className="mr-auto text-xs text-background/70 sm:mr-0 sm:order-2">
+                {profile?.display_name || user.email}
+              </span>
+              <div className="flex flex-wrap items-center gap-2 sm:order-3">
+                <HelpModal mode="member" />
+                {profile?.is_admin || profile?.is_system_admin ? (
+                  <Button variant="outline" size="sm" className="border-white/30 bg-transparent text-background hover:bg-white/10 hover:text-background" onClick={() => router.push('/admin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin
+                  </Button>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-background hover:bg-white/10 hover:text-background"
+                  onClick={async () => {
+                    await signOut()
+                    router.push('/login')
+                  }}
+                >
+                  Sign Out
                 </Button>
-              ) : null}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-background hover:bg-white/10 hover:text-background"
-                onClick={async () => {
-                  await signOut()
-                  router.push('/login')
-                }}
-              >
-                Sign Out
-              </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 pb-28 sm:py-6 sm:pb-32">
+      <div
+        className={
+          embedded
+            ? 'space-y-4 py-4 pb-28 sm:pb-32'
+            : 'mx-auto max-w-5xl space-y-4 px-4 py-4 pb-28 sm:py-6 sm:pb-32'
+        }
+      >
         <AdminSectionCard
           title={`Preferred tee times${registrationsPaused ? ' (Weekly registration paused)' : ''}`}
         >
