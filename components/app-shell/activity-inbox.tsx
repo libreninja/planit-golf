@@ -14,10 +14,11 @@
 // detail. The browser talks only to the planit.golf Supabase project — never to
 // planit-ai. See migration 025 + lib/activity-format (decideRealtimeAction).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { LeadingTrailingThrottle } from '@/lib/refresh-schedule'
 import {
   ACTIVITY_FEATURE,
   decideRealtimeAction,
@@ -65,24 +66,37 @@ export function ActivityInbox({ userId }: { userId: string }) {
   // Track the cursor we marked seen up to, so a realtime event arriving while
   // the inbox is open is correctly counted as new/unread (created_at > cursor).
   const seenCursorRef = useRef<string | null>(null)
-  // Independent leading-edge throttle for router.refresh(). A rapid burst (e.g.
-  // a batch availability save emits several activity rows near-simultaneously)
-  // would otherwise fire one server refetch per row. The first event refreshes
-  // immediately; further refreshes within the throttle window are suppressed.
-  // This is deliberately separate from activity grouping (which is purely a
-  // presentation concern over the already-fetched rows).
-  const lastRefreshRef = useRef(0)
-  const maybeRefresh = useCallback(() => {
-    const t = Date.now()
-    if (t - lastRefreshRef.current >= 500) {
-      lastRefreshRef.current = t
-      router.refresh()
-    }
-  }, [router])
+  // Leading + trailing throttle for router.refresh() on remote activity. A pure
+  // leading-edge throttle could leave the board stale: an event that arrives
+  // inside the throttle window (e.g. a second availability save 200ms after the
+  // first) would be suppressed and, with no later event, never re-fetched —
+  // even though the inbox received the activity row. Leading + trailing fixes
+  // that: the first relevant event refreshes immediately; further events within
+  // the ~500ms window are suppressed; if any were suppressed, ONE trailing
+  // refresh fires at the end of the anchored window so the suppressed change is
+  // eventually fetched. After the trailing refresh nothing is pending unless a
+  // new event arrives. This is independent of the 30s inbox grouping window
+  // (grouping is presentation-only; this is fetch scheduling). The scheduler is
+  // a stable, component-lifetime instance kept in a ref; router is mirrored
+  // into a ref so the stable throttle always calls the current router. See
+  // lib/refresh-schedule + tests/refresh-schedule.test.
+  const routerRef = useRef(router)
+  routerRef.current = router
+  const throttleRef = useRef<LeadingTrailingThrottle | null>(null)
+  if (throttleRef.current === null) {
+    throttleRef.current = new LeadingTrailingThrottle({
+      windowMs: 500,
+      refresh: () => routerRef.current.refresh(),
+    })
+  }
   // Group raw events into editing bursts for presentation only. `items` stays
   // the raw newest-first list (read state + cursor are computed from it); the
   // rendered list is the grouped view.
   const groups = useMemo(() => groupActivities(items), [items])
+
+  // Cancel any pending trailing refresh on unmount so a refresh scheduled during
+  // the last burst never fires after teardown.
+  useEffect(() => () => throttleRef.current?.dispose(), [])
 
   // Initial fetch: recent activity + authoritative unread count.
   useEffect(() => {
@@ -130,14 +144,14 @@ export function ActivityInbox({ userId }: { userId: string }) {
           // edit — only when it's a genuinely separate burst.
           setItems((prev) => [ev, ...prev].slice(0, 40))
           setUnread((c) => c + 1)
-          if (action.refresh) maybeRefresh()
+          if (action.refresh) throttleRef.current?.hit()
         }
       )
       .subscribe()
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [pathname, maybeRefresh, userId])
+  }, [pathname, userId])
 
   // Nudge relative timestamps while the popover is open.
   useEffect(() => {
