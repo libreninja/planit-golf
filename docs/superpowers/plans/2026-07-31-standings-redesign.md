@@ -821,8 +821,14 @@ export interface CapabilityInput {
 }
 
 export function deriveOccurrenceCapabilities(input: CapabilityInput): OccurrenceCapabilities {
+  // The mask targets FLIGHTS (the `multi` case) — men's flights are unknown
+  // until final. A `single` grouping (women's Overall) is always known; masking
+  // it to `none` loses information with no UI benefit (both `single` and `none`
+  // render no grouping control per spec §6). So the mask only fires for `multi`.
   const maskLive =
-    input.liveGroupingPolicy === 'hide-until-final' && input.resultStatus === 'live'
+    input.liveGroupingPolicy === 'hide-until-final' &&
+    input.resultStatus === 'live' &&
+    input.availableGroupings.kind === 'multi'
   const groupings: GroupingAvailability = maskLive ? { kind: 'none' } : input.availableGroupings
   const scoring: ScoringModeAvailability = { modes: input.scoringModes }
   return {
