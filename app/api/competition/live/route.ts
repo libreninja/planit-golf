@@ -3,11 +3,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getLiveResults } from '@/lib/competition/live'
 
-// Compatibility handler for the legacy /api/igc/league/live endpoint. Parses
-// legacy params (league=mens|womens, week=N), maps them to the generic request,
-// and invokes the SAME getLiveResults function the generic route uses. Does
-// NOT redirect. Returns the same normalized response shape. Removed in a later
-// cleanup. See design spec §4.
 export const dynamic = 'force-dynamic'
 
 async function authenticatedUserId(): Promise<string | undefined> {
@@ -24,24 +19,18 @@ export async function GET(request: Request) {
   if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const url = new URL(request.url)
-  const league = url.searchParams.get('league')
-  const weekParam = url.searchParams.get('week')
-  if (league !== 'mens' && league !== 'womens') {
-    return NextResponse.json({ error: 'Invalid league' }, { status: 400 })
-  }
-  const week = weekParam ? Number.parseInt(weekParam, 10) : NaN
-  if (!Number.isFinite(week)) {
-    return NextResponse.json({ error: 'Invalid week' }, { status: 400 })
-  }
-
-  const competitionKey = league === 'mens' ? 'mens-league' : 'womens-league'
+  const competition = url.searchParams.get('competition')
+  const occurrence = url.searchParams.get('occurrence')
   const scoring = (url.searchParams.get('scoring') as 'gross' | 'net') || 'net'
+  if (!competition || !occurrence) {
+    return NextResponse.json({ error: 'competition and occurrence required' }, { status: 400 })
+  }
   try {
     const nowIso = new Date().toISOString()
-    const results = await getLiveResults({ competitionKey, occurrenceId: String(week), scoring, nowIso })
+    const results = await getLiveResults({ competitionKey: competition, occurrenceId: occurrence, scoring, nowIso })
     return NextResponse.json({ results })
   } catch (err) {
-    console.error(`[api/igc/league/live] ${league} wk${week}:`, err)
+    console.error(`[api/competition/live] ${competition}/${occurrence}:`, err)
     return NextResponse.json({ error: 'Failed to fetch live results' }, { status: 502 })
   }
 }
