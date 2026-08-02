@@ -86,6 +86,24 @@ test('upstream failure → stale-while-error returns last known with showingLast
   assert.equal(r.leaderboard!.entries[0].name, 'Hans')
 })
 
+test('upstream failure with NO stale data → honest unavailable (unknown, no leaderboard, not showingLastKnown, not pending)', async () => {
+  // Correction 7 + plan issue #4: a genuine GG failure with no cached data
+  // must NOT collapse into a misleading pending/inconclusive/live verdict.
+  // It serves an honest unavailable state: resultStatus 'unknown', no
+  // leaderboard, showingLastKnown false. (ResultStatus has no 'pending'
+  // value; 'unknown' is the unavailable/error result.)
+  const cache = makeLiveCacheStore(new Map())   // empty — no stale row
+  const throwingGg = async () => { throw new Error('GG down') }
+  const r = await getLiveResults({
+    competitionKey: 'mens-league', occurrenceId: '18', scoring: 'gross',
+    nowIso: '2026-07-28T18:00:00-07:00',
+    deps: { adapterConfig, ggClient: throwingGg, readEvent: fakeEventReader(null), cacheStore: cache },
+  })
+  assert.equal(r.showingLastKnown, false)
+  assert.equal(r.leaderboard, null, 'no leaderboard when no stale data available')
+  assert.equal(r.resultStatus, 'unknown', 'unavailable/error result, not pending/live')
+})
+
 test('durableCurrent derived from event row source vs import (version equality)', async () => {
   const gg = fakeGg({ tournaments: [], results: {} })
   const cache = makeLiveCacheStore(new Map())
