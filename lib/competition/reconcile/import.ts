@@ -22,6 +22,11 @@ export interface ImportDb {
   upsertPerformances(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
   upsertResults(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
   setDurableImported(week: number, atIso: string, sourceVersion: string | null): Promise<{ ok: boolean }>
+  // Optional: persist per-round authoritative event.season_points entries.
+  // Production (reconcile.ts importDb) provides it; the 19B unit-test fake
+  // omits it (optional chaining → no-op), so 19B's write-bucket count is
+  // unchanged. See Task 19F.1.
+  upsertSeasonPointEntries?(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
 }
 
 export interface ImportInput {
@@ -33,7 +38,7 @@ export interface ImportInput {
   nowIso: string
 }
 
-export interface ImportSummary { performances: number; results: number; durable: boolean }
+export interface ImportSummary { performances: number; results: number; seasonPointEntries: number; durable: boolean }
 
 export async function importOccurrence(input: ImportInput): Promise<ImportSummary> {
   const leagueKey = input.competitionKey === 'mens-league' ? 'mens' : 'womens'
@@ -41,6 +46,12 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
 
   const perfRows: Record<string, unknown>[] = []
   const resultRows: Record<string, unknown>[] = []
+  // Authoritative per-round season points, summed across the Gross and Net
+  // tournament payloads (both credit the same season_point_category; women's
+  // returns an empty array → no entries). Captured ONLY for completed rounds
+  // — parity with the existing sync's isCompleted guard. One entry per member
+  // per round; rebuildSeasonPoints sums across rounds. See Task 19F.1.
+  const seasonPointsCum = new Map<string, number>()
 
   for (const competition of ['gross', 'net'] as const) {
     const tId = competition === 'gross' ? grossTournamentId : netTournamentId
@@ -73,6 +84,16 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
         }
       }
     }
+    // Accumulate this tournament's event.season_points (weekly points awarded
+    // this round) per member. Both competitions' arrays are summed; the UNIQUE
+    // (league, week, member) constraint means we write ONE combined row after
+    // the loop. Women's returns [] → no-op.
+    if (input.resolved.upstreamStatus === 'completed' && Array.isArray((payload as any)?.event?.season_points)) {
+      for (const sp of (payload as any).event.season_points) {
+        if (!sp?.member_card_id) continue
+        seasonPointsCum.set(sp.member_card_id, (seasonPointsCum.get(sp.member_card_id) ?? 0) + (Number(sp.total_points) || 0))
+      }
+    }
   }
 
   // Persist the resolved ids + source finalization/version on the event row —
@@ -88,9 +109,17 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
   })
   if (perfRows.length) await input.db.upsertPerformances(perfRows)
   if (resultRows.length) await input.db.upsertResults(resultRows)
+  // Per-round authoritative season-points entries (durable source for
+  // rebuildSeasonPoints). Optional on the db — skipped (no-op) when the caller
+  // doesn't provide it, e.g. the 19B unit test.
+  const seasonPointRows: Record<string, unknown>[] = [...seasonPointsCum.entries()].map(([member_card_id, total_points]) => ({
+    league_key: leagueKey, week_number: weekNumber,
+    member_card_id, total_points, player_name: null,
+  }))
+  if (seasonPointRows.length) await input.db.upsertSeasonPointEntries?.(seasonPointRows)
   // Record both the import time AND the source version captured, so the
   // durable-current version-equality branch (Task 11) can compare
   // source_version vs durable_source_version.
   await input.db.setDurableImported(weekNumber, input.nowIso, sourceVersion)
-  return { performances: perfRows.length, results: resultRows.length, durable: true }
+  return { performances: perfRows.length, results: resultRows.length, seasonPointEntries: seasonPointRows.length, durable: true }
 }

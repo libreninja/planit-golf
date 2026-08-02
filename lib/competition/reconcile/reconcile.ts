@@ -162,6 +162,18 @@ function importDb(supabase: any, competitionKey: string) {
     },
     async upsertPerformances(rows: any[]) { await supabase.from('igc_league_performances').upsert(rows); return { ok: true } },
     async upsertResults(rows: any[]) { await supabase.from('igc_league_results').upsert(rows); return { ok: true } },
+    async upsertSeasonPointEntries(rows: any[]) {
+      if (!rows.length) return { ok: true }
+      await supabase.from('igc_league_season_point_entries').upsert(
+        rows.map((r) => ({
+          league_key: leagueKey, week_number: r.week_number,
+          member_card_id: r.member_card_id, total_points: r.total_points,
+          player_name: r.player_name, synced_at: new Date().toISOString(),
+        })),
+        { onConflict: 'league_key,week_number,member_card_id' }
+      )
+      return { ok: true }
+    },
     async setDurableImported(week: number, atIso: string, sourceVersion: string | null) {
       await supabase.from('igc_league_events').update({ durable_imported_at: atIso, durable_source_version: sourceVersion })
         .eq('league_key', leagueKey).eq('week_number', week)
