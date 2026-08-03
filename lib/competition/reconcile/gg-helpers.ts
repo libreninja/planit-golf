@@ -51,3 +51,26 @@ export function countCompletedHoles(scores: any[], _netScores?: any): number {
 export function totalOut(totals: any, key: string): number | null {
   return totals?.[key]?.out ?? totals?.[key]?.total ?? null;
 }
+
+// Integer coerce (parity with the original sync's parseIntOrNull). GG totals are
+// integers; Math.trunc is a defensive coerce, never a rounding that changes data.
+export function parseIntOrNull(value: unknown): number | null {
+  const n = parseNum(value)
+  return n === null ? null : Math.trunc(n)
+}
+
+// Secondary birdie/double-bogey counts from net scores vs course par (parity with
+// the original sync lines 317–324). parData is the per-hole course par array from
+// /events/{id}/courses; when absent/short, affected holes are skipped (counts stay
+// 0, matching the original sync's `parData.length > 0` guard).
+export function countBirdiesDoubles(netScores: (number | null)[], parData: (number | null)[]): { birdies: number; doubleBogeys: number } {
+  let birdies = 0, doubleBogeys = 0
+  if (!Array.isArray(parData) || parData.length === 0) return { birdies, doubleBogeys }
+  for (let i = 0; i < netScores.length && i < parData.length; i++) {
+    if (netScores[i] !== null && parData[i] !== null) {
+      if (netScores[i]! >= parData[i]! + 2) doubleBogeys++
+      if (netScores[i]! === parData[i]! - 1) birdies++
+    }
+  }
+  return { birdies, doubleBogeys }
+}

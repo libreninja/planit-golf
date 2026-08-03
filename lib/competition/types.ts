@@ -132,6 +132,7 @@ export interface HoleScore {
   gross: number | null
   net: number | null
   toPar: number | null
+  toParGross: number | null
   cumulativeToPar: number | null
 }
 

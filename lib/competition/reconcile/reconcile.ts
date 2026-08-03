@@ -151,14 +151,8 @@ function importDb(supabase: any, competitionKey: string) {
   const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
   return {
     async upsertEvent(row: any) {
-      await supabase.from('igc_league_events').update({
-        gg_event_id: row.gg_event_id, gg_round_id: row.gg_round_id,
-        gg_gross_tournament_id: row.gg_gross_tournament_id, gg_net_tournament_id: row.gg_net_tournament_id,
-        event_format: row.event_format, discovery_state: row.discovery_state,
-        source_finalized_at: row.source_finalized_at, source_version: row.source_version,
-        status: row.status,
-      }).eq('league_key', leagueKey).eq('week_number', row.week_number)
-      return { ok: true }
+      const { data } = await supabase.from('igc_league_events').upsert(row).select('id').single()
+      return { ok: true, id: (data as any)?.id ?? null }
     },
     async upsertPerformances(rows: any[]) { await supabase.from('igc_league_performances').upsert(rows); return { ok: true } },
     async upsertResults(rows: any[]) { await supabase.from('igc_league_results').upsert(rows); return { ok: true } },

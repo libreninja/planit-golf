@@ -13,6 +13,7 @@ export interface HoleScore {
   gross: number | null;
   net: number | null;
   toPar: number | null; // net to-par for THIS hole (delta)
+  toParGross: number | null; // gross to-par for THIS hole (delta) — D1 parity
   cumulativeToPar: number | null; // running net to-par through this hole
 }
 
@@ -81,6 +82,7 @@ export function buildHoles(
       gross,
       net,
       toPar: tpn,
+      toParGross: tpg,
       cumulativeToPar: hasAny && tpn !== null ? running : null,
     });
   }
