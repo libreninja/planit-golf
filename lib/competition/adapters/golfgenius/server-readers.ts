@@ -6,17 +6,17 @@
 // positionLabelOf, playerKey, deriveResultStatus, isDurableCurrent) is already
 // covered by the competition test suite.
 //
-// Client split (project rule):
-//   - resolveOccurrences / buildHistoricalLiveResponse / resolveAvailableGroupings
-//     use the RLS-respecting server client (createClient). The league tables
-//     they read (igc_league_events / igc_league_performances / igc_league_results)
-//     have public SELECT RLS policies.
-//   - resolveSeasonPoints reads the season-points snapshot, which is service-
-//     role-only, so it uses createServiceClient. The service client bypasses
-//     RLS and never reaches the browser.
+// Client split (project rule — least privilege):
+//   - All four readers use the RLS-respecting server client (createClient).
+//     The league tables they read — igc_league_events / igc_league_performances
+//     / igc_league_results / igc_league_season_points — all have public SELECT
+//     RLS policies, so the RLS-respecting client returns the same rows the
+//     service client would, without bypassing RLS. The service client is
+//     reserved for service-role-only tables (e.g. igc_league_season_point_entries,
+//     the per-round source the reconcile pipeline writes); none of these
+//     readers touch those.
 
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/service'
 import { getCompetitionConfig } from '@/lib/competition/registry'
 import { deriveResultStatus } from '@/lib/competition/result-status'
 import { isDurableCurrent } from '@/lib/competition/durable-current'
@@ -300,21 +300,22 @@ export async function resolveAvailableGroupings(
 }
 
 // ---------------------------------------------------------------------------
-// 4. Season points — read the cumulative snapshot. Service-role client.
+// 4. Season points — read the cumulative snapshot. RLS-respecting client.
 // ---------------------------------------------------------------------------
 
 // The cumulative season-points snapshot lives in igc_league_season_points (the
 // reconcile pipeline maintains it via rebuildSeasonPoints → replaceSnapshot).
-// That table carries the exact SeasonPointsRow columns. We read it with the
-// service-role client to honor the brief's service-role mandate (harmless on a
-// table that also has a public SELECT RLS policy — service bypasses RLS either
-// way). The brief named igc_league_season_point_entries, but that table is the
-// per-round authoritative source (one row per league/week/member), not the
-// cumulative snapshot — it lacks the position/previous_position/events_played/
-// wins/points_behind columns SeasonPointsRow requires. See task report.
+// That table carries the exact SeasonPointsRow columns (position,
+// previous_position, total_points, events_played, wins, points_behind) and has
+// a public SELECT RLS policy, so the RLS-respecting server client is the
+// least-privilege choice. The brief's comment text named
+// igc_league_season_point_entries, but that table is the per-round authoritative
+// source (one row per league/week/member, service-role-only, no public SELECT)
+// that rebuildSeasonPoints consumes — it lacks the display columns
+// SeasonPointsRow requires, so it is not the right table to read here.
 export async function resolveSeasonPoints(competitionKey: string): Promise<SeasonPointsRow[]> {
   const leagueKey = leagueKeyFor(competitionKey)
-  const supabase = createServiceClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('igc_league_season_points')
     .select('member_card_id, player_name, total_points, position, previous_position, events_played, wins, points_behind')
