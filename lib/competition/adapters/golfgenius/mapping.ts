@@ -5,7 +5,38 @@
 // valid ISO timestamps with real offsets — no hardcoded evening start in
 // shared code. See design spec §4/§6 (revision 6).
 
-import type { Occurrence, ActiveWindow, EventFormat, DiscoveryState, ResultStatus } from '../../types.ts'
+import type { Occurrence, ActiveWindow, EventFormat, DiscoveryState, ResultStatus, LabelRule } from '../../types.ts'
+import { isOccurrenceActive } from '../../active-window.ts'
+
+// Format an ISO date (YYYY-MM-DD[...]) as MM/DD/YYYY for user-facing labels.
+// Returns '' when the date is missing or malformed so the label degrades to
+// just the "<noun> <number>" prefix instead of leaking a raw timestamp.
+export function formatDateUS(iso: string | null): string {
+  if (!iso) return ''
+  const parts = iso.slice(0, 10).split('-')
+  if (parts.length !== 3 || !parts.every((p) => p && /^\d+$/.test(p))) return ''
+  const [y, m, d] = parts
+  return `${m}/${d}/${y}`
+}
+
+// Pick the occurrence to show when the URL doesn't name one. Pure so it is
+// unit-testable and so the server wrapper stays thin. Order of preference:
+//   1. the occurrence currently in its active window (live play now)
+//   2. the most recent finalized occurrence (latest historical results)
+//   3. the latest occurrence overall (e.g. a scheduled-but-not-played week)
+// Occurrences are assumed chronological (oldest→newest); "latest" = last.
+export function defaultOccurrenceId(occurrences: Occurrence[], nowIso: string): string | null {
+  if (occurrences.length === 0) return null
+  for (const o of occurrences) {
+    if (isOccurrenceActive(o.activeWindow, nowIso, false)) return o.id
+  }
+  let lastFinal: Occurrence | null = null
+  for (const o of occurrences) {
+    if (o.resultStatus === 'final') lastFinal = o
+  }
+  if (lastFinal) return lastFinal.id
+  return occurrences[occurrences.length - 1].id
+}
 
 export interface LeagueEventRow {
   week_number: number
@@ -90,12 +121,17 @@ export function mapLeagueEventToOccurrence(
 }
 
 export function leagueOccurrenceLabel(
-  rule: { kind: 'composite'; noun: string; separator: string } | { kind: 'numberPrefix'; noun: string } | { kind: 'event_name' },
+  rule: LabelRule,
   number: number | null,
   eventName: string | null,
+  date: string | null = null,
 ): string {
   if (rule.kind === 'event_name') return eventName ?? `${number ?? ''}`.trim()
   const prefix = `${rule.noun} ${number ?? ''}`.trim()
   if (rule.kind === 'numberPrefix') return prefix
+  if (rule.kind === 'weekDate') {
+    const ds = formatDateUS(date)
+    return ds ? `${prefix}${rule.separator}${ds}` : prefix
+  }
   return eventName ? `${prefix}${rule.separator}${eventName}` : prefix
 }

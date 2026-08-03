@@ -13,7 +13,7 @@ export const mensLeagueConfig: CompetitionConfig = {
     teamFormatOverrides: [],                       // populate with known scramble week numbers
     roundResolution: 'pointsRoundIndex',
   },
-  navigation: { occurrenceNoun: 'week', queryParam: 'week', labelRule: { kind: 'composite', noun: 'Week', separator: ' – ' } },
+  navigation: { occurrenceNoun: 'week', queryParam: 'week', labelRule: { kind: 'weekDate', noun: 'Week', separator: ' - ' } },
   capabilities: {
     views: ['season', 'weekly'],
     scoring: { modes: ['gross', 'net'] },

@@ -67,7 +67,7 @@ test('upstream failure → stale-while-error returns last known with showingLast
   // Seed a stale cache row from a prior successful fetch.
   const prior: any = {
     occurrence: { id: '18', number: 18, label: 'Week 18', date: null, activeWindow: { start: '', end: null }, format: 'individual', discoveryState: 'discovered', resultStatus: 'live' },
-    leaderboard: { occurrenceId: '18', scoringMode: 'gross', grouping: null, entries: [{ key: 'k', name: 'Hans', positionLabel: '1', positionOrder: 1, points: 50, purse: null }], scorecards: [], resultStatus: 'live', durableCurrent: false },
+    leaderboard: { occurrenceId: '18', scoringMode: 'gross', grouping: null, entries: [{ key: 'k', name: 'Hans', positionLabel: '1', positionOrder: 1, points: 50, purse: null, flight: null }], scorecards: [], resultStatus: 'live', durableCurrent: false },
     resultStatus: 'live', eventFormat: 'individual', discoveryState: 'discovered', durableCurrent: false, showingLastKnown: false,
   }
   const cache = makeLiveCacheStore(new Map([['results:igc:mens-league:18:gross', {

@@ -61,7 +61,14 @@ export function buildStandingsViewModel(input: ViewModelInput): StandingsViewMod
     liveGroupingPolicy: input.liveGroupingPolicy,
   })
 
-  const view: View = input.urlState.view ?? input.configViews[0] ?? 'weekly'
+  // Default view: when the URL doesn't name one, land on Weekly / Live during
+  // the season (any occurrence has final/live results → historical weekly data
+  // is available and live play will surface on play days); fall back to the
+  // first config view (Season Points for men's) in the off-season. Both views
+  // remain one click away via the hoisted ViewTabs. See P1.
+  const hasResultData = input.occurrences.some((o) => o.resultStatus === 'final' || o.resultStatus === 'live')
+  const view: View = input.urlState.view
+    ?? (hasResultData && input.configViews.includes('weekly') ? 'weekly' : input.configViews[0] ?? 'weekly')
   const grouping = input.urlState.grouping ?? (capabilities.groupings.kind === 'multi' && capabilities.groupings.defaultAll ? 'all' : null)
 
   return {

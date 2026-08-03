@@ -21,6 +21,10 @@ export type LabelRule =
   | { kind: 'numberPrefix'; noun: string }
   | { kind: 'event_name' }
   | { kind: 'composite'; noun: string; separator: string }
+  // Date-driven label: "<noun> <number><separator><MM/DD/YYYY>". Uses the
+  // occurrence date, NOT the upstream event_name (which leaks GG source strings
+  // like "Points Season - Week 26 - Season Points Finale"). See P4.
+  | { kind: 'weekDate'; noun: string; separator: string }
 
 export interface NavigationOptions {
   occurrenceNoun: 'week' | 'session' | 'round' | 'stage' | string
@@ -157,6 +161,7 @@ export interface ResultEntry {
   positionOrder: number
   points: number | null
   purse: string | null
+  flight: string | null       // flight/grouping key (e.g. "Flight A"); null when unflighted (live)
 }
 
 export interface Leaderboard {

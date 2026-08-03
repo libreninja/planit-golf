@@ -45,3 +45,35 @@ test('women\'s single view → tabs hidden (views length 1)', () => {
   assert.equal(vm.capabilities.views.length, 1)
   assert.equal(vm.capabilities.groupings.kind, 'single')
 })
+
+// ---- P1: default view (no URL view) ----
+
+test('default view: in-season (live occurrence present) + no URL view → weekly', () => {
+  const vm = buildStandingsViewModel(base({ urlState: { view: null, scoring: null, grouping: null } }))
+  // base() includes a live occurrence → hasResultData true → default weekly.
+  assert.equal(vm.view, 'weekly')
+})
+
+test('default view: in-season (final occurrence present) + no URL view → weekly', () => {
+  const vm = buildStandingsViewModel(base({
+    urlState: { view: null, scoring: null, grouping: null },
+    occurrences: [{ id: '18', number: 18, label: 'Week 18', date: '2026-07-28', activeWindow: { start: '', end: null }, format: 'individual', discoveryState: 'discovered', resultStatus: 'final' }],
+    resultStatus: 'final',
+  }))
+  assert.equal(vm.view, 'weekly')
+})
+
+test('default view: off-season (no final/live) + no URL view → first config view (season)', () => {
+  const vm = buildStandingsViewModel(base({
+    urlState: { view: null, scoring: null, grouping: null },
+    occurrences: [{ id: '1', number: 1, label: 'Week 1', date: '2026-08-11', activeWindow: { start: '', end: null }, format: 'individual', discoveryState: 'pending', resultStatus: 'not_started' }],
+    resultStatus: 'not_started',
+    configViews: ['season', 'weekly'],
+  }))
+  assert.equal(vm.view, 'season')
+})
+
+test('explicit URL view always wins over the in-season default', () => {
+  const vm = buildStandingsViewModel(base({ urlState: { view: 'season', scoring: null, grouping: null } }))
+  assert.equal(vm.view, 'season')
+})

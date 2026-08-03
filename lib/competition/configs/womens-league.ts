@@ -12,7 +12,7 @@ export const womensLeagueConfig: CompetitionConfig = {
     teamFormatOverrides: [],
     roundResolution: 'pointsRoundIndex',
   },
-  navigation: { occurrenceNoun: 'week', queryParam: 'week', labelRule: { kind: 'composite', noun: 'Week', separator: ' – ' } },
+  navigation: { occurrenceNoun: 'week', queryParam: 'week', labelRule: { kind: 'weekDate', noun: 'Week', separator: ' - ' } },
   capabilities: {
     views: ['weekly'],
     scoring: { modes: ['gross', 'net'] },

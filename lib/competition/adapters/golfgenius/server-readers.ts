@@ -69,7 +69,7 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
     .from('igc_league_events')
     .select('week_number, event_name, event_date, event_format, discovery_state, source_finalized_at, source_version, durable_source_version, durable_imported_at')
     .eq('league_key', leagueKey)
-    .order('event_date', { ascending: false })
+    .order('event_date', { ascending: true })
     .limit(200)
 
   if (error || !data) return []
@@ -106,6 +106,7 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
       config.navigation.labelRule,
       e.week_number,
       e.event_name ?? null,
+      e.event_date ?? null,
     )
     occurrences.push(
       mapLeagueEventToOccurrence(
@@ -147,6 +148,7 @@ interface PerformanceRow {
 interface ResultRow {
   member_card_id: string | null
   player_name: string
+  flight_name: string | null
   position_label: string | null
   points: string | number | null
   purse: string | null
@@ -171,7 +173,7 @@ export async function buildHistoricalLiveResponse(
       .limit(1000),
     supabase
       .from('igc_league_results')
-      .select('member_card_id, player_name, position_label, points, purse')
+      .select('member_card_id, player_name, flight_name, position_label, points, purse')
       .eq('league_key', leagueKey)
       .eq('week_number', weekNumber)
       .eq('competition', scoring)
@@ -232,6 +234,7 @@ export async function buildHistoricalLiveResponse(
         positionOrder: positionOrder(r.position_label),
         points: Number.isFinite(points as number) ? (points as number) : null,
         purse: r.purse ?? null,
+        flight: r.flight_name ?? null,
       }
     })
     .sort((a, b) => a.positionOrder - b.positionOrder || a.name.localeCompare(b.name))

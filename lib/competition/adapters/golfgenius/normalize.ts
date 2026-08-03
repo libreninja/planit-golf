@@ -98,6 +98,7 @@ export function normalizeTournament(
         positionOrder: positionOrder(a.position),
         points: parseNum(a.points),
         purse: a.purse ?? null,
+        flight: flightName,
       }
       if (!entriesByFlight.has(flightName)) entriesByFlight.set(flightName, [])
       entriesByFlight.get(flightName)!.push(entry)

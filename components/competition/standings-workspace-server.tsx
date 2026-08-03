@@ -9,12 +9,14 @@ import { buildStandingsViewModel } from './standings-view-model'
 import { normalizeUrlState } from './url-state'
 import { StandingsWorkspace } from './standings-workspace'
 import { SeasonPointsView } from './season-points-view'
+import { ViewTabs } from './view-tabs'
 import {
   buildHistoricalLiveResponse,
   resolveAvailableGroupings,
   resolveOccurrences,
   resolveSeasonPoints,
 } from '@/lib/competition/adapters/golfgenius/server-readers'
+import { defaultOccurrenceId } from '@/lib/competition/adapters/golfgenius/mapping'
 import type { ScoringMode } from '@/lib/competition/types'
 
 export async function StandingsWorkspaceServer({
@@ -41,14 +43,16 @@ export async function StandingsWorkspaceServer({
     allowedScoring: config.capabilities.scoring.modes as ScoringMode[],
   })
 
-  const selectedId = urlState.occurrenceId ?? occurrences[0]?.id ?? null
+  // Default selection: the active (live) occurrence if we're in its window, else
+  // the most recent finalized week, else the latest week overall (P3/P5).
+  const nowIso = new Date().toISOString()
+  const selectedId = urlState.occurrenceId ?? defaultOccurrenceId(occurrences, nowIso)
   const selected = occurrences.find((o) => o.id === selectedId) ?? null
   const initialIsHistoricalFinal = selected?.resultStatus === 'final'
 
   const defaultScoring = (config.capabilities.scoring.modes[0] ?? 'net') as ScoringMode
   const scoring: ScoringMode = (urlState.scoring as ScoringMode | null) ?? defaultScoring
 
-  const nowIso = new Date().toISOString()
   const initial = selected && config.capabilities.supportsLiveResults && !initialIsHistoricalFinal
     ? await getLiveResults({ competitionKey, occurrenceId: selected.id, scoring, nowIso })
     : selected
@@ -74,29 +78,22 @@ export async function StandingsWorkspaceServer({
     ? `/api/competition/live?competition=${encodeURIComponent(competitionKey)}&occurrence=${encodeURIComponent(selected.id)}`
     : null
 
-  // Season Points view: for competitions whose views include 'season' and the
-  // selected view is 'season', render <SeasonPointsView> instead of the
-  // weekly/live workspace. The shell switches on vm.view.
-  if (vm.view === 'season' && config.capabilities.views.includes('season')) {
-    const rows = await resolveSeasonPoints(competitionKey)
-    return (
-      <SeasonPointsView
-        competitionKey={competitionKey}
-        occurrences={vm.occurrences}
-        selectedOccurrenceId={selectedId}
-        queryParam={config.navigation.queryParam}
-        rows={rows}
-      />
-    )
-  }
-
-  return (
+  // ViewTabs are hoisted above the conditional body so the Season Points /
+  // Weekly-Live switch is visible from BOTH views (P1). Returns null for a
+  // single-view competition (women's).
+  const body = vm.view === 'season' && config.capabilities.views.includes('season') ? (
+    <SeasonPointsView rows={await resolveSeasonPoints(competitionKey)} />
+  ) : (
+    // Keyed by occurrence + scoring so navigating weeks (or toggling Gross/Net)
+    // remounts the workspace with the new initial data — useLivePoll's
+    // useState(initial) only seeds on mount, so without a key the old week's
+    // leaderboard would stay mounted after navigation (P5 stale-data fix).
     <StandingsWorkspace
+      key={`${vm.selectedOccurrenceId ?? 'none'}-${vm.scoring}`}
       competitionKey={competitionKey}
       occurrences={vm.occurrences}
       selectedOccurrenceId={vm.selectedOccurrenceId}
       queryParam={config.navigation.queryParam}
-      view={vm.view}
       scoring={vm.scoring}
       grouping={vm.grouping}
       capabilities={vm.capabilities}
@@ -104,5 +101,12 @@ export async function StandingsWorkspaceServer({
       pollUrl={pollUrl}
       initialIsHistoricalFinal={initialIsHistoricalFinal}
     />
+  )
+
+  return (
+    <section className="space-y-4">
+      <ViewTabs views={config.capabilities.views} selectedView={vm.view} />
+      {body}
+    </section>
   )
 }
