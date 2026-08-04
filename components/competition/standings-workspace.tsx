@@ -12,6 +12,7 @@ import { StatusBadge } from './status-badge'
 import { LoadingSkeleton, UnavailableState, TeamEventState, RefreshingIndicator } from './states'
 import { useLivePoll } from './use-live-poll'
 import { filterLeaderboardByGrouping } from './leaderboard-filter'
+import { sortAllViewEntries } from './leaderboard-sort'
 
 export interface StandingsWorkspaceProps {
   competitionKey: string
@@ -55,6 +56,19 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
   // Apply the flight/grouping filter (P6). Only reached for finalized men's
   // weeks (groupings.kind === 'multi'); live weeks and women's render no filter.
   const filteredLb = filterLeaderboardByGrouping(lb, grouping)
+  // FIX 1: the "All" view sorts position-ascending then flight-ascending
+  // (pos:flight — 1:1, 1:2, 1:3, 2:1, …; the server default is position-then-
+  // name). A specific flight keeps the server sort. 'all' is only ever the
+  // grouping for a finalized multi-flight week, so this never touches live
+  // (unflighted) or women's (single) leaderboards.
+  const displayLb =
+    grouping === 'all' && filteredLb
+      ? { ...filteredLb, entries: sortAllViewEntries(filteredLb.entries) }
+      : filteredLb
+  // FIX 2: render the Flight column only for the finalized Men's "All" view —
+  // a specific flight makes the column redundant, live weeks are unflighted,
+  // and women's is single Overall. Driven by grouping + capability state.
+  const showFlight = grouping === 'all' && props.capabilities.groupings.kind === 'multi'
   const isInitialEmpty = !props.initial?.leaderboard && !props.initial
   const eventFormat = data?.eventFormat ?? props.initial?.eventFormat ?? 'unknown'
   const discoveryState = data?.discoveryState ?? props.initial?.discoveryState ?? 'pending'
@@ -91,8 +105,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
         <LoadingSkeleton />
       ) : eventFormat === 'team' && discoveryState === 'discovered' ? (
         <TeamEventState label={props.occurrences.find((o) => o.id === props.selectedOccurrenceId)?.label ?? ''} />
-      ) : filteredLb ? (
-        <Leaderboard leaderboard={filteredLb} />
+      ) : displayLb ? (
+        <Leaderboard leaderboard={displayLb} showFlight={showFlight} />
       ) : showingLastKnown ? (
         <UnavailableState message="Live results are temporarily unavailable. Showing the last known standings." onRetry={() => void refresh()} retrying={refreshing} />
       ) : (

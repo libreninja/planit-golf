@@ -38,6 +38,7 @@ export function ScorecardRow({
   live,
   isOpen,
   onToggle,
+  showFlight = false,
 }: {
   entry: ResultEntry;
   card: ScorecardT | null;
@@ -45,6 +46,7 @@ export function ScorecardRow({
   live: boolean;
   isOpen: boolean;
   onToggle: () => void;
+  showFlight?: boolean;
 }) {
   const isGross = scoringMode === "gross";
   const hasHoles = !!card && card.holes.some((h) => h.gross !== null || h.net !== null);
@@ -62,7 +64,10 @@ export function ScorecardRow({
         disabled={!hasHoles}
         aria-expanded={isOpen}
         className={[
-          "grid w-full grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem] items-center gap-2 px-3 py-2 text-left text-sm sm:grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem]",
+          "grid w-full grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem] items-center gap-2 px-3 py-2 text-left text-sm",
+          showFlight
+            ? "sm:grid-cols-[2.5rem_1fr_5rem_4rem_3rem_4rem_4rem_5rem]"
+            : "sm:grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem]",
           hasHoles ? "cursor-pointer hover:bg-muted/30" : "cursor-default",
         ].join(" ")}
       >
@@ -70,6 +75,11 @@ export function ScorecardRow({
           {entry.positionLabel ?? "—"}
         </span>
         <span className="truncate font-medium">{entry.name}</span>
+        {showFlight && (
+          <span className="hidden truncate text-right text-xs tabular-nums text-muted-foreground sm:block">
+            {entry.flight ?? "—"}
+          </span>
+        )}
         <span className={`text-right font-semibold tabular-nums ${toParClass(toPar)}`}>
           {formatToPar(toPar)}
         </span>

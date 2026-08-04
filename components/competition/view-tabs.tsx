@@ -6,18 +6,19 @@
 // weekly workspace and vanished on the season view (P1). Returns null for a
 // single-view competition (e.g. women's) so it never renders a one-item bar.
 //
-// Optimistic (§7): the click is acknowledged IMMEDIATELY — the selected-tab
-// styling flips and a subtle pending spinner appears on the chosen tab before
-// the server re-renders. Because this is a query-param navigation, the old
-// view stays mounted during the transition (no flash), and a second click of
-// the SAME tab while that switch is already pending is a no-op (no duplicate
-// navigation). `pendingView` is never cleared in an effect: it is inert once
-// the server catches up because `pendingView !== selectedView` is then false,
-// so the spinner/disabled state falls out of the render with no effect.
+// Snappy segmented control (FIX 3): exactly ONE tab is ever visually selected.
+// On click the filled background immediately moves to the clicked tab and
+// leaves the previous tab — BEFORE the server re-renders — so the two tabs
+// never both appear selected at once. The selection logic lives in the pure
+// `tabSelectionState` helper (see view-tabs-selection.ts) and is unit-tested
+// there. `pendingView` is never cleared in an effect: it is inert once the
+// server catches up because `pendingView !== selectedView` is then false, so
+// the spinner/disabled state falls out of the render with no effect.
 
 import { useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
+import { tabSelectionState } from './view-tabs-selection'
 
 const VIEW_LABELS: Record<string, string> = {
   season: 'Season Points',
@@ -50,8 +51,11 @@ export function ViewTabs({
     <div className="inline-flex rounded-md border border-border p-0.5">
       {views.map((v) => {
         const label = VIEW_LABELS[v] ?? v.charAt(0).toUpperCase() + v.slice(1)
-        const active = selectedView === v
-        const pending = inFlight && pendingView === v
+        // FIX 3: a single displayed selection. While a navigation is in flight,
+        // the PENDING view is the sole filled tab (the previous server view
+        // loses its fill immediately); otherwise the server-confirmed view is.
+        // Only one tab is ever active — never both. See view-tabs-selection.ts.
+        const { active, pending } = tabSelectionState(selectedView, pendingView, v)
         return (
           <button
             key={v}
@@ -61,7 +65,7 @@ export function ViewTabs({
             disabled={inFlight && !pending}
             className={cn(
               'inline-flex items-center gap-1.5 rounded px-3 py-1 text-sm transition-colors',
-              (active || pending)
+              active
                 ? 'bg-foreground text-background'
                 : 'text-muted-foreground hover:text-foreground',
               pending && 'cursor-progress',
