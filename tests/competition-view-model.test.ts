@@ -46,34 +46,36 @@ test('women\'s single view → tabs hidden (views length 1)', () => {
   assert.equal(vm.capabilities.groupings.kind, 'single')
 })
 
-// ---- P1: default view (no URL view) ----
+// ---- §2: default view (no URL view) — Weekly/Live is the primary view ----
 
-test('default view: in-season (live occurrence present) + no URL view → weekly', () => {
-  const vm = buildStandingsViewModel(base({ urlState: { view: null, scoring: null, grouping: null } }))
-  // base() includes a live occurrence → hasResultData true → default weekly.
-  assert.equal(vm.view, 'weekly')
-})
-
-test('default view: in-season (final occurrence present) + no URL view → weekly', () => {
-  const vm = buildStandingsViewModel(base({
-    urlState: { view: null, scoring: null, grouping: null },
-    occurrences: [{ id: '18', number: 18, label: 'Week 18', date: '2026-07-28', activeWindow: { start: '', end: null }, format: 'individual', discoveryState: 'discovered', resultStatus: 'final' }],
-    resultStatus: 'final',
-  }))
-  assert.equal(vm.view, 'weekly')
-})
-
-test('default view: off-season (no final/live) + no URL view → first config view (season)', () => {
+test('men\'s default view (no URL view) → weekly even off-season with no live/final occurrence', () => {
+  // Off-season: a scheduled-but-not-played week, no results. Weekly/Live is
+  // still the primary standings view — the default is NOT conditioned on
+  // whether a live/final occurrence exists.
   const vm = buildStandingsViewModel(base({
     urlState: { view: null, scoring: null, grouping: null },
     occurrences: [{ id: '1', number: 1, label: 'Week 1', date: '2026-08-11', activeWindow: { start: '', end: null }, format: 'individual', discoveryState: 'pending', resultStatus: 'not_started' }],
     resultStatus: 'not_started',
     configViews: ['season', 'weekly'],
   }))
-  assert.equal(vm.view, 'season')
+  assert.equal(vm.view, 'weekly')
 })
 
-test('explicit URL view always wins over the in-season default', () => {
+test('men\'s default view with a live occurrence present → weekly', () => {
+  const vm = buildStandingsViewModel(base({ urlState: { view: null, scoring: null, grouping: null } }))
+  assert.equal(vm.view, 'weekly')
+})
+
+test('women\'s single-view league default → weekly (its only view)', () => {
+  const vm = buildStandingsViewModel(base({
+    urlState: { view: null, scoring: null, grouping: null },
+    configViews: ['weekly'],
+    availableGroupings: { kind: 'single', grouping: { key: 'overall', label: 'Overall' } },
+  }))
+  assert.equal(vm.view, 'weekly')
+})
+
+test('explicit URL view always wins over the weekly default', () => {
   const vm = buildStandingsViewModel(base({ urlState: { view: 'season', scoring: null, grouping: null } }))
   assert.equal(vm.view, 'season')
 })

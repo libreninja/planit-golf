@@ -121,3 +121,28 @@ test('delayed finalization: re-run after a round flips to completed advances the
   const after = await rebuildSeasonPoints({ competitionKey: 'mens-league', deps: deps as any })
   assert.equal(after[0].total_points, 50, 'snapshot advanced after finalization')
 })
+
+test('freshness: a rebuild supplied ALL completed rounds reflects every one — not a stale subset', async () => {
+  // Mirrors the observed staleness: an earlier rebuild captured 11 rounds;
+  // wk12-16 results existed but were never incorporated. A fresh rebuild that
+  // supplies all 16 completed rounds must reflect 16, proving the rebuild is
+  // the operation that makes Season Points current (not a label/cache fix).
+  const eventsPlayed = new Map<string, number>([['mc-1', 16]])
+  const mkRound = (n: number) => [{ member_card_id: 'mc-1', total_points: 10, player_name: 'Hans' }]
+  const deps16 = fakeDeps({
+    rounds: Array.from({ length: 16 }, (_, i) => mkRound(i)),
+    eventsPlayed, wins: new Map([['mc-1', 0]]), names: new Map([['mc-1', 'Hans']]),
+  })
+  const rows16 = await rebuildSeasonPoints({ competitionKey: 'mens-league', deps: deps16 as any })
+  assert.equal(rows16[0].total_points, 160, '16 rounds × 10 pts')
+  assert.equal(rows16[0].events_played, 16)
+
+  const deps11 = fakeDeps({
+    rounds: Array.from({ length: 11 }, (_, i) => mkRound(i)),
+    eventsPlayed: new Map([['mc-1', 11]]), wins: new Map([['mc-1', 0]]), names: new Map([['mc-1', 'Hans']]),
+  })
+  const rows11 = await rebuildSeasonPoints({ competitionKey: 'mens-league', deps: deps11 as any })
+  assert.equal(rows11[0].total_points, 110, 'stale rebuild only sees the 11 supplied rounds')
+  assert.equal(rows11[0].events_played, 11)
+  assert.ok(rows16[0].total_points > rows11[0].total_points, 'fresh rebuild is strictly ahead')
+})

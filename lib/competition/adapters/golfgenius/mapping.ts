@@ -6,7 +6,6 @@
 // shared code. See design spec §4/§6 (revision 6).
 
 import type { Occurrence, ActiveWindow, EventFormat, DiscoveryState, ResultStatus, LabelRule } from '../../types.ts'
-import { isOccurrenceActive } from '../../active-window.ts'
 
 // Format an ISO date (YYYY-MM-DD[...]) as MM/DD/YYYY for user-facing labels.
 // Returns '' when the date is missing or malformed so the label degrades to
@@ -20,21 +19,39 @@ export function formatDateUS(iso: string | null): string {
 }
 
 // Pick the occurrence to show when the URL doesn't name one. Pure so it is
-// unit-testable and so the server wrapper stays thin. Order of preference:
-//   1. the occurrence currently in its active window (live play now)
-//   2. the most recent finalized occurrence (latest historical results)
-//   3. the latest occurrence overall (e.g. a scheduled-but-not-played week)
-// Occurrences are assumed chronological (oldest→newest); "latest" = last.
-export function defaultOccurrenceId(occurrences: Occurrence[], nowIso: string): string | null {
+// unit-testable and so the server wrapper stays thin. Implements the
+// product rule verbatim — "if golf is happening today and scores are coming
+// in, show me today's golf; otherwise show me the latest golf that happened"
+// — using DIRECT result evidence, not inferred status:
+//
+//   1. TODAY (a play-day occurrence dated today) WITH posted golf → today.
+//   2. Otherwise → the NEWEST occurrence that actually has stored results
+//      (chronological order, oldest→newest; "newest with results" = last
+//      occurrence whose id is in `hasResults`). An empty occurrence is never
+//      useful merely because it is newer, so a future/unscored week never
+//      replaces the last useful leaderboard.
+//   3. Fallback → today (scheduled but no results yet), else the last
+//      occurrence overall (e.g. start of season, nothing played yet).
+//
+// `todayId`/`todayHasPostedGolf`/`hasResults` are computed server-side from
+// direct evidence (stored result rows + posted scorecards); this function
+// stays pure and deterministic. Occurrences are chronological (oldest first).
+// See P0/§3 (simplify initial selection).
+export interface DefaultOccurrenceEvidence {
+  todayId: string | null
+  todayHasPostedGolf: boolean
+  hasResults: Set<string>
+}
+
+export function defaultOccurrenceId(
+  occurrences: Occurrence[],
+  evidence: DefaultOccurrenceEvidence,
+): string | null {
   if (occurrences.length === 0) return null
-  for (const o of occurrences) {
-    if (isOccurrenceActive(o.activeWindow, nowIso, false)) return o.id
-  }
-  let lastFinal: Occurrence | null = null
-  for (const o of occurrences) {
-    if (o.resultStatus === 'final') lastFinal = o
-  }
-  if (lastFinal) return lastFinal.id
+  if (evidence.todayId && evidence.todayHasPostedGolf) return evidence.todayId
+  const withResults = occurrences.filter((o) => evidence.hasResults.has(o.id))
+  if (withResults.length) return withResults[withResults.length - 1].id
+  if (evidence.todayId) return evidence.todayId
   return occurrences[occurrences.length - 1].id
 }
 

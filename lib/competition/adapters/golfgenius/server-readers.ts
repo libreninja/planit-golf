@@ -127,6 +127,57 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
 }
 
 // ---------------------------------------------------------------------------
+// 1b. Direct result evidence for default selection (§3 / §4). DIRECT evidence
+//     of stored result rows and posted scorecards — never inferred from
+//     source_finalized_at / resultStatus, which are absent for legacy imports.
+//     `hasResults` is the set of occurrence ids with at least one stored
+//     igc_league_results row; `todayHasPostedGolf` is true when today's week
+//     has any performance with completed holes. Both use cheap head-counts so
+//     PostgREST's 1000-row cap never truncates the answer.
+// ---------------------------------------------------------------------------
+
+export async function resolveWeeksWithResults(
+  competitionKey: string,
+  weekNumbers: number[],
+): Promise<Set<string>> {
+  if (weekNumbers.length === 0) return new Set()
+  const leagueKey = leagueKeyFor(competitionKey)
+  const supabase = await createClient()
+  const counts = await Promise.all(
+    weekNumbers.map((w) =>
+      supabase
+        .from('igc_league_results')
+        .select('id', { count: 'exact', head: true })
+        .eq('league_key', leagueKey)
+        .eq('week_number', w),
+    ),
+  )
+  const set = new Set<string>()
+  weekNumbers.forEach((w, i) => {
+    if ((counts[i].count ?? 0) > 0) set.add(String(w))
+  })
+  return set
+}
+
+export async function resolveHasPostedGolf(
+  competitionKey: string,
+  weekNumber: number,
+): Promise<boolean> {
+  if (!Number.isFinite(weekNumber)) return false
+  const leagueKey = leagueKeyFor(competitionKey)
+  const supabase = await createClient()
+  // holes_completed > 0 is direct scorecard evidence. (gross_scores is an
+  // array; holes_completed is the rolled-up count and is directly queryable.)
+  const { count } = await supabase
+    .from('igc_league_performances')
+    .select('id', { count: 'exact', head: true })
+    .eq('league_key', leagueKey)
+    .eq('week_number', weekNumber)
+    .gt('holes_completed', 0)
+  return (count ?? 0) > 0
+}
+
+// ---------------------------------------------------------------------------
 // 2. Historical final — build a generic LiveResponse from the DB (no GG fetch).
 // ---------------------------------------------------------------------------
 

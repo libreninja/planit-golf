@@ -73,33 +73,60 @@ const occ = (id: string, status: 'final' | 'live' | 'unknown' | 'not_started', s
   activeWindow: { start, end }, format: 'individual', discoveryState: 'discovered', resultStatus: status,
 })
 
-test('defaultOccurrenceId: active (in-window) occurrence wins', () => {
-  const occs = [
-    occ('w1', 'final', '2026-07-14T16:00:00-07:00', '2026-07-15T00:00:00-07:00'),
-    occ('w2', 'live', '2026-07-28T16:00:00-07:00', '2026-07-29T00:00:00-07:00'), // active now
-    occ('w3', 'final', '2026-07-21T16:00:00-07:00', '2026-07-22T00:00:00-07:00'),
-  ]
-  assert.equal(defaultOccurrenceId(occs, '2026-07-28T17:00:00-07:00'), 'w2')
-})
-
-test('defaultOccurrenceId: no active → most recent finalized (last final in chronological order)', () => {
+test('defaultOccurrenceId: Tuesday + posted golf → today (the current event)', () => {
   const occs = [
     occ('w1', 'final', '2026-07-07T16:00:00-07:00', '2026-07-08T00:00:00-07:00'),
     occ('w2', 'final', '2026-07-14T16:00:00-07:00', '2026-07-15T00:00:00-07:00'),
-    occ('w3', 'unknown', '2026-08-04T16:00:00-07:00', '2026-08-05T00:00:00-07:00'), // future, not final
+    occ('w3', 'unknown', '2026-08-04T16:00:00-07:00', '2026-08-05T00:00:00-07:00'), // today, golf happening
   ]
-  // Monday between weeks — no active window; latest final is w2.
-  assert.equal(defaultOccurrenceId(occs, '2026-08-03T12:00:00-07:00'), 'w2')
+  assert.equal(defaultOccurrenceId(occs, { todayId: 'w3', todayHasPostedGolf: true, hasResults: new Set(['w1', 'w2']) }), 'w3')
 })
 
-test('defaultOccurrenceId: no final/live → latest occurrence overall', () => {
+test('defaultOccurrenceId: Tuesday + today has NO posted golf → most recent prior occurrence with results', () => {
+  const occs = [
+    occ('w1', 'final', '2026-07-07T16:00:00-07:00', '2026-07-08T00:00:00-07:00'),
+    occ('w2', 'final', '2026-07-14T16:00:00-07:00', '2026-07-15T00:00:00-07:00'),
+    occ('w3', 'unknown', '2026-08-04T16:00:00-07:00', '2026-08-05T00:00:00-07:00'), // today, nobody has posted yet
+  ]
+  assert.equal(defaultOccurrenceId(occs, { todayId: 'w3', todayHasPostedGolf: false, hasResults: new Set(['w1', 'w2']) }), 'w2')
+})
+
+test('defaultOccurrenceId: Wednesday–Monday → newest occurrence WITH results', () => {
+  const occs = [
+    occ('w1', 'final', '2026-07-07T16:00:00-07:00', '2026-07-08T00:00:00-07:00'),
+    occ('w2', 'final', '2026-07-14T16:00:00-07:00', '2026-07-15T00:00:00-07:00'),
+    occ('w3', 'unknown', '2026-08-04T16:00:00-07:00', '2026-08-05T00:00:00-07:00'), // future empty
+  ]
+  // No todayId (not a play day) → newest with results is w2; the future empty w3 never wins.
+  assert.equal(defaultOccurrenceId(occs, { todayId: null, todayHasPostedGolf: false, hasResults: new Set(['w1', 'w2']) }), 'w2')
+})
+
+test('defaultOccurrenceId: a newer EMPTY occurrence does not replace the last useful results', () => {
+  const occs = [
+    occ('w15', 'final', '2026-07-14T16:00:00-07:00', '2026-07-15T00:00:00-07:00'),
+    occ('w16', 'final', '2026-07-21T16:00:00-07:00', '2026-07-22T00:00:00-07:00'), // newest with results
+    occ('w17', 'unknown', '2026-07-28T16:00:00-07:00', '2026-07-29T00:00:00-07:00'), // newer but empty (no play)
+    occ('w18', 'unknown', '2026-08-04T16:00:00-07:00', '2026-08-05T00:00:00-07:00'), // future empty
+  ]
+  // Monday: todayId null. hasResults only w15/w16. w18 (newest overall) must NOT be chosen.
+  assert.equal(defaultOccurrenceId(occs, { todayId: null, todayHasPostedGolf: false, hasResults: new Set(['w15', 'w16']) }), 'w16')
+})
+
+test('defaultOccurrenceId: no results anywhere + today exists → today (nothing else to show)', () => {
+  const occs = [
+    occ('w1', 'not_started', '2026-08-04T16:00:00-07:00', '2026-08-05T00:00:00-07:00'),
+  ]
+  assert.equal(defaultOccurrenceId(occs, { todayId: 'w1', todayHasPostedGolf: false, hasResults: new Set() }), 'w1')
+})
+
+test('defaultOccurrenceId: no results anywhere + no today → latest occurrence overall', () => {
   const occs = [
     occ('w1', 'not_started', '2026-08-11T16:00:00-07:00', '2026-08-12T00:00:00-07:00'),
     occ('w2', 'not_started', '2026-08-18T16:00:00-07:00', '2026-08-19T00:00:00-07:00'),
   ]
-  assert.equal(defaultOccurrenceId(occs, '2026-08-03T12:00:00-07:00'), 'w2')
+  assert.equal(defaultOccurrenceId(occs, { todayId: null, todayHasPostedGolf: false, hasResults: new Set() }), 'w2')
 })
 
 test('defaultOccurrenceId: empty → null', () => {
-  assert.equal(defaultOccurrenceId([], '2026-08-03T12:00:00-07:00'), null)
+  assert.equal(defaultOccurrenceId([], { todayId: null, todayHasPostedGolf: false, hasResults: new Set() }), null)
 })
