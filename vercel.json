@@ -4,6 +4,6 @@
   "installCommand": "corepack pnpm install --frozen-lockfile",
   "buildCommand": "corepack pnpm run build",
   "crons": [
-    { "path": "/api/cron/reconcile", "schedule": "13 * * * *" }
+    { "path": "/api/cron/reconcile", "schedule": "37 13 * * *" }
   ]
 }
