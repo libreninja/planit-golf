@@ -98,12 +98,15 @@ export async function reconcileCompetition(input: ReconcileCompetitionInput): Pr
 // ResolvedOccurrence (no placeholders — Corrections 4 & 6).
 async function defaultOps(): Promise<ReconcileOps> {
   const { createServiceClient } = await import('../../supabase/service.ts')
-  const { makeGolfGeniusRequest } = await import('../../gg/client.ts')
+  const { makeGolfGeniusRequestOptional } = await import('../../gg/client.ts')
   const { discoverAndPersistEventClassification } = await import('./discover.ts')
   const { importOccurrence } = await import('./import.ts')
   const { rebuildSeasonPoints } = await import('./season-points.ts')
   const supabase = createServiceClient()
-  const ggClient = (async (endpoint: string) => makeGolfGeniusRequest({ endpoint })) as any
+  // 404-tolerant client: a missing tournament .json ("not found yet") resolves
+  // to null instead of throwing, per discovery's ERROR CONTRACT. This is what
+  // stops unfinalized rounds from surfacing as `wk{N}: ... 404` reconcile errors.
+  const ggClient = (async (endpoint: string) => makeGolfGeniusRequestOptional({ endpoint })) as any
   return {
     async listEvents(competitionKey) {
       const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
@@ -119,9 +122,24 @@ async function defaultOps(): Promise<ReconcileOps> {
     },
     async discoverAndPersist(competitionKey, week, nowIso) {
       const config = (await import('../registry.ts')).getCompetitionConfig(competitionKey)!
+      const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
+      // Pass persisted GG ids from the event row as hints so discovery verifies
+      // and uses them directly. This lets reconcile work in deployments where
+      // IGC_*_SEASON_ID is not configured (config discovery would 404 on an
+      // empty season); stale/empty hints still fall back to full config
+      // discovery. Mirrors the live path's hint usage.
+      const { data: ev } = await supabase.from('igc_league_events')
+        .select('gg_event_id, gg_round_id, gg_gross_tournament_id, gg_net_tournament_id')
+        .eq('league_key', leagueKey).eq('week_number', week).maybeSingle()
+      const persistedHints = ev?.gg_event_id ? {
+        ggEventId: ev.gg_event_id,
+        ggRoundId: ev.gg_round_id ?? null,
+        grossTournamentId: ev.gg_gross_tournament_id ?? null,
+        netTournamentId: ev.gg_net_tournament_id ?? null,
+      } : null
       // Returns the DiscoverResult (carrying `resolved`); orchestration reads
       // resolved.upstreamStatus and passes `resolved` into importOccurrence.
-      return await discoverAndPersistEventClassification({ competitionKey, weekNumber: week, adapterConfig: config.adapterConfig, ggClient, db: classifyDb(supabase, competitionKey), nowIso })
+      return await discoverAndPersistEventClassification({ competitionKey, weekNumber: week, adapterConfig: config.adapterConfig, ggClient, db: classifyDb(supabase, competitionKey), nowIso, persistedHints })
     },
     async importOccurrence(competitionKey, week, nowIso, resolved) {
       const config = (await import('../registry.ts')).getCompetitionConfig(competitionKey)!

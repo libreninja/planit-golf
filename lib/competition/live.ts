@@ -57,8 +57,12 @@ export async function getLiveResults(input: GetLiveResultsInput): Promise<LiveRe
   // Resolve deps (injected in tests, real in prod).
   const adapterConfig = input.deps?.adapterConfig ?? config.adapterConfig
   const ggClient = input.deps?.ggClient ?? ((async (endpoint: string) => {
-    const { makeGolfGeniusRequest } = await import('../gg/client.ts')
-    return makeGolfGeniusRequest({ endpoint })
+    // 404-tolerant: a stale hinted id or a not-posted-yet tournament .json
+    // resolves to null (discovery degrades to not_started / fresh discovery)
+    // instead of throwing → blanking the live leaderboard. 401/403/5xx still
+    // throw so stale-while-error can serve last-known data. See discovery.ts.
+    const { makeGolfGeniusRequestOptional } = await import('../gg/client.ts')
+    return makeGolfGeniusRequestOptional({ endpoint })
   }) as GGClient)
   const readEvent = input.deps?.readEvent ?? (async (competitionKey: string, occurrenceId: string) => {
     const { createClient } = await import('../supabase/server.ts')

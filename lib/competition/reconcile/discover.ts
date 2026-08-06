@@ -5,7 +5,7 @@
 
 import { discoverOccurrence } from '../adapters/golfgenius/discovery.ts'
 import type { GolfGeniusAdapterConfig } from '../types.ts'
-import type { GGClient } from '../adapters/golfgenius/discovery.ts'
+import type { GGClient, PersistedHints } from '../adapters/golfgenius/discovery.ts'
 
 export interface ClassifyDb {
   updateClassification(w: {
@@ -25,6 +25,13 @@ export interface DiscoverPersistInput {
   ggClient: GGClient
   db: ClassifyDb
   nowIso: string
+  // Persisted GG ids from the event row (gg_event_id, gg_round_id, gross/net
+  // tournament ids). When supplied, discovery verifies them against GG and uses
+  // them directly — so reconcile works in deployments where the adapter's
+  // seasonId is not configured (config-based event discovery would 404 on an
+  // empty season). Stale/empty hints fall back to full config discovery, same
+  // as the live path. null re-discovers from config (the original behavior).
+  persistedHints?: PersistedHints | null
 }
 
 // Returns the DiscoverResult (carrying `resolved: ResolvedOccurrence`) so the
@@ -36,7 +43,7 @@ export async function discoverAndPersistEventClassification(input: DiscoverPersi
     tenantKey: input.adapterConfig.tenantKey,
     adapterConfig: input.adapterConfig,
     occurrenceContext: { number: input.weekNumber, date: null },
-    persistedHints: null,                                   // durable path re-discovers fresh
+    persistedHints: input.persistedHints ?? null,
     teamOverride: (input.adapterConfig.teamFormatOverrides ?? []).includes(input.weekNumber),
     ggClient: input.ggClient,
     scoringMode: 'net',

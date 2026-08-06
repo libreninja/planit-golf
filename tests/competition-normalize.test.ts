@@ -48,3 +48,27 @@ test('empty scopes → empty result, no crash', () => {
   assert.equal(entriesByFlight.size, 0)
   assert.equal(scorecards.size, 0)
 })
+
+test('upstreamStatus derived from event.status when present', () => {
+  const { upstreamStatus } = normalizeTournament({ event: { scopes: [], status: 'completed' } }, 'gross')
+  assert.equal(upstreamStatus, 'completed')
+})
+
+test('non-empty event.season_points → completed (GG league rounds expose no event.status)', () => {
+  // IGC league .json never populates event.status; a non-empty season_points is
+  // the authoritative "scored/finalized" signal. This is what unblocks the
+  // reconcile import gate.
+  const fx = fixture()
+  fx.event!.status = undefined
+  fx.event!.season_points = [{ member_card_id: 'mc-1', total_points: 50 }]
+  const { upstreamStatus } = normalizeTournament(fx, 'net')
+  assert.equal(upstreamStatus, 'completed')
+})
+
+test('empty event.season_points (future/unscored round) → unknown, not completed', () => {
+  const fx = fixture()
+  fx.event!.status = undefined
+  fx.event!.season_points = []
+  const { upstreamStatus } = normalizeTournament(fx, 'net')
+  assert.equal(upstreamStatus, 'unknown')
+})

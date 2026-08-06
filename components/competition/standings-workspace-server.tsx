@@ -74,10 +74,13 @@ export async function StandingsWorkspaceServer({
 
   // For TODAY's event, also consult the LIVE path (GG) for posted golf — the
   // direct scorecard evidence that golf is happening right now — but ONLY when
-  // the adapter is configured (seasonId present). The result is reused as the
-  // live initial when today is selected. Skipped in unconfigured envs (no GG
-  // call, no latency) where DB evidence alone suffices.
-  const ggConfigured = !!config.adapterConfig.seasonId
+  // the GG adapter can actually call upstream (API key present). Discovery
+  // resolves the occurrence from persisted hints (gg_event_id on the event row),
+  // so it does NOT require seasonId; gating on seasonId wrongly disabled the
+  // entire live path in deployments where IGC_*_SEASON_ID is unset. The result
+  // is reused as the live initial when today is selected. Skipped only when GG
+  // is unreachable (no API key) — DB evidence alone suffices there.
+  const ggConfigured = !!process.env.GOLF_GENIUS_API_KEY
   const todayLive = (todayId && ggConfigured && config.capabilities.supportsLiveResults)
     ? await getLiveResults({ competitionKey, occurrenceId: todayId, scoring, nowIso })
     : null
@@ -104,6 +107,7 @@ export async function StandingsWorkspaceServer({
     hasStoredResults,
     todayActive,
     selectedIsToday: selected?.id === todayId,
+    todayLiveHasGolf,
   })
   const initial = dec.useLivePath
     ? (selected?.id === todayId && todayLive ? todayLive : historical)

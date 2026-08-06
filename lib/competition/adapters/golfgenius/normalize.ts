@@ -40,6 +40,11 @@ export interface GGResultsFixture {
     scopes?: GGScope[]
     // Upstream lifecycle status when GG exposes it on the round/tournament:
     status?: string   // e.g. 'completed' | 'in_progress' | 'not_started'
+    // GG's authoritative cumulative season-points array, computed at scoring
+    // time. IGC league rounds never populate event.status, so a non-empty
+    // season_points is the reliable "this round is scored/finalized" signal:
+    // scored rounds return ~70-150 entries; future/unscored rounds return [].
+    season_points?: unknown[] | null
   }
 }
 
@@ -110,6 +115,16 @@ export function normalizeTournament(
   if (rawStatus === 'completed' || rawStatus === 'final') upstreamStatus = 'completed'
   else if (rawStatus === 'in_progress' || rawStatus === 'live') upstreamStatus = 'in_progress'
   else if (rawStatus === 'not_started' || rawStatus === 'upcoming') upstreamStatus = 'not_started'
+  // GG league rounds never expose event.status (it is null on the .json
+  // endpoint). The authoritative completion signal is a NON-EMPTY
+  // event.season_points array — GG computes the cumulative standings at scoring
+  // time, so its presence means the round is scored/finalized. A future or
+  // in-progress round returns season_points: [] (or no scopes). This is what
+  // unblocks reconcile's `upstreamStatus === 'completed'` import gate and the
+  // per-round season-points capture in import.ts.
+  else if (Array.isArray(results?.event?.season_points) && (results!.event!.season_points!.length > 0)) {
+    upstreamStatus = 'completed'
+  }
 
   return { competition, entriesByFlight, scorecards, upstreamStatus }
 }
