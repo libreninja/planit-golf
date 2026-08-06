@@ -1,16 +1,19 @@
 // Async server component: resolves the competition config + initial data and
-// renders either the weekly/live workspace or the season-points view. The
-// client shell receives only plain serializable props — no CompetitionConfig
-// object crosses the server/client boundary. See task 26D/26E/26F.
+// hands a fully-preloaded, serializable prop bundle to the unified client shell
+// (P1-1 / P1-2). The shell toggles Season Points ↔ Weekly/Live and Gross ↔ Net
+// as pure client state — no server round-trip — so the server must preload both
+// scorings for a finalized week and the season-points rows up front. The live
+// path preloads only the current scoring (the shell prefetches the other).
+//
+// No CompetitionConfig object crosses the server/client boundary — only plain
+// serializable props. See task 26D/26E/26F + P1-1/P1-2.
 
 import { getCompetitionConfig } from '@/lib/competition/registry'
 import { getLiveResults } from '@/lib/competition/live'
 import { isOccurrenceActive } from '@/lib/competition/active-window'
 import { buildStandingsViewModel } from './standings-view-model'
 import { normalizeUrlState } from './url-state'
-import { StandingsWorkspace } from './standings-workspace'
-import { SeasonPointsView } from './season-points-view'
-import { ViewTabs } from './view-tabs'
+import { StandingsShell } from './standings-shell'
 import { decideInitialRender } from './initial-render-decision'
 import {
   buildHistoricalLiveResponse,
@@ -21,7 +24,7 @@ import {
   resolveWeeksWithResults,
 } from '@/lib/competition/adapters/golfgenius/server-readers'
 import { defaultOccurrenceId } from '@/lib/competition/adapters/golfgenius/mapping'
-import type { ResultStatus, ScoringMode } from '@/lib/competition/types'
+import type { LiveResponse, ResultStatus, ScoringMode } from '@/lib/competition/types'
 
 // Today's calendar date (YYYY-MM-DD) in the league timezone — used to identify
 // the play-day occurrence ("Tuesday's event") for the initial-selection rule.
@@ -59,6 +62,7 @@ export async function StandingsWorkspaceServer({
   const tz = config.schedule?.timezone ?? 'America/Los_Angeles'
   const defaultScoring = (config.capabilities.scoring.modes[0] ?? 'net') as ScoringMode
   const scoring: ScoringMode = (urlState.scoring as ScoringMode | null) ?? defaultScoring
+  const scoringModes = config.capabilities.scoring.modes as ScoringMode[]
 
   // ---- Direct evidence for the product-rule initial selection (§3/§4) ----
   // DIRECT evidence — never source_finalized_at / resultStatus (absent for
@@ -116,13 +120,32 @@ export async function StandingsWorkspaceServer({
     ? `/api/competition/live?competition=${encodeURIComponent(competitionKey)}&occurrence=${encodeURIComponent(selected.id)}`
     : null
 
+  // ---- P1-2: preload BOTH scoring datasets for instant Gross/Net toggle ----
+  // Finalized/historical weeks: fetch every scoring from the DB (cheap RLS
+  // reads) so a toggle is an instant client remount with preloaded data. Live
+  // path: only the current scoring is fetched server-side; the other scoring
+  // is fetched client-side via the poll (the shell prefetches its URL so the
+  // first toggle is warm and repeated toggles hit the server cache).
+  const initialByScoring: Record<string, LiveResponse | null> = {}
+  initialByScoring[scoring] = initial
+  if (!dec.useLivePath) {
+    for (const m of scoringModes) {
+      if (m === scoring) continue
+      initialByScoring[m] = selected ? await buildHistoricalLiveResponse(competitionKey, selected, m) : null
+    }
+  } else {
+    for (const m of scoringModes) {
+      if (!(m in initialByScoring)) initialByScoring[m] = null
+    }
+  }
+
   const vm = buildStandingsViewModel({
     competitionKey,
     occurrences,
     selectedOccurrenceId: selectedId,
     urlState: { view: urlState.view, scoring: urlState.scoring, grouping: urlState.grouping },
-    availableScoringModes: config.capabilities.scoring.modes as ScoringMode[],
-    storedScoring: null, // server has no localStorage; client resolves stored pref on mount
+    availableScoringModes: scoringModes,
+    storedScoring: null, // server has no localStorage; client resolves stored pref on toggle
     availableGroupings: await resolveAvailableGroupings(competitionKey, selectedId),
     // effectiveStatus uses DIRECT evidence (hasStoredResults), so a completed
     // historical week exposes multi-flight grouping capabilities even though
@@ -134,35 +157,32 @@ export async function StandingsWorkspaceServer({
     supportsEventNavigation: config.capabilities.supportsEventNavigation,
   })
 
-  // ViewTabs are hoisted above the conditional body so the Season Points /
-  // Weekly-Live switch is visible from BOTH views (P1). Returns null for a
-  // single-view competition (women's).
-  const body = vm.view === 'season' && config.capabilities.views.includes('season') ? (
-    <SeasonPointsView rows={await resolveSeasonPoints(competitionKey)} />
-  ) : (
-    // Keyed by occurrence + scoring so navigating weeks (or toggling Gross/Net)
-    // remounts the workspace with the new initial data — useLivePoll's
-    // useState(initial) only seeds on mount, so without a key the old week's
-    // leaderboard would stay mounted after navigation (P5 stale-data fix).
-    <StandingsWorkspace
-      key={`${vm.selectedOccurrenceId ?? 'none'}-${vm.scoring}`}
-      competitionKey={competitionKey}
-      occurrences={vm.occurrences}
-      selectedOccurrenceId={vm.selectedOccurrenceId}
-      queryParam={config.navigation.queryParam}
-      scoring={vm.scoring}
-      grouping={vm.grouping}
-      capabilities={vm.capabilities}
-      initial={initial}
-      pollUrl={pollUrl}
-      initialIsHistoricalFinal={dec.initialIsHistoricalFinal}
-    />
-  )
+  // ---- P1-1: preload Season Points rows so the view switch is instant ----
+  // Resolved only when the competition actually has a 'season' view; null
+  // otherwise (women's is weekly-only) so the shell never offers a season tab.
+  const seasonRows = config.capabilities.views.includes('season')
+    ? await resolveSeasonPoints(competitionKey)
+    : null
 
   return (
-    <section className="space-y-4">
-      <ViewTabs views={config.capabilities.views} selectedView={vm.view} />
-      {body}
-    </section>
+    <StandingsShell
+      competitionKey={competitionKey}
+      configViews={config.capabilities.views}
+      initialView={vm.view}
+      initialScoring={vm.scoring}
+      scoringModes={scoringModes}
+      seasonRows={seasonRows}
+      weekly={{
+        occurrences: vm.occurrences,
+        selectedOccurrenceId: vm.selectedOccurrenceId,
+        queryParam: config.navigation.queryParam,
+        grouping: vm.grouping,
+        capabilities: vm.capabilities,
+        initialByScoring,
+        pollUrl,
+        initialIsHistoricalFinal: dec.initialIsHistoricalFinal,
+        useLivePath: dec.useLivePath,
+      }}
+    />
   )
 }

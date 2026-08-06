@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { occurrenceNavNeighbors, type NavOcc } from './occurrence-nav-neighbors'
 
@@ -13,12 +13,21 @@ import { occurrenceNavNeighbors, type NavOcc } from './occurrence-nav-neighbors'
 // (App Router keeps the old segment during a query-only navigation, and the
 // workspace is keyed by occurrence+scoring so it remounts with fresh initial
 // data when the new render arrives — no stale-data, no full skeleton).
+//
+// URL construction is delegated to the parent (`urlFor`) so a week change
+// preserves the shell's CURRENT scoring/view — which the parent tracks in
+// client state and writes via history.replaceState (P1-1/P1-2), and which
+// next/navigation's useSearchParams would otherwise not reflect. `onSelect`
+// performs the actual router.replace.
 export function OccurrenceNav({
-  occurrences, selectedId, queryParam,
-}: { occurrences: NavOcc[]; selectedId: string | null; queryParam: string }) {
+  occurrences, selectedId, onSelect, urlFor,
+}: {
+  occurrences: NavOcc[]
+  selectedId: string | null
+  onSelect: (id: string) => void
+  urlFor: (id: string) => string
+}) {
   const router = useRouter()
-  const pathname = usePathname()
-  const params = useSearchParams()
   const [localId, setLocalId] = useState<string | null>(selectedId)
   const [navigating, setNavigating] = useState(false)
 
@@ -30,27 +39,20 @@ export function OccurrenceNav({
 
   const { prev, next } = occurrenceNavNeighbors(occurrences, localId)
 
-  const urlFor = (id: string) => {
-    const np = new URLSearchParams(params.toString())
-    np.set(queryParam, id)
-    return `${pathname}?${np.toString()}`
-  }
-
   const go = (id: string) => {
     if (!id || id === localId) return
     setLocalId(id)        // optimistic: the control acknowledges the click instantly
     setNavigating(true)
-    router.replace(urlFor(id), { scroll: false })
+    onSelect(id)
   }
 
   // Prefetch the adjacent occurrence routes so the next chevron click swaps
   // without a cold fetch (P5).
-  const searchString = params.toString()
   useEffect(() => {
     if (prev) router.prefetch(urlFor(prev.id))
     if (next) router.prefetch(urlFor(next.id))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prev?.id, next?.id, pathname, searchString])
+  }, [prev?.id, next?.id, urlFor])
 
   return (
     <div className="flex items-center gap-2">

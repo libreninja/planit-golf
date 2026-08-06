@@ -10,12 +10,17 @@ import { cn } from "@/lib/utils/cn";
 // capability state (grouping === 'all' && groupings.kind === 'multi'), never a
 // route-name check. A specific flight makes the column redundant, live weeks
 // are unflighted, and women's is single Overall. See FIX 2.
+// colorizeFlights (P1-3) tints each row + its flight badge with the flight's
+// color — true for any finalized Men's multi-flight week (All AND a specific
+// flight). Live/women's stay neutral (the flag is false there).
 export function Leaderboard({
   leaderboard,
   showFlight = false,
+  colorizeFlights = false,
 }: {
   leaderboard: Leaderboard;
   showFlight?: boolean;
+  colorizeFlights?: boolean;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   if (leaderboard.entries.length === 0) {
@@ -58,6 +63,7 @@ export function Leaderboard({
               isOpen={expanded === key}
               onToggle={() => setExpanded((c) => (c === key ? null : key))}
               showFlight={showFlight}
+              colorizeFlights={colorizeFlights}
             />
           );
         })}

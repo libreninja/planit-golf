@@ -1,10 +1,12 @@
 "use client";
 
+import { cn } from "@/lib/utils/cn";
 import type {
   Scorecard as ScorecardT,
   ResultEntry,
   ScoringMode,
 } from "@/lib/competition/types";
+import { flightColor } from "./flight-color";
 
 // ---- formatting helpers -----------------------------------------------------
 
@@ -39,6 +41,7 @@ export function ScorecardRow({
   isOpen,
   onToggle,
   showFlight = false,
+  colorizeFlights = false,
 }: {
   entry: ResultEntry;
   card: ScorecardT | null;
@@ -47,6 +50,7 @@ export function ScorecardRow({
   isOpen: boolean;
   onToggle: () => void;
   showFlight?: boolean;
+  colorizeFlights?: boolean;
 }) {
   const isGross = scoringMode === "gross";
   const hasHoles = !!card && card.holes.some((h) => h.gross !== null || h.net !== null);
@@ -55,6 +59,9 @@ export function ScorecardRow({
   const total = isGross ? card?.grossTotal ?? null : card?.netTotal ?? null;
   const holesCompleted = card?.holesCompleted ?? 0;
   const isPlayerLive = live && !!card?.isLive;
+  // P1-3: subtle per-flight tint + badge for finalized Men's multi-flight views.
+  // null for non-numeric/unflighted rows → those rows stay neutral.
+  const color = colorizeFlights ? flightColor(entry.flight) : null;
 
   return (
     <div>
@@ -63,22 +70,33 @@ export function ScorecardRow({
         onClick={hasHoles ? onToggle : undefined}
         disabled={!hasHoles}
         aria-expanded={isOpen}
-        className={[
+        className={cn(
           "grid w-full grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem] items-center gap-2 px-3 py-2 text-left text-sm",
           showFlight
             ? "sm:grid-cols-[2.5rem_1fr_5rem_4rem_3rem_4rem_4rem_5rem]"
             : "sm:grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem]",
-          hasHoles ? "cursor-pointer hover:bg-muted/30" : "cursor-default",
-        ].join(" ")}
+          hasHoles ? "cursor-pointer" : "cursor-default",
+          // Default hover when uncolored; the flight color's hover when tinted.
+          color ? color.row : hasHoles ? "hover:bg-muted/30" : "",
+          color && hasHoles ? color.rowHover : "",
+        )}
       >
         <span className="font-medium tabular-nums text-muted-foreground">
           {entry.positionLabel ?? "—"}
         </span>
         <span className="truncate font-medium">{entry.name}</span>
         {showFlight && (
-          <span className="hidden truncate text-right text-xs tabular-nums text-muted-foreground sm:block">
-            {entry.flight ?? "—"}
-          </span>
+          color ? (
+            <span className="hidden justify-end sm:flex">
+              <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums", color.badge)}>
+                {entry.flight ?? "—"}
+              </span>
+            </span>
+          ) : (
+            <span className="hidden truncate text-right text-xs tabular-nums text-muted-foreground sm:block">
+              {entry.flight ?? "—"}
+            </span>
+          )
         )}
         <span className={`text-right font-semibold tabular-nums ${toParClass(toPar)}`}>
           {formatToPar(toPar)}

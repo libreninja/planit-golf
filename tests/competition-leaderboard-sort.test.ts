@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { sortAllViewEntries, compareFlightAscending } from '../components/competition/leaderboard-sort.ts'
+import { sortAllViewEntries, compareFlightAscending, compareFlightDescending } from '../components/competition/leaderboard-sort.ts'
 import type { ResultEntry } from '../lib/competition/types.ts'
 
 function entry(name: string, positionOrder: number, flight: string | null, positionLabel: string | null = null): ResultEntry {
@@ -13,25 +13,25 @@ test('compareFlightAscending: numeric labels sort low-to-high ("Flight 1" before
   assert.equal(compareFlightAscending('Flight 2', 'Flight 2'), 0)
 })
 
-test('compareFlightAscending: "Flight 2" sorts above "Flight 10" (numeric, not lexicographic)', () => {
-  assert.equal(compareFlightAscending('Flight 2', 'Flight 10') < 0, true, 'Flight 2 first')
-  assert.equal(compareFlightAscending('Flight 10', 'Flight 2') > 0, true)
+test('compareFlightDescending: numeric labels sort high-to-low ("Flight 3" before "Flight 1")', () => {
+  assert.equal(compareFlightDescending('Flight 3', 'Flight 1') < 0, true, 'Flight 3 first')
+  assert.equal(compareFlightDescending('Flight 1', 'Flight 3') > 0, true)
+  assert.equal(compareFlightDescending('Flight 2', 'Flight 2'), 0)
 })
 
-test('compareFlightAscending: non-numeric labels fall back to string-ascending (A before B before C)', () => {
-  assert.equal(compareFlightAscending('A', 'C') < 0, true, 'A first')
-  assert.equal(compareFlightAscending('C', 'A') > 0, true)
-  assert.equal(compareFlightAscending('B', 'B'), 0)
+test('compareFlightDescending: "Flight 10" sorts above "Flight 2" (numeric, not lexicographic)', () => {
+  assert.equal(compareFlightDescending('Flight 10', 'Flight 2') < 0, true, 'Flight 10 first')
+  assert.equal(compareFlightDescending('Flight 2', 'Flight 10') > 0, true)
 })
 
-test('compareFlightAscending: null/empty flight always sorts last', () => {
-  assert.equal(compareFlightAscending(null, 'Flight 1') > 0, true, 'Flight 1 first, null last')
-  assert.equal(compareFlightAscending('Flight 1', null) < 0, true)
-  assert.equal(compareFlightAscending(null, null), 0)
-  assert.equal(compareFlightAscending('', 'Flight 1') > 0, true)
+test('compareFlightDescending: null/empty flight always sorts last', () => {
+  assert.equal(compareFlightDescending(null, 'Flight 1') > 0, true, 'Flight 1 first, null last')
+  assert.equal(compareFlightDescending('Flight 1', null) < 0, true)
+  assert.equal(compareFlightDescending(null, null), 0)
+  assert.equal(compareFlightDescending('', 'Flight 1') > 0, true)
 })
 
-test('All view: pos:flight ordering — 1:1, 1:2, 1:3, 2:1, 2:2 across multiple flights', () => {
+test('All view: position ascending then flight DESCENDING — 1/F3, 1/F2, 1/F1, 2/F2, 2/F1, 3/F1', () => {
   const rows = [
     entry('p2f2', 2, 'Flight 2'),
     entry('p1f3', 1, 'Flight 3'),
@@ -42,24 +42,24 @@ test('All view: pos:flight ordering — 1:1, 1:2, 1:3, 2:1, 2:2 across multiple 
   ]
   const sorted = sortAllViewEntries(rows)
   assert.deepEqual(sorted.map((r) => r.name), [
-    'p1f1', 'p1f2', 'p1f3',  // position 1: flights 1,2,3 (ascending)
-    'p2f1', 'p2f2',          // position 2: flights 1,2
+    'p1f3', 'p1f2', 'p1f1',  // position 1: flights 3,2,1 (descending)
+    'p2f2', 'p2f1',          // position 2: flights 2,1
     'p3f1',                  // position 3
   ])
 })
 
-test('All view: duplicate position values use flight-ascending tie-break', () => {
-  // Three players tied at position 1 across flights 1 and 2 → flight 1 first.
+test('All view: duplicate position values use flight-DESCENDING tie-break', () => {
+  // Three players tied at position 1 across flights 1 and 2 → flight 2 first.
   const rows = [
-    entry('HighFlight', 1, 'Flight 2'),
     entry('LowFlight', 1, 'Flight 1'),
+    entry('HighFlight', 1, 'Flight 2'),
     entry('MidFlight', 1, 'Flight 1'),
   ]
   const sorted = sortAllViewEntries(rows)
-  // flight 1 rows first (stable among themselves), then flight 2.
-  assert.equal(sorted[0].flight, 'Flight 1')
+  // flight 2 row first, then flight 1 rows (stable among themselves).
+  assert.equal(sorted[0].name, 'HighFlight', 'flight 2 first among the tied position 1')
   assert.equal(sorted[1].flight, 'Flight 1')
-  assert.equal(sorted[2].name, 'HighFlight', 'flight 2 last among the tied position 1')
+  assert.equal(sorted[2].flight, 'Flight 1')
 })
 
 test('All view: unflighted (null) rows sort to the bottom within their position', () => {
@@ -69,8 +69,8 @@ test('All view: unflighted (null) rows sort to the bottom within their position'
     entry('F1', 1, 'Flight 1'),
   ]
   const sorted = sortAllViewEntries(rows)
-  assert.deepEqual(sorted.map((r) => r.name), ['F1', 'F2', 'NoFlight'],
-    'flight 1, then flight 2, then null flight last — all at position 1')
+  assert.deepEqual(sorted.map((r) => r.name), ['F2', 'F1', 'NoFlight'],
+    'flight 2, then flight 1, then null flight last — all at position 1 (descending)')
 })
 
 test('All view: does not mutate the input array', () => {
