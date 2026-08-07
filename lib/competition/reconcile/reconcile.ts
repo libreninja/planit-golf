@@ -167,16 +167,75 @@ function classifyDb(supabase: any, competitionKey: string) {
 }
 function importDb(supabase: any, competitionKey: string) {
   const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
+  // FAILURE-PROPAGATION CONTRACT: supabase-js does NOT throw on upsert/update
+  // errors — it resolves { data, error }. Previously every writer here ignored
+  // `.error` and returned { ok: true }, so a failed performances upsert (e.g.
+  // a NOT NULL / CHECK / unknown-column violation) was swallowed, the week was
+  // stamped durable_imported_at anyway, and reconcile reported errors:[] while
+  // igc_league_performances stayed empty (the weeks-17/18 contract violation).
+  // Now every required write checks `.error` and throws with table + week +
+  // context; importOccurrence awaits these in order with setDurableImported
+  // LAST, so any required-write failure makes durable unreachable, and the
+  // reconcile loop surfaces it in errors[] instead of incrementing imported.
   return {
     async upsertEvent(row: any) {
-      const { data } = await supabase.from('igc_league_events').upsert(row).select('id').single()
-      return { ok: true, id: (data as any)?.id ?? null }
+      // UPDATE (not UPSERT). The event row is created by the seeder/legacy and
+      // ALWAYS pre-exists by import time — reconcile only imports candidates
+      // returned by listEvents (existing rows), and discovery's
+      // updateClassification also UPDATEs (never creates). igc_league_events has
+      // event_name + event_date NOT NULL with NO default, so an UPSERT that omits
+      // them fails: `INSERT ... ON CONFLICT (league_key,week_number) DO UPDATE`
+      // still constructs the INSERT row, and the 23502 NOT NULL violation on
+      // event_name is NOT the arbiter unique violation (23505) that ON CONFLICT
+      // catches — so it propagates and the merge never happens (the exact
+      // weeks-17/18 break: upsertEvent returned no row → eventId/eventName null
+      // → perf rows got event_name null → perf upsert failed NOT NULL → 0 rows,
+      // durable stamped anyway). UPDATE sets only the import columns and PRESERVES
+      // event_name/event_date, which we RETURN so performance rows can populate
+      // event_name (also NOT NULL on igc_league_performances).
+      //
+      // Do NOT set source_finalized_at / source_version here: discovery owns
+      // those (discover.ts sets source_finalized_at = sourceFinalizedAt ?? nowIso
+      // — the nowIso fallback is required because GG's tournament .json for
+      // finalized rounds often has NO event.completed_at). Setting them from the
+      // raw resolved.sourceFinalizedAt (null when completed_at is absent) would
+      // CLOBBER discovery's correct nowIso value back to null, breaking the
+      // finalized signal and candidate selection on the next run.
+      const { data, error } = await supabase.from('igc_league_events')
+        .update({
+          gg_event_id: row.gg_event_id, gg_round_id: row.gg_round_id,
+          gg_gross_tournament_id: row.gg_gross_tournament_id, gg_net_tournament_id: row.gg_net_tournament_id,
+          event_format: row.event_format, discovery_state: row.discovery_state,
+          status: row.status,
+        })
+        .eq('league_key', row.league_key).eq('week_number', row.week_number)
+        .select('id,event_name,event_date').single()
+      if (error) throw new Error(`igc_league_events update wk${row.week_number}: ${error.message}`)
+      return { ok: true, id: (data as any)?.id ?? null, event_name: (data as any)?.event_name ?? null, event_date: (data as any)?.event_date ?? null }
     },
-    async upsertPerformances(rows: any[]) { await supabase.from('igc_league_performances').upsert(rows); return { ok: true } },
-    async upsertResults(rows: any[]) { await supabase.from('igc_league_results').upsert(rows); return { ok: true } },
+    async upsertPerformances(rows: any[]) {
+      const { data, error } = await supabase.from('igc_league_performances')
+        .upsert(rows, { onConflict: 'league_key,week_number,player_name' }).select('id')
+      if (error) throw new Error(`igc_league_performances upsert wk${rows[0]?.week_number}: ${error.message}`)
+      // A completed round must produce performances. PostgREST normally returns
+      // an error for any constraint violation, but defend against a silent
+      // partial/zero write (a swallowed constraint, a BEFORE-trigger dropping
+      // rows): if fewer rows came back than we sent, treat it as failure so the
+      // week cannot become durable with empty performances.
+      if ((data?.length ?? 0) !== rows.length) {
+        throw new Error(`igc_league_performances upsert wk${rows[0]?.week_number}: wrote ${data?.length ?? 0} of ${rows.length} rows`)
+      }
+      return { ok: true }
+    },
+    async upsertResults(rows: any[]) {
+      const { error } = await supabase.from('igc_league_results')
+        .upsert(rows, { onConflict: 'league_key,week_number,member_card_id,competition' })
+      if (error) throw new Error(`igc_league_results upsert wk${rows[0]?.week_number}: ${error.message}`)
+      return { ok: true }
+    },
     async upsertSeasonPointEntries(rows: any[]) {
       if (!rows.length) return { ok: true }
-      await supabase.from('igc_league_season_point_entries').upsert(
+      const { error } = await supabase.from('igc_league_season_point_entries').upsert(
         rows.map((r) => ({
           league_key: leagueKey, week_number: r.week_number,
           member_card_id: r.member_card_id, total_points: r.total_points,
@@ -184,11 +243,13 @@ function importDb(supabase: any, competitionKey: string) {
         })),
         { onConflict: 'league_key,week_number,member_card_id' }
       )
+      if (error) throw new Error(`igc_league_season_point_entries upsert wk${rows[0]?.week_number}: ${error.message}`)
       return { ok: true }
     },
     async setDurableImported(week: number, atIso: string, sourceVersion: string | null) {
-      await supabase.from('igc_league_events').update({ durable_imported_at: atIso, durable_source_version: sourceVersion })
+      const { error } = await supabase.from('igc_league_events').update({ durable_imported_at: atIso, durable_source_version: sourceVersion })
         .eq('league_key', leagueKey).eq('week_number', week)
+      if (error) throw new Error(`setDurableImported wk${week}: ${error.message}`)
       return { ok: true }
     },
   }
@@ -205,6 +266,23 @@ function importDb(supabase: any, competitionKey: string) {
 // lives in season-points.ts.
 function seasonDeps(supabase: any, competitionKey: string) {
   const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
+  // Paginated select. supabase-js caps a single select at 1000 rows; the
+  // entries table (2617+ rows for a full men's season) and the performances
+  // table (2300+ rows) both exceed that. Without paging, listCompletedRounds
+  // summed only weeks 1–7 and the season-points snapshot was built from a
+  // truncated entry set. Pages until a short page is returned.
+  async function selectAll(table: string, cols: string, eq: Record<string, unknown>): Promise<any[]> {
+    const PAGE = 1000
+    const rows: any[] = []
+    let from = 0
+    while (true) {
+      const r = await supabase.from(table).select(cols).match(eq).range(from, from + PAGE - 1)
+      if (r.error) return rows
+      rows.push(...(r.data ?? []))
+      if ((r.data ?? []).length < PAGE) return rows
+      from += PAGE
+    }
+  }
   return {
     async listCompletedRoundsWithPoints() {
       // Authoritative source: GG's embedded event.season_points, captured at
@@ -213,11 +291,10 @@ function seasonDeps(supabase: any, competitionKey: string) {
       // player_name} entries. Ordered by week_number ascending. (If the entries
       // table is not yet populated, fall back to reading the captured season_points
       // JSON from igc_league_events — but never derive from igc_league_results.points.)
-      const { data } = await supabase.from('igc_league_season_point_entries')
-        .select('week_number, member_card_id, total_points, player_name')
-        .eq('league_key', leagueKey).order('week_number', { ascending: true })
+      const data = await selectAll('igc_league_season_point_entries', 'week_number, member_card_id, total_points, player_name', { league_key: leagueKey })
+      data.sort((a: any, b: any) => a.week_number - b.week_number)
       const byRound = new Map<number, { member_card_id: string; total_points: number; player_name?: string | null }[]>()
-      for (const r of data ?? []) {
+      for (const r of data) {
         if (!byRound.has(r.week_number)) byRound.set(r.week_number, [])
         byRound.get(r.week_number)!.push({ member_card_id: r.member_card_id, total_points: Number(r.total_points ?? 0), player_name: r.player_name ?? null })
       }
@@ -225,10 +302,9 @@ function seasonDeps(supabase: any, competitionKey: string) {
     },
     async readEventsPlayed() {
       // weeks with a non-null gross_scores performance per member
-      const { data } = await supabase.from('igc_league_performances')
-        .select('member_card_id, gross_scores').eq('league_key', leagueKey)
+      const data = await selectAll('igc_league_performances', 'member_card_id, gross_scores', { league_key: leagueKey })
       const m = new Map<string, number>()
-      for (const r of data ?? []) {
+      for (const r of data) {
         if (Array.isArray(r.gross_scores) && r.gross_scores.some((g: number | null) => g != null)) {
           m.set(r.member_card_id, (m.get(r.member_card_id) ?? 0) + 1)
         }
@@ -236,10 +312,9 @@ function seasonDeps(supabase: any, competitionKey: string) {
       return m
     },
     async readWins() {
-      const { data } = await supabase.from('igc_league_results')
-        .select('member_card_id, flight_position').eq('league_key', leagueKey).eq('flight_position', 1)
+      const data = await selectAll('igc_league_results', 'member_card_id, flight_position', { league_key: leagueKey, flight_position: 1 })
       const m = new Map<string, number>()
-      for (const r of data ?? []) m.set(r.member_card_id, (m.get(r.member_card_id) ?? 0) + 1)
+      for (const r of data) m.set(r.member_card_id, (m.get(r.member_card_id) ?? 0) + 1)
       return m
     },
     async readNames() {

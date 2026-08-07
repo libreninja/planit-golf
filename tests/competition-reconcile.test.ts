@@ -94,3 +94,26 @@ test('stops before the shared deadline and marks stoppedForBudget', async () => 
   })
   assert.equal(summary.stoppedForBudget, true)
 })
+
+// Failure-propagation contract (weeks-17/18 regression): when import throws
+// (a required write failed, or a completed round built 0 performances), the
+// reconcile loop must surface it in errors[] and NOT count the week as
+// imported, and must not run the season-points rebuild for that week.
+test('importOccurrence failure → surfaced in errors[], not counted as imported, no rebuild', async () => {
+  const ops = makeOps({ events: baseEvents([
+    { week_number: 17, event_format: 'individual', discovery_state: 'discovered', upstream_status: 'completed', durable_imported_at: null },
+  ]), completedWeeks: [17] })
+  // Override importOccurrence to throw (mirrors the production importDb rethrow
+  // or the zero-perf guard firing).
+  ;(ops as any).importOccurrence = async (_ck: string, week: number) => {
+    throw new Error(`wk${week}: completed round produced 0 performance rows (gross=g1 net=n1)`)
+  }
+  const summary = await reconcileCompetition({
+    competitionKey: 'mens-league', deadlineMs: Date.now() + 60_000, nowIso: '2026-07-28T22:00:00Z', ops: ops as any,
+  })
+  assert.equal(summary.imported, 0, 'a failed import must not be counted as imported')
+  assert.equal(summary.seasonPointsRebuilds, 0, 'rebuild must not run after a failed import')
+  assert.equal(summary.errors.length, 1)
+  assert.match(summary.errors[0], /wk17: completed round produced 0 performance rows/)
+  assert.ok(!ops.calls.includes('points'), 'season-points rebuild skipped for the failed week')
+})

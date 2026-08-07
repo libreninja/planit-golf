@@ -73,9 +73,14 @@ function emptyResolved(weekNumber: number | null): ResolvedOccurrence {
   }
 }
 
-// Coerce a GG rounds response to an array (list or {rounds:[...]}).
+// Coerce a GG rounds response to an array (list or {rounds:[...]}). Each
+// element arrives wrapped as {round: {id, date, ...}} from GG's
+// /events/{ev}/rounds endpoint; unwrap that so callers can read `.id`/`.date`
+// at the top level. Elements that are already flat (no `round` key) pass
+// through unchanged, so this is safe for both shapes.
 function asRounds(list: any): any[] {
-  return Array.isArray(list) ? list : (list?.rounds ?? [])
+  const arr = Array.isArray(list) ? list : (list?.rounds ?? [])
+  return arr.map((x: any) => (x && typeof x === 'object' && 'round' in x ? x.round : x))
 }
 // Coerce a GG list response to an array (list or {<key>:[...]}).
 function asArr(list: any, key: string): any[] {

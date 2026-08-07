@@ -18,7 +18,7 @@ import type { GolfGeniusAdapterConfig, ResolvedOccurrence } from '../types.ts'
 import type { GGClient } from '../adapters/golfgenius/discovery.ts'
 
 export interface ImportDb {
-  upsertEvent(row: Record<string, unknown>): Promise<{ ok: boolean; id?: string | null }>
+  upsertEvent(row: Record<string, unknown>): Promise<{ ok: boolean; id?: string | null; event_name?: string | null; event_date?: string | null }>
   upsertPerformances(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
   upsertResults(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
   setDurableImported(week: number, atIso: string, sourceVersion: string | null): Promise<{ ok: boolean }>
@@ -57,6 +57,11 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     status: 'finalized',
   })
   const eventId = evRes?.id ?? null
+  // event_name/event_date are NOT NULL on igc_league_performances. Discovery
+  // leaves resolved.eventName null on the hint path, so source them from the
+  // merged event row (which always carries them). roundDate is the fallback.
+  const eventNameFinal = evRes?.event_name ?? eventName ?? null
+  const eventDateFinal = evRes?.event_date ?? roundDate ?? null
 
   // Course par for the (secondary) birdie/double-bogey counts only. Not critical:
   // on any fetch failure parData stays [] → counts are 0 (parity with the
@@ -132,8 +137,8 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
           purse: e.purse,
           holes_completed: card ? card.holesCompleted : 0,
           scorecard_status: card ? card.scorecardStatus : null,
-          event_name: eventName,
-          event_date: roundDate,
+          event_name: eventNameFinal,
+          event_date: eventDateFinal,
           double_bogeys: doubleBogeys, birdies: birdies,
           weekly_position: parsePosition(e.positionLabel) ?? 9999,
           net_scores: netScores,
@@ -153,6 +158,16 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
   }
 
   const perfRows = [...perfByKey.values()]
+  // INVARIANT: a completed/finalized round MUST produce performance rows. Zero
+  // rows means import built nothing (normalize produced no entries, or the GG
+  // payload was empty/malformed). Previously this fell through to
+  // setDurableImported, stamping a finalized round durable while
+  // igc_league_performances stayed empty — the exact weeks-17/18 contract
+  // violation. Fail loudly BEFORE any required write so the week cannot become
+  // durable, and reconcile surfaces it in errors[].
+  if (perfRows.length === 0 && input.resolved.upstreamStatus === 'completed') {
+    throw new Error(`wk${weekNumber}: completed round produced 0 performance rows (gross=${grossTournamentId} net=${netTournamentId})`)
+  }
   if (perfRows.length) await input.db.upsertPerformances(perfRows)
   if (resultRows.length) await input.db.upsertResults(resultRows)
   // Per-round authoritative season-points entries (durable source for

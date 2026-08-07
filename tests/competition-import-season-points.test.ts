@@ -110,3 +110,98 @@ test('missing upsertSeasonPointEntries (optional): capture skipped, no throw, 19
   assert.equal(summary.seasonPointEntries, 1, 'entries computed even when db cannot persist them')
   // No throw — optional chaining skips the write.
 })
+
+// ── Failure-propagation contract (weeks-17/18 regression) ──────────────────
+// A week must NEVER become durable unless every required persistent output
+// succeeded. These prove a Supabase failure (or a completed round that builds
+// zero performances) aborts BEFORE setDurableImported, so durable is never
+// stamped on a half-written week.
+
+test('failure propagation: upsertPerformances error aborts before setDurableImported', async () => {
+  const results = {
+    g1: { event: { scopes: [scope()], season_points: [{ member_card_id: 'mc-1', total_points: '40' }] } },
+    n1: { event: { scopes: [scope()], season_points: [{ member_card_id: 'mc-1', total_points: '10' }] } },
+  }
+  let durableCalled = false
+  const d: any = {
+    upsertEvent: async () => ({ ok: true, id: 'ev-1', event_name: 'Mens League', event_date: '2026-07-28' }),
+    // Simulates the production importDb rethrowing a Supabase error.
+    upsertPerformances: async () => { throw new Error('igc_league_performances upsert wk18: column "xyz" does not exist') },
+    upsertResults: async () => ({ ok: true }),
+    upsertSeasonPointEntries: async () => ({ ok: true }),
+    setDurableImported: async () => { durableCalled = true; return { ok: true } },
+  }
+  const gg = fakeGg({ results })
+  await assert.rejects(
+    () => importOccurrence({ competitionKey: 'mens-league', resolved: resolved(), adapterConfig, ggClient: gg, db: d, nowIso: '2026-07-28T22:05:00Z' }),
+    /igc_league_performances upsert wk18: column "xyz" does not exist/,
+  )
+  assert.equal(durableCalled, false, 'durable must NOT be stamped after a performances-write failure')
+})
+
+test('failure propagation: upsertResults error aborts before setDurableImported', async () => {
+  const results = {
+    g1: { event: { scopes: [scope()], season_points: [{ member_card_id: 'mc-1', total_points: '40' }] } },
+    n1: { event: { scopes: [scope()], season_points: [{ member_card_id: 'mc-1', total_points: '10' }] } },
+  }
+  let durableCalled = false
+  const d: any = {
+    upsertEvent: async () => ({ ok: true, id: 'ev-1', event_name: 'Mens League', event_date: '2026-07-28' }),
+    upsertPerformances: async () => ({ ok: true }),
+    upsertResults: async () => { throw new Error('igc_league_results upsert wk18: duplicate') },
+    upsertSeasonPointEntries: async () => ({ ok: true }),
+    setDurableImported: async () => { durableCalled = true; return { ok: true } },
+  }
+  const gg = fakeGg({ results })
+  await assert.rejects(
+    () => importOccurrence({ competitionKey: 'mens-league', resolved: resolved(), adapterConfig, ggClient: gg, db: d, nowIso: '2026-07-28T22:05:00Z' }),
+    /igc_league_results upsert wk18: duplicate/,
+  )
+  assert.equal(durableCalled, false, 'durable must NOT be stamped after a results-write failure')
+})
+
+test('failure propagation: completed round that builds 0 performances aborts before setDurableImported', async () => {
+  // Empty scopes → normalizeTournament produces no entries → 0 perf rows.
+  const results = {
+    g1: { event: { scopes: [], season_points: [{ member_card_id: 'mc-1', total_points: '40' }] } },
+    n1: { event: { scopes: [], season_points: [{ member_card_id: 'mc-1', total_points: '10' }] } },
+  }
+  let durableCalled = false, perfCalled = false
+  const d: any = {
+    upsertEvent: async () => ({ ok: true, id: 'ev-1', event_name: 'Mens League', event_date: '2026-07-28' }),
+    upsertPerformances: async () => { perfCalled = true; return { ok: true } },
+    upsertResults: async () => ({ ok: true }),
+    upsertSeasonPointEntries: async () => ({ ok: true }),
+    setDurableImported: async () => { durableCalled = true; return { ok: true } },
+  }
+  const gg = fakeGg({ results })
+  await assert.rejects(
+    () => importOccurrence({ competitionKey: 'mens-league', resolved: resolved(), adapterConfig, ggClient: gg, db: d, nowIso: '2026-07-28T22:05:00Z' }),
+    /completed round produced 0 performance rows/,
+  )
+  assert.equal(perfCalled, false, 'upsertPerformances must not be called when 0 rows were built')
+  assert.equal(durableCalled, false, 'durable must NOT be stamped for a completed round with 0 performances')
+})
+
+test('failure propagation: not-completed round with 0 performances does NOT throw (no durable expected anyway)', async () => {
+  // An in-progress round legitimately may have no scorecard entries yet; the
+  // zero-perf guard fires only for completed rounds. This must not regress to
+  // throwing on every not-yet-finalized week (which would flood reconcile errors).
+  const results = {
+    g1: { event: { scopes: [], season_points: [] } },
+    n1: { event: { scopes: [], season_points: [] } },
+  }
+  let durableCalled = false
+  const d: any = {
+    upsertEvent: async () => ({ ok: true, id: 'ev-1', event_name: 'Mens League', event_date: '2026-07-28' }),
+    upsertPerformances: async () => { throw new Error('should not be called') },
+    upsertResults: async () => ({ ok: true }),
+    upsertSeasonPointEntries: async () => ({ ok: true }),
+    setDurableImported: async () => { durableCalled = true; return { ok: true } },
+  }
+  const gg = fakeGg({ results })
+  // Resolves (no throw) — guard only applies to completed rounds.
+  const summary = await importOccurrence({ competitionKey: 'mens-league', resolved: resolved({ upstreamStatus: 'in_progress', sourceFinalizedAt: null }), adapterConfig, ggClient: gg, db: d, nowIso: '2026-07-28T18:00:00Z' })
+  assert.equal(summary.performances, 0)
+  assert.equal(durableCalled, true, 'non-completed round still stamps durable (no required-perf invariant)')
+})
