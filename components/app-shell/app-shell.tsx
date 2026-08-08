@@ -387,18 +387,9 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
         <div className="flex-1 overflow-y-auto px-2 pb-4">
           <NavList user={user} pathname={pathname} />
         </div>
-        {/* Anonymous rail footer: low-pressure Sign in / Create account CTAs.
-            Signed-in viewers get their account controls in the top bar instead. */}
-        {anon ? (
-          <div className="space-y-2 border-t border-border px-3 py-3">
-            <Button asChild size="sm" className="w-full">
-              <Link href={signInHref}>Sign in</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="w-full">
-              <Link href="/signup">Create account</Link>
-            </Button>
-          </div>
-        ) : null}
+        {/* No auth CTAs in the desktop rail — the top-right header carries the
+            single desktop auth area for anonymous viewers. The mobile drawer
+            carries the single mobile auth area. Avoids duplicate CTAs. */}
       </aside>
 
       {/* Mobile drawer */}
@@ -477,12 +468,14 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
                 <AccountMenu user={user} />
               ) : (
                 <>
-                  {/* Create account is invite-gated (/signup); on narrow screens
-                      it lives in the drawer to keep the top bar to one CTA. */}
-                  <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
+                  {/* Anonymous desktop auth area (single, top-right). Hidden on
+                      mobile (<md), where the drawer carries the single auth area
+                      instead — no duplicate CTAs across surfaces. Create account
+                      is invite-gated (/signup); Sign in returns via `next`. */}
+                  <Button asChild size="sm" variant="ghost" className="hidden md:inline-flex">
                     <Link href="/signup">Create account</Link>
                   </Button>
-                  <Button asChild size="sm">
+                  <Button asChild size="sm" className="hidden md:inline-flex">
                     <Link href={signInHref}>Sign in</Link>
                   </Button>
                 </>
