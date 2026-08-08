@@ -29,6 +29,11 @@ export interface ChampionshipAggregateDeps {
 export interface ChampionshipAggregate extends LiveResponse {
   championshipKey: string
   roundCount: number
+  // How many constituent rounds have posted golf and reached 'final', and how
+  // many are currently 'live'. Lets the UI show "Round 1 of 2 complete" and a
+  // live indicator per round without re-deriving from the summed leaderboard.
+  roundsComplete: number
+  roundsLive: number
 }
 
 // Gather the configured rounds for one championship (e.g. 'club-championship'),
@@ -87,7 +92,7 @@ export async function getChampionshipAggregate(
 
   if (specs.length === 0) {
     return {
-      championshipKey, roundCount: 0,
+      championshipKey, roundCount: 0, roundsComplete: 0, roundsLive: 0,
       occurrence, leaderboard: null, resultStatus: 'unknown',
       eventFormat: 'unknown', discoveryState: 'pending',
       durableCurrent: false, showingLastKnown: false,
@@ -98,6 +103,8 @@ export async function getChampionshipAggregate(
   let anyLive = false
   let anyData = false
   let allFinal = true
+  let roundsComplete = 0
+  let roundsLive = 0
   let eventFormat: EventFormat = 'individual'
   let discoveryState: DiscoveryState = 'discovered'
 
@@ -121,13 +128,14 @@ export async function getChampionshipAggregate(
       scorecards: r.leaderboard.scorecards,
       entries: r.leaderboard.entries,
     })
-    if (r.resultStatus === 'live') { anyLive = true; allFinal = false }
-    else if (r.resultStatus !== 'final') allFinal = false
+    if (r.resultStatus === 'live') { anyLive = true; allFinal = false; roundsLive++ }
+    else if (r.resultStatus === 'final') { roundsComplete++ }
+    else allFinal = false
   }
 
   if (!anyData) {
     return {
-      championshipKey, roundCount: specs.length,
+      championshipKey, roundCount: specs.length, roundsComplete: 0, roundsLive: 0,
       occurrence, leaderboard: null, resultStatus: 'not_started',
       eventFormat, discoveryState, durableCurrent: false, showingLastKnown: false,
     }
@@ -145,7 +153,7 @@ export async function getChampionshipAggregate(
     durableCurrent: !anyLive && allFinal,
   }
   return {
-    championshipKey, roundCount: specs.length,
+    championshipKey, roundCount: specs.length, roundsComplete, roundsLive,
     occurrence: { ...occurrence, resultStatus },
     leaderboard, resultStatus, eventFormat, discoveryState,
     durableCurrent: !anyLive && allFinal, showingLastKnown: false,
