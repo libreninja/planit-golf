@@ -28,6 +28,7 @@
 
 import { classifyEventFormat, nameKind, type DiscoveredTournament } from '../../classify.ts'
 import { normalizeTournament } from './normalize.ts'
+import { trimScorecardsToRoundHoles } from '../../../igc/weekly-results-helpers.ts'
 import type { GolfGeniusAdapterConfig, Leaderboard, ScoringMode, EventFormat, DiscoveryState, ResultStatus, ResolvedOccurrence } from '../../types.ts'
 import type { UpstreamStatus } from '../../result-status.ts'
 
@@ -275,6 +276,12 @@ export async function discoverOccurrence(input: DiscoverInput): Promise<Discover
   // signal; default to 'live' as a safe interim until the caller decides.
   const resultStatus: ResultStatus = upstreamStatus === 'completed' ? 'final' : 'live'
   const entries = [...norm.entriesByFlight.values()].flat()
+  // Trim each card to the round's real hole count (a 9-hole Interbay league
+  // round arrives as 18 slots with trailing nulls). recomputeLive=true so a
+  // finished 9-hole card reads "F" against the real course length, not "thru 9"
+  // against the padded 18. This fixes the scorecard SHAPE; totals come from GG
+  // and are unaffected.
+  trimScorecardsToRoundHoles([...norm.scorecards.values()], true)
   const leaderboard: Leaderboard = {
     occurrenceId: '',                             // filled by caller
     scoringMode,

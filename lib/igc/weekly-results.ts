@@ -37,9 +37,11 @@ import {
   positionLabelOf,
   playerKey,
   buildHoles,
+  isPartialRound,
+  trimScorecardsToRoundHoles,
   type HoleScore,
 } from "./weekly-results-helpers.ts";
-export { positionOrder, positionLabelOf, playerKey, buildHoles, type HoleScore } from "./weekly-results-helpers.ts";
+export { positionOrder, positionLabelOf, playerKey, buildHoles, isPartialRound, trimScorecardsToRoundHoles, type HoleScore } from "./weekly-results-helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Shared view-model types
@@ -120,27 +122,11 @@ function parseNum(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function isPartialRound(holesCompleted: number, totalHoles: number): boolean {
-  return holesCompleted > 0 && holesCompleted < totalHoles;
-}
-
-// Trim every scorecard to the round's actual hole count. GG returns 18-slot
-// arrays with trailing nulls for the unplayed holes of a shorter course
-// (Interbay league rounds are 9 holes), so the course length is the largest
-// leading non-null prefix any player in the round reached — `holesCompleted`
-// on a finished card equals the course length. Trimming renders only the
-// holes that belong to the round (no 18-hole assumption) and makes the live
-// "thru"/"F" detection compare against the real course length. `recomputeLive`
-// re-derives the in-progress flag after trimming (live path); the completed-
-// round DB path passes false so finished cards stay "F".
-function trimToRoundHoleCount(scorecards: WeeklyScorecard[], recomputeLive: boolean): void {
-  const roundHoles = scorecards.reduce((m, c) => Math.max(m, c.holesCompleted), 0);
-  if (roundHoles <= 0) return;
-  for (const c of scorecards) {
-    if (c.holes.length > roundHoles) c.holes = c.holes.slice(0, roundHoles);
-    if (recomputeLive) c.isLive = isPartialRound(c.holesCompleted, roundHoles);
-  }
-}
+// Hole-count trimming now lives in the shared, canonical weekly-results-helpers
+// module (trimScorecardsToRoundHoles / roundHoleCount / isPartialRound) so the
+// generic competition path and this legacy path use ONE implementation. See
+// weekly-results-helpers.ts for the rationale (9-hole rounds must not render
+// holes 10–18 as empties).
 
 // ---------------------------------------------------------------------------
 // Season points (Men's) — from the persisted snapshot
@@ -301,7 +287,7 @@ export async function getLeagueWeeklyResultsFromDB(
   // Render only the holes that belong to this round/course (Interbay plays 9;
   // GG returns 18-slot arrays with trailing nulls). Completed rounds leave
   // isLive=false so finished cards show "F".
-  trimToRoundHoleCount([...scorecardByKey.values()], false);
+  trimScorecardsToRoundHoles([...scorecardByKey.values()], false);
 
   // Group result memberships by flight, then competition (net before gross).
   // The `.order('competition')` is alphabetic but we re-key explicitly so the
@@ -553,7 +539,7 @@ export async function fetchLeagueLiveResults(
     if (!source) continue;
     for (const [key, card] of source) if (!allScorecards.has(key)) allScorecards.set(key, card);
   }
-  trimToRoundHoleCount([...allScorecards.values()], true);
+  trimScorecardsToRoundHoles([...allScorecards.values()], true);
   const anyLive = [...allScorecards.values()].some((c) => c.isLive);
 
   // Merge per flight. Scorecards are deduped across the two parses (identical

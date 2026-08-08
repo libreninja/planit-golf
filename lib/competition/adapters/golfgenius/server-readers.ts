@@ -31,6 +31,7 @@ import {
   playerKey,
   positionLabelOf,
   positionOrder,
+  trimScorecardsToRoundHoles,
 } from '@/lib/igc/weekly-results-helpers'
 import type {
   GroupingAvailability,
@@ -271,6 +272,13 @@ export async function buildHistoricalLiveResponse(
       holes,
     })
   }
+  // Trim each card to the round's real hole count. GG pads shorter rounds (a
+  // 9-hole Interbay league round) to 18 slots with trailing nulls; this drops
+  // those trailing holes so the scorecard carries ONLY the holes that belong
+  // to the occurrence. Historical cards are final → recomputeLive=false so
+  // finished cards keep "F". Totals come from GG (stored separately) and are
+  // unaffected. (FIX: 9-hole rounds no longer render holes 10–18 as empties.)
+  trimScorecardsToRoundHoles([...scorecardByKey.values()], false)
 
   // Entries: per-competition placements, sorted by finishing position.
   const entries: NonNullable<LiveResponse['leaderboard']>['entries'] = results

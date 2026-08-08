@@ -49,7 +49,8 @@ export function playerKey(memberCardId: string | null | undefined, name: string)
 // gross - gross-to-par (both stored); the running net to-par is the cumulative
 // sum of the per-hole net-to-par deltas. Holes beyond what the player has
 // reached are still listed (for a 9-hole league the back 9 are null) so the
-// card has consistent length.
+// card has consistent length — callers trim to the round's real hole count
+// via trimScorecardsToRoundHoles before display.
 export function buildHoles(
   grossScores: (number | null)[] | null,
   netScores: (number | null)[] | null,
@@ -87,4 +88,48 @@ export function buildHoles(
     });
   }
   return holes;
+}
+
+// A card is still in progress when it has started but not reached the round's
+// real hole count. Used to (re)derive the in-progress flag after trimming to
+// the course length, so a finished 9-hole card reads "F" (not "thru 9").
+export function isPartialRound(holesCompleted: number, totalHoles: number): boolean {
+  return holesCompleted > 0 && holesCompleted < totalHoles;
+}
+
+// The round's real hole count, derived from the cards themselves: the largest
+// leading non-null prefix any player reached. On a finished card holesCompleted
+// equals the course length, so the max across the field is the round's actual
+// hole count (9 for an Interbay league round, 18 for a full course). GG returns
+// 18-slot arrays padded with trailing nulls for shorter rounds and does not
+// expose an explicit course hole count on the results payload, so this is the
+// strongest available source. It is exact for every completed round and for
+// live rounds once any player has finished; it is a safe fallback otherwise.
+export function roundHoleCount<T extends { holesCompleted: number }>(cards: T[]): number {
+  return cards.reduce((m, c) => Math.max(m, c.holesCompleted), 0);
+}
+
+// Canonical hole-count trim, shared by the generic competition path (server
+// readers + live discovery) and the legacy weekly-results path so there is ONE
+// implementation. Removes trailing null holes so every scorecard carries ONLY
+// the holes that belong to the occurrence: a 9-hole round renders 9 holes (not
+// 18 with trailing empties), an 18-hole round renders 18. This fixes the
+// scorecard SHAPE (card.holes is the round's real length) — it is not a JSX
+// hide. Mutates the cards in place (they are freshly built per request).
+//
+// `recomputeLive`: re-derive isLive against the real course length. Pass true
+// for the live path (a finished 9-hole card becomes "F", not "thru 9"); pass
+// false for historical/final cards so finished cards stay "F" (isLive already
+// false). Totals (netTotal/grossTotal/toPar*) are GG-provided and stored
+// separately, so trimming the holes array never changes them.
+export function trimScorecardsToRoundHoles<T extends { holes: HoleScore[]; holesCompleted: number; isLive: boolean }>(
+  cards: T[],
+  recomputeLive: boolean,
+): void {
+  const roundHoles = roundHoleCount(cards);
+  if (roundHoles <= 0) return;
+  for (const c of cards) {
+    if (c.holes.length > roundHoles) c.holes = c.holes.slice(0, roundHoles);
+    if (recomputeLive) c.isLive = isPartialRound(c.holesCompleted, roundHoles);
+  }
 }
