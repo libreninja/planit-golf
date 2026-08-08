@@ -24,36 +24,38 @@ const PALETTE: FlightColor[] = [
   {
     row: 'bg-sky-50/60',
     rowHover: 'hover:bg-sky-100/70',
-    tabIdle: 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100',
-    tabActive: 'border-sky-400 bg-sky-100 text-sky-800',
+    // bg+text only — no border, no radius. The SegmentedControl pill owns the
+    // single border + rounding; per-segment borders would double up (FIX 3).
+    tabIdle: 'bg-sky-50 text-sky-700 hover:bg-sky-100',
+    tabActive: 'bg-sky-100 text-sky-800',
     badge: 'bg-sky-100 text-sky-700',
   },
   {
     row: 'bg-emerald-50/60',
     rowHover: 'hover:bg-emerald-100/70',
-    tabIdle: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
-    tabActive: 'border-emerald-400 bg-emerald-100 text-emerald-800',
+    tabIdle: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    tabActive: 'bg-emerald-100 text-emerald-800',
     badge: 'bg-emerald-100 text-emerald-700',
   },
   {
     row: 'bg-amber-50/60',
     rowHover: 'hover:bg-amber-100/70',
-    tabIdle: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100',
-    tabActive: 'border-amber-400 bg-amber-100 text-amber-800',
+    tabIdle: 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+    tabActive: 'bg-amber-100 text-amber-800',
     badge: 'bg-amber-100 text-amber-700',
   },
   {
     row: 'bg-violet-50/60',
     rowHover: 'hover:bg-violet-100/70',
-    tabIdle: 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100',
-    tabActive: 'border-violet-400 bg-violet-100 text-violet-800',
+    tabIdle: 'bg-violet-50 text-violet-700 hover:bg-violet-100',
+    tabActive: 'bg-violet-100 text-violet-800',
     badge: 'bg-violet-100 text-violet-700',
   },
   {
     row: 'bg-rose-50/60',
     rowHover: 'hover:bg-rose-100/70',
-    tabIdle: 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100',
-    tabActive: 'border-rose-400 bg-rose-100 text-rose-800',
+    tabIdle: 'bg-rose-50 text-rose-700 hover:bg-rose-100',
+    tabActive: 'bg-rose-100 text-rose-800',
     badge: 'bg-rose-100 text-rose-700',
   },
 ]

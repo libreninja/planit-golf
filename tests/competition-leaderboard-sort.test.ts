@@ -31,7 +31,7 @@ test('compareFlightDescending: null/empty flight always sorts last', () => {
   assert.equal(compareFlightDescending('', 'Flight 1') > 0, true)
 })
 
-test('All view: position ascending then flight DESCENDING — 1/F3, 1/F2, 1/F1, 2/F2, 2/F1, 3/F1', () => {
+test('All view: position ascending then flight ASCENDING — 1/F1, 1/F2, 1/F3, 2/F1, 2/F2, 3/F1', () => {
   const rows = [
     entry('p2f2', 2, 'Flight 2'),
     entry('p1f3', 1, 'Flight 3'),
@@ -42,24 +42,40 @@ test('All view: position ascending then flight DESCENDING — 1/F3, 1/F2, 1/F1, 
   ]
   const sorted = sortAllViewEntries(rows)
   assert.deepEqual(sorted.map((r) => r.name), [
-    'p1f3', 'p1f2', 'p1f1',  // position 1: flights 3,2,1 (descending)
-    'p2f2', 'p2f1',          // position 2: flights 2,1
+    'p1f1', 'p1f2', 'p1f3',  // position 1: flights 1,2,3 (ascending)
+    'p2f1', 'p2f2',          // position 2: flights 1,2
     'p3f1',                  // position 3
   ])
 })
 
-test('All view: duplicate position values use flight-DESCENDING tie-break', () => {
-  // Three players tied at position 1 across flights 1 and 2 → flight 2 first.
+// Product requirement, explicit so it cannot silently flip back to DESC:
+// when positions are otherwise equal, Flight 1 MUST appear before Flight 2,
+// and Flight 2 before Flight 3. This is the single assertion that guards the
+// ASC rule; if it ever fails, the sort flipped.
+test('All view: equal positions order Flight 1 -> Flight 2 -> Flight 3 (ASC, the requirement)', () => {
+  const rows = [
+    entry('F3', 1, 'Flight 3'),
+    entry('F1', 1, 'Flight 1'),
+    entry('F2', 1, 'Flight 2'),
+  ]
+  const sorted = sortAllViewEntries(rows)
+  assert.deepEqual(sorted.map((r) => r.flight), ['Flight 1', 'Flight 2', 'Flight 3'],
+    'Position 1 / Flight 1, then 1 / Flight 2, then 1 / Flight 3 — exactly in that order')
+})
+
+test('All view: duplicate position values use flight-ASCENDING tie-break', () => {
+  // Three players tied at position 1 across flights 1 and 2 → flight 1 first.
   const rows = [
     entry('LowFlight', 1, 'Flight 1'),
     entry('HighFlight', 1, 'Flight 2'),
     entry('MidFlight', 1, 'Flight 1'),
   ]
   const sorted = sortAllViewEntries(rows)
-  // flight 2 row first, then flight 1 rows (stable among themselves).
-  assert.equal(sorted[0].name, 'HighFlight', 'flight 2 first among the tied position 1')
+  // flight 1 rows first (stable among themselves), then flight 2.
+  assert.equal(sorted[0].flight, 'Flight 1', 'flight 1 first among the tied position 1')
   assert.equal(sorted[1].flight, 'Flight 1')
-  assert.equal(sorted[2].flight, 'Flight 1')
+  assert.equal(sorted[2].name, 'HighFlight', 'flight 2 last')
+  assert.equal(sorted[2].flight, 'Flight 2')
 })
 
 test('All view: unflighted (null) rows sort to the bottom within their position', () => {
@@ -69,8 +85,8 @@ test('All view: unflighted (null) rows sort to the bottom within their position'
     entry('F1', 1, 'Flight 1'),
   ]
   const sorted = sortAllViewEntries(rows)
-  assert.deepEqual(sorted.map((r) => r.name), ['F2', 'F1', 'NoFlight'],
-    'flight 2, then flight 1, then null flight last — all at position 1 (descending)')
+  assert.deepEqual(sorted.map((r) => r.name), ['F1', 'F2', 'NoFlight'],
+    'flight 1, then flight 2, then null flight last — all at position 1 (ascending)')
 })
 
 test('All view: does not mutate the input array', () => {

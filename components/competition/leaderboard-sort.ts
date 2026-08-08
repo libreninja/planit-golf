@@ -1,13 +1,19 @@
 // Pure sort for the finalized Men's "All" grouping view. Sort order is
-// position ascending, then flight DESCENDING — e.g. 1/Flight 3, 1/Flight 2,
-// 1/Flight 1, 2/Flight 3, 2/Flight 2, 2/Flight 1. Within a tied position the
-// higher (stronger) flight is listed first.
+// position ascending, then flight ASCENDING — e.g. 1/Flight 1, 1/Flight 2,
+// 1/Flight 3, 2/Flight 1, 2/Flight 2, 2/Flight 3. Within a tied position the
+// lower-numbered flight is listed first.
 //   1. Position ascending (lower/better position numbers first)
-//   2. Flight DESCENDING as the tie-breaker (Flight 3 before Flight 2 before 1)
-// Deterministic — uses the normalized `positionOrder` (already a numeric sort
-// key from positionOrder()) and the raw `flight` value on each ResultEntry,
-// never rendered/positional text. The specific-flight sort is untouched; this
-// only applies when the grouping filter is set to "All". See FIX 1 / P1-4.
+//   2. Flight ASCENDING as the tie-breaker (Flight 1 before Flight 2 before 3)
+//
+// This rule is a product requirement, NOT a derivation from any example: when
+// positions are otherwise equal, Flight 1 contestants appear before Flight 2,
+// and Flight 2 before Flight 3. It must NOT silently flip back to descending.
+// The explicit ASC assertion in competition-leaderboard-sort.test.ts guards
+// against that regression. Deterministic — uses the normalized `positionOrder`
+// (already a numeric sort key from positionOrder()) and the raw `flight` value
+// on each ResultEntry, never rendered/positional text. The specific-flight sort
+// is untouched; this only applies when the grouping filter is set to "All".
+// See FIX 2 / P1-4 (revised: flight ASC).
 //
 // Relative import (no @/ alias) so `node --test` can load this module.
 
@@ -58,6 +64,6 @@ export function compareFlightDescending(a: string | null, b: string | null): num
 export function sortAllViewEntries(entries: ResultEntry[]): ResultEntry[] {
   return [...entries].sort((a, b) => {
     if (a.positionOrder !== b.positionOrder) return a.positionOrder - b.positionOrder
-    return compareFlightDescending(a.flight, b.flight)
+    return compareFlightAscending(a.flight, b.flight)
   })
 }
