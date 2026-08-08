@@ -12,7 +12,7 @@ import { deriveResultStatus, type UpstreamStatus } from './result-status.ts'
 import { isDurableCurrent } from './durable-current.ts'
 import { isOccurrenceActive } from './active-window.ts'
 import { readCachedResult, readStaleResult, writeCachedResult, makeSingleFlight, type LiveCacheStore } from './cache.ts'
-import { getCompetitionConfig } from './registry.ts'
+import { getCompetitionConfig, getSpecialOccurrence } from './registry.ts'
 import type { GolfGeniusAdapterConfig, LiveResponse, Occurrence, ScoringMode, DurableCurrentSource } from './types.ts'
 
 const sf = makeSingleFlight<LiveResponse>()
@@ -101,13 +101,23 @@ async function fetchFresh(
 ): Promise<LiveResponse> {
   const ev = await readEvent(input.competitionKey, input.occurrenceId)
   const occurrenceNumber = Number(input.occurrenceId)
-  const occurrenceDate = ev?.event_date ?? null
+
+  // When no persisted row exists, a configured special occurrence (e.g. a Club
+  // Championship round) supplies its date + GG event/round ids from config so live
+  // discovery resolves it WITHOUT a durable row — the Standings live-discovery
+  // contract. A persisted row, when present, still wins (it carries the
+  // durable-current columns + freshly reconciled ids).
+  const spec = ev ? null : getSpecialOccurrence(input.competitionKey, occurrenceNumber)
+  const occurrenceDate = ev?.event_date ?? spec?.date ?? null
 
   const teamOverride = (adapterConfig.teamFormatOverrides ?? []).includes(occurrenceNumber)
   const persistedHints = ev ? {
     ggEventId: ev.gg_event_id, ggRoundId: ev.gg_round_id,
     grossTournamentId: ev.gg_gross_tournament_id, netTournamentId: ev.gg_net_tournament_id,
-  } : null
+  } : (spec ? {
+    ggEventId: spec.ggEventId ?? null, ggRoundId: spec.ggRoundId ?? null,
+    grossTournamentId: null, netTournamentId: null,
+  } : null)
 
   // Durable-current contract from the persisted row (may be null when no row).
   const dcs: DurableCurrentSource = {
@@ -151,7 +161,7 @@ async function fetchFresh(
       durableFinalized: durableCurrent,
     })
 
-    const label = leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? r.resolved.eventName ?? null)
+    const label = spec?.label ?? leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? r.resolved.eventName ?? null)
     const occurrence: Occurrence = mapLeagueEventToOccurrence(
       { week_number: occurrenceNumber, event_name: ev?.event_name ?? r.resolved.eventName ?? null, event_date: effectiveDate, event_format: r.eventFormat, discovery_state: r.discoveryState },
       label, window, resultStatus,
@@ -176,7 +186,7 @@ async function fetchFresh(
       date: occurrenceDate, tz: config.schedule?.timezone ?? 'America/Los_Angeles',
       playStartLocal: config.schedule?.playStartLocal, windowHours: config.schedule?.windowHours,
     }) ?? { start: occurrenceDate ?? '', end: null }
-    const label = leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? null)
+    const label = spec?.label ?? leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? null)
     return {
       occurrence: mapLeagueEventToOccurrence(
         { week_number: occurrenceNumber, event_name: ev?.event_name ?? null, event_date: occurrenceDate, event_format: 'unknown', discovery_state: 'pending' },

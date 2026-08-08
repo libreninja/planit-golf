@@ -185,7 +185,7 @@ test('points are summed across occurrences; entries without a card are ignored',
   ], [entry({ key: 'a', points: 5 })])
   const tuesday = occ('tue', [
     card({ key: 'a', grossTotal: 44, toParGross: 4, holesCompleted: 9 }),
-  ], [entry({ key: 'a', points: 8 }, { key: 'ghost', points: 99 })]) // ghost has no card
+  ], [entry({ key: 'a', points: 8 }), entry({ key: 'ghost', points: 99 })]) // ghost has no card
   const agg = aggregateLeaderboard([monday, tuesday], 'gross')
   const a = agg.entries.find((e) => e.key === 'a')!
   assert.equal(a.points, 13, 'points summed across both occurrences')

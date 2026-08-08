@@ -29,8 +29,8 @@ test('two concurrent cold-miss getLiveResults calls each return a correct LiveRe
   // branch increments upstreamCallCount so we can assert at least one happened.
   const ggClient = async (endpoint) => {
     upstreamCallCount++
-    if (endpoint === `/seasons/s1/events`) {
-      return { events: [{ id: 'evt1', name: 'Mens League', category_id: 'c1' }] }
+    if (endpoint === `/events?season=s1`) {
+      return [{ id: 'evt1', name: 'Mens League', category_id: 'c1' }]
     }
     if (endpoint === `/events/evt1/rounds`) {
       return { rounds: [{ id: 'r1', date: '2026-07-28', is_points_round: true }] }

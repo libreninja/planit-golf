@@ -90,13 +90,26 @@ function asArr(list: any, key: string): any[] {
 
 // Resolve the parent GG event from config (season + category). Returns the
 // event {id, name} matching the adapter's eventFilter. Does NOT swallow errors.
+//
+// The GG REST API lists a season's events at /events?season={id} (NOT
+// /seasons/{id}/events, which 404s), and each element arrives wrapped as
+// {event: {id, name, category: {id, id_str}}}. Unwrap both shapes so this
+// works whether the client returns the bare array or {events: [...]}. Match on
+// category id (id_str holds full precision — the numeric `id` is lossy) OR on
+// the eventFilter substring of the name. This is the config-only fallback
+// exercised when no persisted gg_event_id hint is available (e.g. a brand-new
+// occurrence not yet in igc_league_events); with a hint the caller's verify
+// branch short-circuits before reaching here.
 async function resolveEventFromConfig(input: DiscoverInput): Promise<{ id: string; name: string | null } | null> {
-  const list = await input.ggClient(`/seasons/${input.adapterConfig.seasonId}/events`)
+  const list = await input.ggClient(`/events?season=${input.adapterConfig.seasonId}`)
   const events = asArr(list, 'events')
-  const match = events.find((e: any) =>
-    e?.id && (e.category_id === input.adapterConfig.categoryId || String(e.name ?? '').toLowerCase().includes(input.adapterConfig.eventFilter)),
-  )
-  return match?.id ? { id: match.id, name: match.name ?? null } : null
+  const match = events.find((e: any) => {
+    const ev = e?.event ?? e
+    const catId = ev?.category?.id_str ?? ev?.category?.id ?? ev?.category_id
+    return ev?.id && (catId === input.adapterConfig.categoryId || String(ev.name ?? '').toLowerCase().includes(input.adapterConfig.eventFilter))
+  })
+  const ev = match?.event ?? match
+  return ev?.id ? { id: ev.id, name: ev.name ?? null } : null
 }
 
 // Select a round from a rounds array by pointsRoundIndex or byDateWindow.

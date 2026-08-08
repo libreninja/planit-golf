@@ -81,7 +81,9 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
   const windowHours = config.schedule?.windowHours
 
   const occurrences: Occurrence[] = []
+  const seenWeeks = new Set<number>()
   for (const e of data as EventRow[]) {
+    seenWeeks.add(e.week_number)
     const durableFinalized = isDurableCurrent({
       sourceFinalizedAt: e.source_finalized_at ?? null,
       sourceVersion: e.source_version ?? null,
@@ -124,6 +126,43 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
       ),
     )
   }
+
+  // Merge configured special occurrences (e.g. Club Championship rounds) that
+  // don't yet have a durable igc_league_events row. They still appear in the nav
+  // — live discovery resolves them from config alone (spec date + GG ids) — and
+  // drop out here once the reconcile path upserts their row (deduped by
+  // week_number). The spec label is used verbatim; week_number is a storage id
+  // and is never shown. Sorted into date order below with the DB rows.
+  for (const spec of config.adapterConfig.specialOccurrences ?? []) {
+    if (seenWeeks.has(spec.weekNumber)) continue
+    const window = buildLeagueActiveWindow({ date: spec.date, tz, playStartLocal, windowHours })
+      ?? { start: spec.date, end: null }
+    const active = isOccurrenceActive(window, nowIso, false)
+    const resultStatus = deriveResultStatus({
+      upstreamStatus: 'unknown',
+      active,
+      hasResults: false,
+      anyPartial: false,
+      durableFinalized: false,
+    })
+    occurrences.push(
+      mapLeagueEventToOccurrence(
+        { week_number: spec.weekNumber, event_name: spec.label, event_date: spec.date, event_format: 'unknown', discovery_state: 'pending' },
+        spec.label,
+        window,
+        resultStatus,
+      ),
+    )
+  }
+
+  // Date order so merged specials slot into the calendar (e.g. CC rounds fall
+  // between Weeks 20 and 22), independent of DB/merge order. Nulls last.
+  occurrences.sort((a, b) => {
+    if (!a.date && !b.date) return 0
+    if (!a.date) return 1
+    if (!b.date) return -1
+    return a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+  })
   return occurrences
 }
 
