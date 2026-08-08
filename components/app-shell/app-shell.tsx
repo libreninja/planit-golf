@@ -9,16 +9,19 @@
 // users with the scouting entitlement (ActivityInbox).
 //
 // The shell is CAPABILITY-AWARE, not authenticated-only. An anonymous visitor
-// on a public route sees the SAME application frame as a signed-in member —
-// branding, public navigation, breadcrumb, and Sign in / Create account CTAs.
-// The public Standings experience is identical for anonymous and authenticated
-// viewers; only the chrome and access to private capabilities differ. Private
-// destinations never appear for an anonymous viewer: Tee Times gates on gtgAccess
-// and Scouting gates on the scouting capability (both false for ANON), and
-// admin is not a nav destination at all. The private routes themselves enforce
-// their own server-side access guards, so a direct deep link redirects before
-// any page body renders. The shell also hides itself on auth/invite/scan/
-// event-browse routes, which keep their own page chrome.
+// on a CONTEXTUAL public route (/igc/mens-league, /igc/womens-league, …) sees
+// the same application frame as a signed-in member — branding, public
+// navigation, breadcrumb, and Sign in / Create account CTAs. The public
+// Standings experience is identical for anonymous and authenticated viewers;
+// only the chrome and access to private capabilities differ. The anonymous
+// ROOT (/) is the one exception: it keeps its own simple landing (no app
+// frame, no league nav) because a cold visitor has no league context yet.
+// Private destinations never appear for an anonymous viewer: Tee Times gates
+// on gtgAccess and Scouting gates on the scouting capability (both false for
+// ANON), and admin is not a nav destination at all. The private routes
+// themselves enforce their own server-side access guards, so a direct deep link
+// redirects before any page body renders. The shell also hides itself on
+// auth/invite/scan/event-browse routes, which keep their own page chrome.
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -347,15 +350,26 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   // The shell renders for every shell-visible route, anonymous or not. An
-  // anonymous viewer gets the public frame (branding + public nav + Sign in /
-  // Create account CTAs); a signed-in viewer gets the full frame with account
-  // controls and any private nav their capabilities unlock. Auth/invite/scan/
-  // event-browse routes keep their own page chrome via isShellVisible.
+  // anonymous viewer on a CONTEXTUAL public route (/igc/mens-league, …) gets
+  // the public frame (branding + league nav + Sign in / Create account CTAs);
+  // a signed-in viewer gets the full frame with account controls and any
+  // private nav their capabilities unlock. Auth/invite/scan/event-browse routes
+  // keep their own page chrome via isShellVisible.
   if (!isShellVisible(pathname)) {
     return <>{children}</>
   }
 
   const anon = !user.signedIn
+  // Anonymous `/` is a no-context landing, not an app frame: a visitor who
+  // arrives at the root knows nothing about the leagues in the rail, so
+  // rendering the sidebar/nav here reads as an empty authenticated app. The
+  // root keeps its own simple landing page (SignInPrompt) with one coherent
+  // auth area. Authenticated `/` is the dashboard and keeps the shell, so
+  // this exception is anonymous-only. Contextual public routes still get the
+  // shell above — this only short-circuits the anonymous root.
+  if (anon && pathname === '/') {
+    return <>{children}</>
+  }
   // Return-path sign-in: /login?next=<current> → /auth/callback?next=<current>
   // → back to the public page the visitor was viewing. The auth callback and
   // the login page both honor `next`, so a sign-in from the standings returns

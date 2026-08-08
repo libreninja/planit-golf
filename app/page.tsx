@@ -49,18 +49,24 @@ export default async function Home() {
 }
 
 function SignInPrompt() {
-  // Minimal public landing for an anonymous visitor on /. The capability-aware
-  // AppShell now renders around it (brand, public nav, Sign in / Create account
-  // CTAs), so this is the page body inside that frame — one wordmark, one line
-  // of context, one Sign in action. Signed-in members get the dashboard above.
+  // Minimal no-context landing for an anonymous visitor on /. The AppShell
+  // deliberately does NOT render here (an anonymous root is not an app frame),
+  // so this is the whole page: one wordmark, one line of context, and ONE
+  // coherent auth area (Sign in + Create account). No league nav, no repeated
+  // CTAs, no marketing redesign. Signed-in members get the dashboard above.
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <h1 className="font-display text-4xl">planit.golf</h1>
         <p className="mt-3 text-base text-muted-foreground">Plan golf. Play golf.</p>
-        <Button asChild className="mt-6 w-full sm:w-auto">
-          <Link href="/login">Sign in</Link>
-        </Button>
+        <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button asChild variant="outline" className="w-full sm:w-auto">
+            <Link href="/signup">Create account</Link>
+          </Button>
+        </div>
       </div>
     </main>
   )
