@@ -50,5 +50,9 @@ export const mensLeagueConfig: CompetitionConfig = {
     supportsEventNavigation: true,
   },
   liveGroupingPolicy: 'hide-until-final',
+  // Public: golfers share this leaderboard link instead of the Golf Genius link;
+  // most recipients have no Planit account, so anonymous reads are allowed at
+  // the live API boundary (including the Club Championship aggregate).
+  visibility: 'public',
   schedule: { timezone: 'America/Los_Angeles', playDay: 2, windowHours: 8, playStartLocal: '16:00' },
 }

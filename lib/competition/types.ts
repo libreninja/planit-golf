@@ -58,6 +58,16 @@ export interface CompetitionCapabilities {
   supportsEventNavigation: boolean
 }
 
+// Who may read a competition's live/durable leaderboard data WITHOUT logging
+// in. IGC league standings are PUBLIC — the product goal is that golfers share
+// the Planit live leaderboard link instead of the Golf Genius link, and a large
+// share of recipients have no Planit account. So 'public' competitions are
+// readable anonymously at the live API boundary; 'private' competitions (a
+// future capability, e.g. a members-only event) still require auth. The live
+// API routes authorize on THIS, not on "is the viewer logged in" — removing
+// auth globally is never the answer. See lib/competition/live-auth.ts.
+export type CompetitionVisibility = 'public' | 'private'
+
 export interface OccurrenceCapabilities extends CompetitionCapabilities {
   groupings: GroupingAvailability
 }
@@ -107,6 +117,10 @@ export interface CompetitionConfig {
   navigation: NavigationOptions
   capabilities: CompetitionCapabilities
   liveGroupingPolicy: LiveGroupingPolicy
+  // Whether anonymous (logged-out) viewers may read live/durable leaderboard
+  // data via the competition live API. 'public' = yes (IGC leagues); 'private'
+  // = requires an authenticated viewer. See CompetitionVisibility.
+  visibility: CompetitionVisibility
   schedule?: CompetitionSchedule
 }
 

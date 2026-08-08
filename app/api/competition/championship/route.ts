@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { getChampionshipAggregate } from '@/lib/competition/aggregate-reader'
+import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,16 +17,22 @@ async function authenticatedUserId(): Promise<string | undefined> {
 
 // Live-poll endpoint for the Club Championship aggregate. Mirrors
 // /api/competition/live but builds the cross-occurrence aggregate instead of a
-// single occurrence. Auth-gated the same way (public standings require a
-// logged-in viewer). Returns { results: ChampionshipAggregate }.
+// single occurrence. Authorizes by COMPETITION VISIBILITY (the Club
+// Championship is a public mens-league competition) so anonymous viewers can
+// follow live scores without a Planit account — same model as the per-week
+// live endpoint. See lib/competition/live-auth.ts.
 export async function GET(request: Request) {
-  const userId = await authenticatedUserId()
-  if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-
   const url = new URL(request.url)
   const competition = url.searchParams.get('competition') ?? 'mens-league'
   const championship = url.searchParams.get('championship') ?? 'club-championship'
   const scoring = (url.searchParams.get('scoring') as 'gross' | 'net') || 'gross'
+
+  const userId = await authenticatedUserId()
+  const decision = authorizeLiveRead(resolveCompetitionVisibility(competition), !!userId)
+  if (!decision.allowed) {
+    return NextResponse.json({ error: decision.reason }, { status: decision.status })
+  }
+
   try {
     const nowIso = new Date().toISOString()
     const results = await getChampionshipAggregate(competition, championship, scoring, nowIso)
