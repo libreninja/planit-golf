@@ -1,11 +1,28 @@
 import { getCompetitionConfig } from '@/lib/competition/registry'
-import { getChampionshipAggregate } from '@/lib/competition/aggregate-reader'
+import { championshipRounds, getChampionshipAggregate } from '@/lib/competition/aggregate-reader'
 import { resolveScoring } from '@/lib/competition/scoring-prefs'
 import { ClubChampionshipView } from '@/components/competition/club-championship-view'
+import type { RoundScheduleItem } from '@/lib/competition/championship-subtitle'
 import type { ChampionshipAggregate } from '@/lib/competition/aggregate-reader'
 import type { ScoringMode } from '@/lib/competition/types'
 
 export const dynamic = 'force-dynamic'
+
+// Build the round schedule parts (weekday/date strings) for the subtitle.
+// Dates are parsed as UTC midnight and formatted in UTC so the weekday is
+// stable regardless of the server's local timezone.
+function buildSchedule(specs: { championshipRound?: number; date: string }[]): RoundScheduleItem[] {
+  return [...specs]
+    .sort((a, b) => (a.championshipRound ?? 0) - (b.championshipRound ?? 0))
+    .map((s) => {
+      const d = new Date(`${s.date}T00:00:00Z`)
+      const weekdayShort = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(d)
+      const weekdayLong = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(d)
+      const dateShort = new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric', timeZone: 'UTC' }).format(d)
+      const dateLong = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(d)
+      return { round: s.championshipRound ?? 0, weekdayShort, weekdayLong, dateShort, dateLong }
+    })
+}
 
 interface ClubChampionshipPageProps {
   searchParams: Promise<{ scoring?: string }>
@@ -51,6 +68,8 @@ export default async function ClubChampionshipPage({ searchParams }: ClubChampio
   for (const [m, agg] of byScoring) initialByScoring[m] = agg
 
   const label = initialByScoring[scoring]?.occurrence.label ?? 'Club Championship'
+  const { specs } = championshipRounds(competitionKey, championshipKey)
+  const roundSchedule = buildSchedule(specs)
 
   const pollUrl = `/api/competition/championship?competition=${encodeURIComponent(competitionKey)}&championship=${encodeURIComponent(championshipKey)}`
 
@@ -58,9 +77,9 @@ export default async function ClubChampionshipPage({ searchParams }: ClubChampio
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">{label}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Combined standings across both championship rounds.
-        </p>
+        {/* The format/status subtitle is rendered live by the view below — it
+            reflects the aggregate state (pre-play / live / final) so it stays
+            honest as Tuesday's scores arrive. */}
       </div>
       <ClubChampionshipView
         competitionKey={competitionKey}
@@ -68,6 +87,7 @@ export default async function ClubChampionshipPage({ searchParams }: ClubChampio
         initialScoring={scoring}
         initialByScoring={initialByScoring}
         pollUrl={pollUrl}
+        roundSchedule={roundSchedule}
       />
     </div>
   )

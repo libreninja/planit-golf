@@ -19,6 +19,7 @@
 
 import { useEffect, useState } from 'react'
 import type { ChampionshipAggregate } from '@/lib/competition/aggregate-reader'
+import { championshipSubtitle, type RoundScheduleItem } from '@/lib/competition/championship-subtitle'
 import type { ScoringMode } from '@/lib/competition/types'
 import { writeScoringPref } from '@/lib/competition/scoring-prefs'
 import { useLivePoll } from './use-live-poll'
@@ -33,6 +34,7 @@ export interface ClubChampionshipViewProps {
   initialScoring: ScoringMode
   initialByScoring: Record<string, ChampionshipAggregate | null>
   pollUrl: string | null
+  roundSchedule: RoundScheduleItem[]
 }
 
 export function ClubChampionshipView(props: ClubChampionshipViewProps) {
@@ -92,6 +94,7 @@ export function ClubChampionshipView(props: ClubChampionshipViewProps) {
         initial={props.initialByScoring[scoring] ?? null}
         pollUrl={props.pollUrl}
         scoring={scoring}
+        roundSchedule={props.roundSchedule}
       />
     </section>
   )
@@ -101,10 +104,12 @@ function ClubChampionshipBoard({
   initial,
   pollUrl,
   scoring,
+  roundSchedule,
 }: {
   initial: ChampionshipAggregate | null
   pollUrl: string | null
   scoring: ScoringMode
+  roundSchedule: RoundScheduleItem[]
 }) {
   const { data, refreshing, showingLastKnown, refresh } = useLivePoll({
     initial,
@@ -121,8 +126,22 @@ function ClubChampionshipBoard({
   const roundsLive = agg?.roundsLive ?? initial?.roundsLive ?? 0
   const isInitialEmpty = !initial?.leaderboard
 
+  // One concise, state-aware subtitle. Driven by the live aggregate so it
+  // updates as Tuesday's scores arrive: "Starts Monday, Aug 17" →
+  // "LIVE · Round 1 in progress" → "LIVE · Round 2 in progress" → "FINAL".
+  const subtitle = championshipSubtitle(
+    {
+      resultStatus: agg?.resultStatus ?? initial?.resultStatus ?? 'unknown',
+      roundsComplete,
+      roundsLive,
+      roundCount,
+    },
+    roundSchedule,
+  )
+
   return (
     <>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
       <RoundProgress
         roundCount={roundCount}
         roundsComplete={roundsComplete}
