@@ -49,9 +49,10 @@ export default async function Home() {
 }
 
 function SignInPrompt() {
-  // Deliberately minimal public landing — rendered with NO application shell
-  // (AppShell hides itself for anonymous viewers). One wordmark, one line of
-  // context, one Sign In action. Nothing else.
+  // Minimal public landing for an anonymous visitor on /. The capability-aware
+  // AppShell now renders around it (brand, public nav, Sign in / Create account
+  // CTAs), so this is the page body inside that frame — one wordmark, one line
+  // of context, one Sign in action. Signed-in members get the dashboard above.
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="w-full max-w-md text-center">

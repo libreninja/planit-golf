@@ -8,11 +8,17 @@
 // it. The activity inbox is Seattle Cup scouting activity only in V1, shown for
 // users with the scouting entitlement (ActivityInbox).
 //
-// The shell is AUTHENTICATED-ONLY. It must not render until authentication has
-// resolved to a real signed-in viewer — an anonymous visitor on / sees a
-// deliberately minimal public landing (no rail, no top bar, no breadcrumb, no
-// account controls), not an empty app frame. It also hides itself on
-// auth/invite/public/event-browse routes, which keep their own page chrome.
+// The shell is CAPABILITY-AWARE, not authenticated-only. An anonymous visitor
+// on a public route sees the SAME application frame as a signed-in member —
+// branding, public navigation, breadcrumb, and Sign in / Create account CTAs.
+// The public Standings experience is identical for anonymous and authenticated
+// viewers; only the chrome and access to private capabilities differ. Private
+// destinations never appear for an anonymous viewer: Tee Times gates on gtgAccess
+// and Scouting gates on the scouting capability (both false for ANON), and
+// admin is not a nav destination at all. The private routes themselves enforce
+// their own server-side access guards, so a direct deep link redirects before
+// any page body renders. The shell also hides itself on auth/invite/scan/
+// event-browse routes, which keep their own page chrome.
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -340,13 +346,21 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
   const pathname = usePathname() || '/'
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // The shell is authenticated-only. An anonymous visitor never gets the app
-  // frame — / renders its own minimal public landing. Public/invite/event-browse
-  // routes are also hidden so they keep their own page chrome.
-  if (!user.signedIn || !isShellVisible(pathname)) {
+  // The shell renders for every shell-visible route, anonymous or not. An
+  // anonymous viewer gets the public frame (branding + public nav + Sign in /
+  // Create account CTAs); a signed-in viewer gets the full frame with account
+  // controls and any private nav their capabilities unlock. Auth/invite/scan/
+  // event-browse routes keep their own page chrome via isShellVisible.
+  if (!isShellVisible(pathname)) {
     return <>{children}</>
   }
 
+  const anon = !user.signedIn
+  // Return-path sign-in: /login?next=<current> → /auth/callback?next=<current>
+  // → back to the public page the visitor was viewing. The auth callback and
+  // the login page both honor `next`, so a sign-in from the standings returns
+  // to the standings rather than dumping the viewer on Home.
+  const signInHref = `/login?next=${encodeURIComponent(pathname)}`
   const crumbs = buildBreadcrumb(pathname)
 
   return (
@@ -357,16 +371,20 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
           <Brand />
         </div>
         <div className="flex-1 overflow-y-auto px-2 pb-4">
-          {user.signedIn ? (
-            <NavList user={user} pathname={pathname} />
-          ) : (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              <Button asChild size="sm" className="w-full">
-                <Link href="/login">Sign in</Link>
-              </Button>
-            </div>
-          )}
+          <NavList user={user} pathname={pathname} />
         </div>
+        {/* Anonymous rail footer: low-pressure Sign in / Create account CTAs.
+            Signed-in viewers get their account controls in the top bar instead. */}
+        {anon ? (
+          <div className="space-y-2 border-t border-border px-3 py-3">
+            <Button asChild size="sm" className="w-full">
+              <Link href={signInHref}>Sign in</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full">
+              <Link href="/signup">Create account</Link>
+            </Button>
+          </div>
+        ) : null}
       </aside>
 
       {/* Mobile drawer */}
@@ -391,18 +409,22 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-2 pb-4">
-              {user.signedIn ? (
-                <NavList user={user} pathname={pathname} onNavigate={() => setDrawerOpen(false)} />
-              ) : (
-                <div className="px-3 py-2">
-                  <Button asChild size="sm" className="w-full">
-                    <Link href="/login" onClick={() => setDrawerOpen(false)}>
-                      Sign in
-                    </Link>
-                  </Button>
-                </div>
-              )}
+              <NavList user={user} pathname={pathname} onNavigate={() => setDrawerOpen(false)} />
             </div>
+            {anon ? (
+              <div className="space-y-2 border-t border-border px-3 py-3">
+                <Button asChild size="sm" className="w-full">
+                  <Link href={signInHref} onClick={() => setDrawerOpen(false)}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="w-full">
+                  <Link href="/signup" onClick={() => setDrawerOpen(false)}>
+                    Create account
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -440,9 +462,16 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
               {user.signedIn ? (
                 <AccountMenu user={user} />
               ) : (
-                <Button asChild size="sm" variant="outline">
-                  <Link href="/login">Sign in</Link>
-                </Button>
+                <>
+                  {/* Create account is invite-gated (/signup); on narrow screens
+                      it lives in the drawer to keep the top bar to one CTA. */}
+                  <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
+                    <Link href="/signup">Create account</Link>
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link href={signInHref}>Sign in</Link>
+                  </Button>
+                </>
               )}
             </div>
           </header>
