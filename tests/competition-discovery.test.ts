@@ -7,7 +7,7 @@ import { discoverOccurrence, type DiscoverInput } from '../lib/competition/adapt
 // on a specific endpoint substring — the client THROWS, mimicking the real
 // client's contract that genuine errors reject while 404/empty returns null.
 function fakeGg(opts: {
-  events?: any[]                  // GET /seasons/{sid}/events
+  events?: any[]                  // GET /events?season={sid}
   rounds?: any[]                   // GET /events/{eid}/rounds (full discovery)
   tournaments?: any[]              // GET /events/{eid}/rounds/{rid}/tournaments
   results?: Record<string, any>   // GET .../tournaments/{tid}.json
@@ -24,7 +24,7 @@ function fakeGg(opts: {
     if (/\/events\/[^/]+\/rounds$/.test(endpoint) && opts.eventRounds !== undefined) return opts.eventRounds
     if (endpoint.endsWith('/tournaments') && !endpoint.includes('.json')) return opts.tournaments ?? []
     if (/\/events\/[^/]+\/rounds$/.test(endpoint)) return opts.rounds ?? []
-    if (/\/seasons\/[^/]+\/events$/.test(endpoint)) return opts.events ?? []
+    if (endpoint.includes('/events?season=')) return opts.events ?? []
     const tId = endpoint.split('/').slice(-1)[0].replace('.json', '')
     return opts.results?.[tId] ?? { event: { scopes: [] } }
   }
@@ -70,7 +70,7 @@ test('no persisted row but discoverable: resolves event + round + tournaments fr
   assert.equal(r.resolved.sourceVersion, 'v9')
   assert.ok(r.leaderboard, 'leaderboard produced from full discovery')
   assert.equal(r.resultStatus, 'live')
-  assert.ok(gg.calls.some((c) => c.endsWith('/events')), 'resolved parent event from config')
+  assert.ok(gg.calls.some((c) => c.includes('/events?season=')), 'resolved parent event from config')
 })
 
 test('row without gg_event_id but with config → full discovery (not a team verdict)', async () => {
@@ -122,7 +122,7 @@ test('stale persisted gg_event_id hint (event no longer has rounds) → falls ba
     persistedHints: { ggEventId: 'ESTALE', ggRoundId: 'R1', grossTournamentId: null, netTournamentId: null },
   })
   assert.equal(r.resolved.ggEventId, 'E', 'fell back to config-discovered event id, not the stale hint')
-  assert.ok(gg.calls.some((c) => /\/seasons\/[^/]+\/events$/.test(c)), 'fell back to listing events from config')
+  assert.ok(gg.calls.some((c) => c.includes('/events?season=')), 'fell back to listing events from config')
 })
 
 test('team override produces team even with no tournaments', async () => {

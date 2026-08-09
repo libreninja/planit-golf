@@ -4,7 +4,7 @@ import { discoverAndPersistEventClassification } from '../lib/competition/reconc
 
 function fakeGg(opts: { tournaments: any[]; results: Record<string, any>; events?: any[]; rounds?: any[]; roundStatus?: string }) {
   return async (endpoint: string) => {
-    if (endpoint.endsWith('/events')) return opts.events ?? [{ id: 'E', category_id: 'C' }]
+    if (endpoint.includes('/events?season=')) return opts.events ?? [{ id: 'E', category_id: 'C' }]
     if (endpoint.endsWith('/rounds')) return opts.rounds ?? [{ id: 'R1', is_points_round: true, position: 18, status: opts.roundStatus }]
     if (endpoint.endsWith('/tournaments') && !endpoint.includes('.json')) return opts.tournaments
     const tId = endpoint.split('/').slice(-1)[0].replace('.json', '')

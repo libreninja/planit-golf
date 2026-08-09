@@ -90,13 +90,26 @@ function asArr(list: any, key: string): any[] {
 
 // Resolve the parent GG event from config (season + category). Returns the
 // event {id, name} matching the adapter's eventFilter. Does NOT swallow errors.
+//
+// The GG REST API lists a season's events at /events?season={id} (NOT
+// /seasons/{id}/events, which 404s), and each element arrives wrapped as
+// {event: {id, name, category: {id, id_str}}}. Unwrap both shapes so this
+// works whether the client returns the bare array or {events: [...]}. Match on
+// category id (id_str holds full precision — the numeric `id` is lossy) OR on
+// the eventFilter substring of the name. This is the config-only fallback
+// exercised when no persisted gg_event_id hint is available (e.g. a brand-new
+// occurrence not yet in igc_league_events); with a hint the caller's verify
+// branch short-circuits before reaching here.
 async function resolveEventFromConfig(input: DiscoverInput): Promise<{ id: string; name: string | null } | null> {
-  const list = await input.ggClient(`/seasons/${input.adapterConfig.seasonId}/events`)
+  const list = await input.ggClient(`/events?season=${input.adapterConfig.seasonId}`)
   const events = asArr(list, 'events')
-  const match = events.find((e: any) =>
-    e?.id && (e.category_id === input.adapterConfig.categoryId || String(e.name ?? '').toLowerCase().includes(input.adapterConfig.eventFilter)),
-  )
-  return match?.id ? { id: match.id, name: match.name ?? null } : null
+  const match = events.find((e: any) => {
+    const ev = e?.event ?? e
+    const catId = ev?.category?.id_str ?? ev?.category?.id ?? ev?.category_id
+    return ev?.id && (catId === input.adapterConfig.categoryId || String(ev.name ?? '').toLowerCase().includes(input.adapterConfig.eventFilter))
+  })
+  const ev = match?.event ?? match
+  return ev?.id ? { id: ev.id, name: ev.name ?? null } : null
 }
 
 // Select a round from a rounds array by pointsRoundIndex or byDateWindow.
@@ -117,19 +130,46 @@ async function listTournaments(input: DiscoverInput, ggEventId: string, ggRoundI
   const list = await input.ggClient(`/events/${ggEventId}/rounds/${ggRoundId}/tournaments`)
   const arr = asArr(list, 'tournaments')
   return arr
-    .map((t: any) => ({ id: t?.event?.id ?? t?.id, name: t?.event?.name ?? t?.name }))
+    .map((t: any) => ({ id: t?.event?.id ?? t?.id, name: t?.event?.name ?? t?.name, result_scope: t?.event?.result_scope ?? t?.result_scope }))
     .filter((t: { id?: string; name?: string }) => t.id && t.name)
-    .map((t: { id: string; name: string }) => ({
+    .map((t: { id: string; name: string; result_scope?: string | null }) => ({
       id: t.id, name: t.name,
       metadataFormat: null as DiscoveredTournament['metadataFormat'],  // GG exposes no explicit format field here
       nameKind: nameKind(t.name),
+      resultScope: (t.result_scope === 'rs_field' || t.result_scope === 'rs_flight') ? t.result_scope : null,
     }))
 }
 
-function pickGrossNet(tournaments: DiscoveredTournament[]): { gross: string | null; net: string | null } {
+// Pick the gross + net individual tournament ids for a round. When a round's
+// tournament list contains BOTH a per-round competition (result_scope='rs_flight')
+// AND a field-wide aggregate (result_scope='rs_field' — e.g. the overall "Gross
+// IGC Men's Club Championship 2026" that spans every round and appears, with the
+// SAME id, in each round's list), prefer the per-round one. Otherwise the
+// Planit per-round read would consume GG's own cross-round aggregate, double-
+// counting it in a Planit championship aggregate. A round with a single gross
+// (and single net) candidate — the normal weekly case — keeps today's behavior
+// (the candidate is picked regardless of scope). See classify.ts resultScope.
+export function pickGrossNet(tournaments: DiscoveredTournament[]): { gross: string | null; net: string | null } {
   const individual = tournaments.filter((t) => t.nameKind === 'individual')
-  const gross = individual.find((t) => /gross/i.test(t.name))?.id ?? null
-  const net = individual.find((t) => /net/i.test(t.name))?.id ?? (individual.length === 1 ? individual[0].id : null)
+  const grossCands = individual.filter((t) => /gross/i.test(t.name))
+  const netCands = individual.filter((t) => /net/i.test(t.name))
+  // Prefer the per-round (rs_flight) candidate when more than one exists; the
+  // rs_field aggregate is GG's own overall, not this round's competition. Falls
+  // back to the first candidate (today's behavior) when scope is unknown or all
+  // candidates share a scope — so this never regresses a single-candidate week.
+  const choose = (cands: DiscoveredTournament[]): string | null => {
+    if (cands.length === 0) return null
+    if (cands.length === 1) return cands[0].id
+    const perRound = cands.filter((t) => t.resultScope === 'rs_flight')
+    if (perRound.length) return perRound[0].id
+    const nonField = cands.filter((t) => t.resultScope !== 'rs_field')
+    return (nonField.length ? nonField : cands)[0].id
+  }
+  const gross = choose(grossCands)
+  const net = choose(netCands.length ? netCands : individual)
+  // Legacy single-individual fallback (a round whose only tournament is named
+  // neither gross nor net but is individual — surface it for both scorings).
+  if (!gross && !net && individual.length === 1) return { gross: individual[0].id, net: individual[0].id }
   return { gross, net }
 }
 
@@ -207,6 +247,7 @@ export async function discoverOccurrence(input: DiscoverInput): Promise<Discover
         // classification reflects the verified results, not the empty list.
         discoveredTournaments = [grossId, netId].filter(Boolean).map((id) => ({
           id: id as string, name: '', metadataFormat: 'individual' as const, nameKind: 'individual' as const,
+          resultScope: null as DiscoveredTournament['resultScope'],
         }))
       }
     } else {

@@ -6,7 +6,7 @@ import { makeLiveCacheStore } from '../lib/competition/cache.ts'
 // Fake GG serving parent event + round + tournaments + results.
 function fakeGg(opts: { tournaments: any[]; results: Record<string, any>; events?: any[]; rounds?: any[] }) {
   return async (endpoint: string) => {
-    if (endpoint.endsWith('/events')) return opts.events ?? [{ id: 'E', name: 'Mens', category_id: 'C' }]
+    if (endpoint.includes('/events?season=')) return opts.events ?? [{ id: 'E', name: 'Mens', category_id: 'C' }]
     if (endpoint.endsWith('/rounds')) return opts.rounds ?? [{ id: 'R1', is_points_round: true, position: 18 }]
     if (endpoint.endsWith('/tournaments') && !endpoint.includes('.json')) return opts.tournaments
     const tId = endpoint.split('/').slice(-1)[0].replace('.json', '')
@@ -118,4 +118,30 @@ test('durableCurrent derived from event row source vs import (version equality)'
     },
   })
   assert.equal(r.durableCurrent, true, 'version equality (v9==v9) → current despite older import timestamp')
+})
+
+// Club Championship: a configured special occurrence (weekNumber 101) resolves
+// from the config spec ALONE — no persisted igc_league_events row. The spec
+// supplies the date (active window) + GG event/round ids (discovery hints), so
+// live discovery succeeds without a durable row (the Standings contract). The
+// spec label is used verbatim; the storage week_number 101 is never shown.
+test('Club Championship Round 1 resolves from the config spec with NO persisted row', async () => {
+  const gg = fakeGg({
+    // The spec's ggRoundId must be present for hint verification to accept it.
+    rounds: [{ id: '12263658868441114147', is_points_round: true, date: '2026-08-17' }],
+    tournaments: [{ event: { id: 'g1', name: 'Gross CLUB CHAMPIONSHIP Round 1: Points' } }],
+    results: {}, // no scores posted yet → not_started
+  })
+  const cache = makeLiveCacheStore(new Map())
+  const r = await getLiveResults({
+    competitionKey: 'mens-league', occurrenceId: '101', scoring: 'gross',
+    nowIso: '2026-08-17T18:00:00-07:00',
+    deps: { adapterConfig, ggClient: gg, readEvent: fakeEventReader(null), cacheStore: cache },
+  })
+  assert.equal(r.occurrence.label, 'Club Championship - Round 1', 'spec label used, never "Week 101"')
+  assert.equal(r.occurrence.date, '2026-08-17', 'spec date drives the active window')
+  assert.equal(r.occurrence.number, 101, 'storage id retained internally for routing')
+  assert.equal(r.eventFormat, 'individual', 'discovery classified the round from the config hint')
+  assert.equal(r.leaderboard, null, 'no scores posted yet → no leaderboard')
+  assert.notEqual(r.resultStatus, 'live', 'no live scores to show before tee-off')
 })

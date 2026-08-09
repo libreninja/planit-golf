@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Leaderboard } from "@/lib/competition/types";
 import { ScorecardRow } from "./scorecard";
+import { shouldShowPurse } from "./leaderboard-purse";
+import { pickLeaderboardCols } from "./leaderboard-cols";
 import { cn } from "@/lib/utils/cn";
 
 // showFlight renders a Flight column (POS / PLAYER / FLIGHT / …) — only for
@@ -27,17 +29,25 @@ export function Leaderboard({
     return <p className="text-sm text-muted-foreground">No results available for this round.</p>;
   }
   const isGross = leaderboard.scoringMode === "gross";
-  const smCols = showFlight
-    ? "sm:grid-cols-[2.5rem_1fr_5rem_4rem_3rem_4rem_4rem_5rem]"
-    : "sm:grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem]";
+  // Purse column is data-driven: shown only when at least one entry carries a
+  // purse. A no-money round (Club Championship Monday — points only) hides the
+  // column instead of rendering an empty one; a money round (Tuesday) keeps it.
+  // Season Points entries have no purse, so the column is hidden there too.
+  const showPurse = shouldShowPurse(leaderboard.entries);
+  // Grid columns adapt to which optional columns render. Flight is sm+ only
+  // (mobile never shows it), so the base (mobile) template never includes it.
+  // Literal class strings come from pickLeaderboardCols so Tailwind's JIT can
+  // see each variant (dynamically built class names are silently dropped).
+  const cols = pickLeaderboardCols(showFlight, showPurse);
   return (
     <div className="overflow-hidden rounded-md border border-border">
       {/* header (hidden on mobile — rows stack). The Flight header only appears
           on sm+ alongside the column; mobile keeps the original 7-col grid. */}
       <div
         className={cn(
-          "hidden grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem] gap-2 bg-muted/40 px-3 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground sm:grid",
-          smCols,
+          "hidden gap-2 bg-muted/40 px-3 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground sm:grid",
+          cols.base,
+          cols.sm,
         )}
       >
         <span>Pos</span>
@@ -47,7 +57,7 @@ export function Leaderboard({
         <span className="text-right">Thru</span>
         <span className="text-right">{isGross ? "Gross" : "Net"}</span>
         <span className="text-right">Points</span>
-        <span className="text-right">Purse</span>
+        {showPurse && <span className="text-right">Purse</span>}
       </div>
       <div className="divide-y divide-border">
         {leaderboard.entries.map((e) => {
@@ -63,6 +73,7 @@ export function Leaderboard({
               isOpen={expanded === key}
               onToggle={() => setExpanded((c) => (c === key ? null : key))}
               showFlight={showFlight}
+              showPurse={showPurse}
               colorizeFlights={colorizeFlights}
             />
           );

@@ -7,6 +7,7 @@ import type {
   ScoringMode,
 } from "@/lib/competition/types";
 import { flightColor } from "./flight-color";
+import { pickLeaderboardCols } from "./leaderboard-cols";
 
 // ---- formatting helpers -----------------------------------------------------
 
@@ -41,6 +42,7 @@ export function ScorecardRow({
   isOpen,
   onToggle,
   showFlight = false,
+  showPurse = false,
   colorizeFlights = false,
 }: {
   entry: ResultEntry;
@@ -50,6 +52,7 @@ export function ScorecardRow({
   isOpen: boolean;
   onToggle: () => void;
   showFlight?: boolean;
+  showPurse?: boolean;
   colorizeFlights?: boolean;
 }) {
   const isGross = scoringMode === "gross";
@@ -62,6 +65,9 @@ export function ScorecardRow({
   // P1-3: subtle per-flight tint + badge for finalized Men's multi-flight views.
   // null for non-numeric/unflighted rows → those rows stay neutral.
   const color = colorizeFlights ? flightColor(entry.flight) : null;
+  // Literal class strings from pickLeaderboardCols so Tailwind sees each
+  // variant (dynamically built class names are silently dropped by the JIT).
+  const cols = pickLeaderboardCols(showFlight, showPurse);
 
   return (
     <div>
@@ -71,10 +77,9 @@ export function ScorecardRow({
         disabled={!hasHoles}
         aria-expanded={isOpen}
         className={cn(
-          "grid w-full grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem] items-center gap-2 px-3 py-2 text-left text-sm",
-          showFlight
-            ? "sm:grid-cols-[2.5rem_1fr_5rem_4rem_3rem_4rem_4rem_5rem]"
-            : "sm:grid-cols-[2.5rem_1fr_4rem_3rem_4rem_4rem_5rem]",
+          "grid w-full items-center gap-2 px-3 py-2 text-left text-sm",
+          cols.base,
+          cols.sm,
           hasHoles ? "cursor-pointer" : "cursor-default",
           // Default hover when uncolored; the flight color's hover when tinted.
           color ? color.row : hasHoles ? "hover:bg-muted/30" : "",
@@ -108,7 +113,9 @@ export function ScorecardRow({
           {total ?? "—"}
         </span>
         <span className="text-right tabular-nums">{formatPoints(entry.points)}</span>
-        <span className="text-right tabular-nums text-muted-foreground">{entry.purse ?? "—"}</span>
+        {showPurse && (
+          <span className="text-right tabular-nums text-muted-foreground">{entry.purse ?? "—"}</span>
+        )}
       </button>
       {isOpen && hasHoles && card && <Scorecard card={card} />}
     </div>

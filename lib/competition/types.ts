@@ -58,6 +58,16 @@ export interface CompetitionCapabilities {
   supportsEventNavigation: boolean
 }
 
+// Who may read a competition's live/durable leaderboard data WITHOUT logging
+// in. IGC league standings are PUBLIC — the product goal is that golfers share
+// the Planit live leaderboard link instead of the Golf Genius link, and a large
+// share of recipients have no Planit account. So 'public' competitions are
+// readable anonymously at the live API boundary; 'private' competitions (a
+// future capability, e.g. a members-only event) still require auth. The live
+// API routes authorize on THIS, not on "is the viewer logged in" — removing
+// auth globally is never the answer. See lib/competition/live-auth.ts.
+export type CompetitionVisibility = 'public' | 'private'
+
 export interface OccurrenceCapabilities extends CompetitionCapabilities {
   groupings: GroupingAvailability
 }
@@ -74,6 +84,29 @@ export interface GolfGeniusAdapterConfig {
   // How an occurrence number maps to a GG round (index into points rounds) and
   // how the active occurrence is found by date window. Server-only.
   roundResolution: 'pointsRoundIndex' | 'byDateWindow'
+  // Explicitly-configured occurrences that live outside the normal numbered
+  // season cadence — e.g. a multi-round Club Championship played on dates that
+  // don't align with the weekly index. Each spec carries its own date + GG
+  // event/round ids so LIVE DISCOVERY resolves it from config alone, WITHOUT a
+  // persisted igc_league_events row (the Standings live-discovery contract).
+  // The durable reconcile path later upserts a matching row idempotently; until
+  // then the nav list merges these specs in so the occurrence is reachable.
+  // `weekNumber` is a STORAGE IDENTIFIER only (e.g. 101/102) — never shown to
+  // users; `label` is the user-facing nav label. Server-only.
+  specialOccurrences?: SpecialOccurrence[]
+}
+
+// A configured occurrence outside the normal weekly cadence (Club Championship
+// rounds). `championshipKey` groups rounds into one aggregate competition;
+// `championshipRound` orders them within it. Server-only.
+export interface SpecialOccurrence {
+  weekNumber: number                 // storage id (101/102), never user-visible
+  label: string                      // user-facing nav label
+  date: string                       // ISO date — active window + byDateWindow fallback
+  ggEventId?: string                 // configured hint (verified against GG)
+  ggRoundId?: string                 // configured hint (verified against GG)
+  championshipKey?: string            // groups rounds into one aggregate ('club-championship')
+  championshipRound?: number          // 1-based order within the championship
 }
 
 export interface CompetitionConfig {
@@ -84,6 +117,10 @@ export interface CompetitionConfig {
   navigation: NavigationOptions
   capabilities: CompetitionCapabilities
   liveGroupingPolicy: LiveGroupingPolicy
+  // Whether anonymous (logged-out) viewers may read live/durable leaderboard
+  // data via the competition live API. 'public' = yes (IGC leagues); 'private'
+  // = requires an authenticated viewer. See CompetitionVisibility.
+  visibility: CompetitionVisibility
   schedule?: CompetitionSchedule
 }
 

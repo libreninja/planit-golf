@@ -30,6 +30,11 @@ export interface ReconcileOps {
   discoverAndPersist(competitionKey: string, week: number, nowIso: string): Promise<{ resolved: ResolvedOccurrence }>
   importOccurrence(competitionKey: string, week: number, nowIso: string, resolved: ResolvedOccurrence): Promise<void>
   rebuildSeasonPoints(competitionKey: string): Promise<void>
+  // Idempotently precreate configured special-occurrence rows (Club Championship
+  // 101/102) so reconcile sees them as candidates. Best-effort: a failure is
+  // logged but does not abort the run (next run retries). Optional so injected
+  // test ops without it are unaffected.
+  precreateSpecialOccurrences?(competitionKey: string): Promise<number>
 }
 
 const RESERVE_MS = 5_000   // leave time to serialize/log + clean cache
@@ -64,6 +69,17 @@ export interface ReconcileCompetitionInput {
 export async function reconcileCompetition(input: ReconcileCompetitionInput): Promise<ReconcileSummary> {
   const summary: ReconcileSummary = { competition: input.competitionKey, discovered: 0, imported: 0, skipped: 0, seasonPointsRebuilds: 0, errors: [], stoppedForBudget: false }
   const ops = input.ops ?? (await defaultOps())
+
+  // Precreate configured special-occurrence rows (Club Championship 101/102)
+  // BEFORE listing candidates so they appear in this run. Best-effort: a failure
+  // is logged but does not abort — the rows retry on the next hourly run.
+  if (ops.precreateSpecialOccurrences) {
+    try {
+      await ops.precreateSpecialOccurrences(input.competitionKey)
+    } catch (err) {
+      summary.errors.push(`precreate: ${String(err)}`)
+    }
+  }
 
   const events = await ops.listEvents(input.competitionKey)
   const candidates = selectReconciliationCandidates(events, input.nowIso)
@@ -102,12 +118,32 @@ async function defaultOps(): Promise<ReconcileOps> {
   const { discoverAndPersistEventClassification } = await import('./discover.ts')
   const { importOccurrence } = await import('./import.ts')
   const { rebuildSeasonPoints } = await import('./season-points.ts')
+  const { precreateSpecialOccurrences } = await import('./precreate.ts')
   const supabase = createServiceClient()
   // 404-tolerant client: a missing tournament .json ("not found yet") resolves
   // to null instead of throwing, per discovery's ERROR CONTRACT. This is what
   // stops unfinalized rounds from surfacing as `wk{N}: ... 404` reconcile errors.
   const ggClient = (async (endpoint: string) => makeGolfGeniusRequestOptional({ endpoint })) as any
   return {
+    async precreateSpecialOccurrences(competitionKey) {
+      // Check-then-insert (ON CONFLICT DO NOTHING semantically): never clobber an
+      // existing row's reconcile state. A race between check+insert surfaces as
+      // a 23505 unique violation, treated as "already exists" (idempotent).
+      const db = {
+        async upsertIgnoreDuplicates(row: any) {
+          const { data: existing } = await supabase.from('igc_league_events')
+            .select('id').eq('league_key', row.league_key).eq('week_number', row.week_number).maybeSingle()
+          if (existing) return { inserted: false }
+          const { error } = await supabase.from('igc_league_events').insert(row)
+          if (error) {
+            if (error.code === '23505') return { inserted: false } // race: another run inserted first
+            throw new Error(`igc_league_events precreate wk${row.week_number}: ${error.message}`)
+          }
+          return { inserted: true }
+        },
+      }
+      return precreateSpecialOccurrences(competitionKey, db)
+    },
     async listEvents(competitionKey) {
       const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
       const { data } = await supabase.from('igc_league_events')

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { getLiveResults } from '@/lib/competition/live'
+import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
 
 // Compatibility handler for the legacy /api/igc/league/live endpoint. Parses
 // legacy params (league=mens|womens, week=N), maps them to the generic request,
@@ -20,9 +21,6 @@ async function authenticatedUserId(): Promise<string | undefined> {
 }
 
 export async function GET(request: Request) {
-  const userId = await authenticatedUserId()
-  if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-
   const url = new URL(request.url)
   const league = url.searchParams.get('league')
   const weekParam = url.searchParams.get('week')
@@ -35,6 +33,15 @@ export async function GET(request: Request) {
   }
 
   const competitionKey = league === 'mens' ? 'mens-league' : 'womens-league'
+  // Authorize by competition visibility (the leagues are public) — same shared
+  // boundary as the generic route, so anonymous viewers poll freely. See
+  // lib/competition/live-auth.ts.
+  const userId = await authenticatedUserId()
+  const decision = authorizeLiveRead(resolveCompetitionVisibility(competitionKey), !!userId)
+  if (!decision.allowed) {
+    return NextResponse.json({ error: decision.reason }, { status: decision.status })
+  }
+
   const scoring = (url.searchParams.get('scoring') as 'gross' | 'net') || 'net'
   try {
     const nowIso = new Date().toISOString()

@@ -88,6 +88,7 @@ function buildNav(user: AppShellUser): NavItem[] {
     { type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 0 },
     { type: 'label', label: "Men's League", level: 1 },
     { type: 'link', label: 'Standings', href: '/igc/mens-league', level: 2 },
+    { type: 'link', label: 'Club Championship', href: '/igc/club-championship', level: 2 },
   ]
   // Tee Times is currently a Men's League capability only. Gated by the same
   // gtgAccess flag the Tee Times page enforces, so it only appears for users
@@ -224,6 +225,8 @@ function buildBreadcrumb(pathname: string): Crumb[] {
     return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }, { label: 'Standings' }]
   if (pathname === '/igc/mens-league/tee-times')
     return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Times' }]
+  if (pathname === '/igc/club-championship')
+    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Club Championship' }]
   if (pathname === '/igc/womens-league')
     return [{ label: 'Interbay', href: '/igc' }, { label: "Women's League" }, { label: 'Standings' }]
   if (pathname === '/igc/seattle-cup/scouting')

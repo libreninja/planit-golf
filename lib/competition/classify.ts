@@ -23,6 +23,14 @@ export interface DiscoveredTournament {
   name: string
   metadataFormat: 'individual' | 'team' | 'side' | null  // explicit upstream metadata; null if absent
   nameKind: NameKind                                     // hint derived from name
+  // GG result scoping. 'rs_field' = the field-wide AGGREGATE (e.g. the overall
+  // Club Championship tournament that spans every round — it appears, with the
+  // SAME id, in every constituent round's tournament list). 'rs_flight' = a
+  // single flight/round competition. For a per-round live read we want the
+  // rs_flight tournament, never the rs_field aggregate (which would double the
+  // Planit aggregate with GG's own cross-round totals). Optional: omitted by
+  // unit-test fixtures (classify doesn't use it); listTournaments always sets it.
+  resultScope?: 'rs_field' | 'rs_flight' | null
 }
 
 export interface ClassifyInput {

@@ -20,5 +20,6 @@ export const womensLeagueConfig: CompetitionConfig = {
     supportsEventNavigation: true,
   },
   liveGroupingPolicy: 'hide-until-final',
+  visibility: 'public',
   schedule: { timezone: 'America/Los_Angeles', playDay: 3, windowHours: 8, playStartLocal: '16:00' },
 }
