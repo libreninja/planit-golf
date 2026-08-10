@@ -8,29 +8,13 @@ import type {
 } from "@/lib/competition/types";
 import { flightColor } from "./flight-color";
 import { pickLeaderboardCols } from "./leaderboard-cols";
-
-// ---- formatting helpers -----------------------------------------------------
-
-function formatToPar(n: number | null): string {
-  if (n === null) return "—";
-  if (n === 0) return "E";
-  return n > 0 ? `+${n}` : `${n}`;
-}
-
-function formatThru(holesCompleted: number, isLive: boolean): string {
-  if (!isLive) return holesCompleted > 0 ? "F" : "—";
-  return `thru ${holesCompleted}`;
-}
-
-function formatPoints(n: number | null): string {
-  if (n === null) return "—";
-  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
-}
-
-function toParClass(n: number | null): string {
-  if (n === null || n === 0) return "text-muted-foreground";
-  return n < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
-}
+import {
+  buildMobileStats,
+  formatToPar,
+  formatThru,
+  formatPoints,
+  toParClass,
+} from "./leaderboard-format";
 
 // One labeled stat for the portrait mobile stat strip. The value sits
 // prominently on top; the micro-label beneath gives it context (the desktop
@@ -42,7 +26,7 @@ function MobileStat({
   valueClass,
 }: {
   label: string
-  value: string | number
+  value: string
   valueClass?: string
 }) {
   return (
@@ -127,11 +111,9 @@ export function ScorecardRow({
               ))}
           </div>
           <div className="mt-1.5 grid grid-cols-5 gap-1">
-            <MobileStat label="Pos" value={entry.positionLabel ?? "—"} />
-            <MobileStat label="To Par" value={formatToPar(toPar)} valueClass={toParClass(toPar)} />
-            <MobileStat label={isGross ? "Gross" : "Net"} value={total ?? "—"} />
-            <MobileStat label="Thru" value={formatThru(holesCompleted, isPlayerLive)} />
-            <MobileStat label="Points" value={formatPoints(entry.points)} />
+            {buildMobileStats(entry, card, scoringMode, isPlayerLive).map((s) => (
+              <MobileStat key={s.label} label={s.label} value={s.value} valueClass={s.valueClass} />
+            ))}
           </div>
           {showPurse && (
             <div className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">
