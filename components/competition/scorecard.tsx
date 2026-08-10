@@ -32,6 +32,27 @@ function toParClass(n: number | null): string {
   return n < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
+// One labeled stat for the portrait mobile stat strip. The value sits
+// prominently on top; the micro-label beneath gives it context (the desktop
+// header is hidden at this width, so a bare 27 / F / 281.25 must not appear
+// without a label). Value-then-label mirrors the agreed mobile hierarchy.
+function MobileStat({
+  label,
+  value,
+  valueClass,
+}: {
+  label: string
+  value: string | number
+  valueClass?: string
+}) {
+  return (
+    <div className="text-center">
+      <div className={cn("font-semibold tabular-nums leading-tight", valueClass)}>{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    </div>
+  )
+}
+
 // ---- player row + expandable (shared) scorecard -----------------------------
 
 export function ScorecardRow({
@@ -77,45 +98,82 @@ export function ScorecardRow({
         disabled={!hasHoles}
         aria-expanded={isOpen}
         className={cn(
-          "grid w-full items-center gap-2 px-3 py-2 text-left text-sm",
-          cols.base,
-          cols.sm,
+          "w-full px-3 py-2 text-left text-sm",
           hasHoles ? "cursor-pointer" : "cursor-default",
           // Default hover when uncolored; the flight color's hover when tinted.
           color ? color.row : hasHoles ? "hover:bg-muted/30" : "",
           color && hasHoles ? color.rowHover : "",
         )}
       >
-        <span className="font-medium tabular-nums text-muted-foreground">
-          {entry.positionLabel ?? "—"}
-        </span>
-        <span className="truncate font-medium">{entry.name}</span>
-        {showFlight && (
-          color ? (
-            <span className="hidden justify-end sm:flex">
-              <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums", color.badge)}>
+        {/* Portrait mobile layout (sm:hidden). Name is primary on its own
+            line, with a compact labeled stat strip beneath it so every value
+            has context without the desktop header (which is hidden at this
+            width). Names wrap rather than truncate — identity must stay
+            visible. The desktop/landscape grid table is rendered below. */}
+        <div className="sm:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <span className="min-w-0 text-[15px] font-semibold leading-tight break-words">
+              {entry.name}
+            </span>
+            {showFlight &&
+              (color ? (
+                <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums", color.badge)}>
+                  {entry.flight ?? "—"}
+                </span>
+              ) : (
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {entry.flight ?? "—"}
+                </span>
+              ))}
+          </div>
+          <div className="mt-1.5 grid grid-cols-5 gap-1">
+            <MobileStat label="Pos" value={entry.positionLabel ?? "—"} />
+            <MobileStat label="To Par" value={formatToPar(toPar)} valueClass={toParClass(toPar)} />
+            <MobileStat label={isGross ? "Gross" : "Net"} value={total ?? "—"} />
+            <MobileStat label="Thru" value={formatThru(holesCompleted, isPlayerLive)} />
+            <MobileStat label="Points" value={formatPoints(entry.points)} />
+          </div>
+          {showPurse && (
+            <div className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">
+              Purse {entry.purse ?? "—"}
+            </div>
+          )}
+        </div>
+        {/* Desktop / landscape grid table (sm+). Identical cells to the
+            previous single-grid row; the portrait block above is hidden at
+            this width, so the existing richer table is fully preserved. */}
+        <div className={cn("hidden items-center gap-2 sm:grid", cols.sm)}>
+          <span className="font-medium tabular-nums text-muted-foreground">
+            {entry.positionLabel ?? "—"}
+          </span>
+          <span className="truncate font-medium">{entry.name}</span>
+          {showFlight && (
+            color ? (
+              <span className="hidden justify-end sm:flex">
+                <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums", color.badge)}>
+                  {entry.flight ?? "—"}
+                </span>
+              </span>
+            ) : (
+              <span className="hidden truncate text-right text-xs tabular-nums text-muted-foreground sm:block">
                 {entry.flight ?? "—"}
               </span>
-            </span>
-          ) : (
-            <span className="hidden truncate text-right text-xs tabular-nums text-muted-foreground sm:block">
-              {entry.flight ?? "—"}
-            </span>
-          )
-        )}
-        <span className={`text-right font-semibold tabular-nums ${toParClass(toPar)}`}>
-          {formatToPar(toPar)}
-        </span>
-        <span className="text-right tabular-nums text-muted-foreground">
-          {formatThru(holesCompleted, isPlayerLive)}
-        </span>
-        <span className="text-right tabular-nums text-muted-foreground">
-          {total ?? "—"}
-        </span>
-        <span className="text-right tabular-nums">{formatPoints(entry.points)}</span>
-        {showPurse && (
-          <span className="text-right tabular-nums text-muted-foreground">{entry.purse ?? "—"}</span>
-        )}
+            )
+          )}
+          <span className={`text-right font-semibold tabular-nums ${toParClass(toPar)}`}>
+            {formatToPar(toPar)}
+          </span>
+          <span className="text-right tabular-nums text-muted-foreground">
+            {formatThru(holesCompleted, isPlayerLive)}
+          </span>
+          <span className="text-right tabular-nums text-muted-foreground">
+            {total ?? "—"}
+          </span>
+          <span className="text-right tabular-nums">{formatPoints(entry.points)}</span>
+          {showPurse && (
+            <span className="text-right tabular-nums text-muted-foreground">{entry.purse ?? "—"}</span>
+          )}
+        </div>
       </button>
       {isOpen && hasHoles && card && <Scorecard card={card} />}
     </div>
