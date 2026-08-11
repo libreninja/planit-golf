@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getLatestRegistrationRunStatus, getNextRunEventDate } from '@/lib/registration-schedule'
+import { getNextRunEventDateFromStatus, getNextRunEventDate } from '@/lib/registration-schedule'
 import { ensureInviteLinkForUser } from '@/lib/invite-linking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
@@ -288,30 +288,23 @@ export async function loadHomePageData(timer?: RequestTimer) {
     eventsQuery = eventsQuery.gte('event_date', new Date().toISOString().split('T')[0])
   }
 
-  const [eventsResult, latestRun] = await Promise.all([
+  const [eventsResult] = await Promise.all([
     measure('events', () => eventsQuery, 'load upcoming events'),
-    memberLeague
-      ? measure(
-          'latest_run',
-          () => getLatestRegistrationRunStatus(serviceClient, memberLeague as League),
-          'load latest registration run status',
-        )
-      : Promise.resolve(null),
   ])
   const allEvents = ((eventsResult as any).data || []) as HomeEvent[]
 
   if (memberLeague) {
-    const fallbackDate = getNextRunEventDate(memberLeague as League)
-    const eventsForLeague = allEvents.map((event) => event.event_date).sort()
-
-    if (!latestRun) {
-      nextRunEventDate = fallbackDate
-    } else if (latestRun.status !== 'completed') {
-      nextRunEventDate = latestRun.event_date
-    } else {
-      nextRunEventDate =
-        eventsForLeague.find((eventDate) => eventDate > latestRun.event_date) || fallbackDate
-    }
+    // Canonical next-run resolution lives in registration-schedule so the Tee
+    // Times UI, the admin next-runs API, and the dashboard share ONE window-
+    // aware definition: a failed/missing run cannot pin a past registration
+    // event once its window has closed. Previously this page duplicated a
+    // stricter rule here (advance only on status === 'completed'), which kept
+    // Aug 11 pinned after the Club Championship automation failed.
+    nextRunEventDate = await getNextRunEventDateFromStatus(
+      serviceClient,
+      memberLeague as League,
+      allEvents,
+    )
   }
 
   const events =

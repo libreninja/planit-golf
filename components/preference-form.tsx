@@ -10,6 +10,12 @@ import { signOut } from '@/app/session-actions'
 import { HelpModal } from '@/components/help-modal'
 import type { EventDemandCounts } from '@/lib/member-demand'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
+import {
+  buildInitialEventOverrides,
+  getEffectiveTimes,
+  type EventPref,
+  type EventOverrideState,
+} from '@/lib/registration-preferences'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -40,12 +46,6 @@ interface DefaultPrefs {
   tee_time_preferences: string[]
 }
 
-interface EventPref {
-  event_id: string
-  tee_time_preferences: string[]
-  skip_registration?: boolean | null
-}
-
 interface PreferenceFormProps {
   user: User
   profile: Profile | null
@@ -64,33 +64,6 @@ type EditorState =
   | { type: 'defaults' }
   | { type: 'event'; eventId: string }
   | null
-
-type EventOverrideState = {
-  times: string[]
-  skipRegistration: boolean
-}
-
-function buildInitialEventOverrides(eventPrefs: EventPref[]): Record<string, EventOverrideState> {
-  const overrides: Record<string, EventOverrideState> = {}
-  for (const eventPref of eventPrefs) {
-    overrides[eventPref.event_id] = {
-      times: eventPref.tee_time_preferences,
-      skipRegistration: eventPref.skip_registration === true,
-    }
-  }
-  return overrides
-}
-
-function getEffectiveTimes(
-  defaultTimes: string[],
-  override: EventOverrideState | undefined,
-): string[] {
-  if (!override) {
-    return defaultTimes
-  }
-
-  return override.skipRegistration ? [] : override.times
-}
 
 function sameTimes(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((time, index) => time === right[index])
