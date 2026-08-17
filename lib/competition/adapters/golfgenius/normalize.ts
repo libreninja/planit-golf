@@ -13,6 +13,7 @@ import {
   positionOrder,
   positionLabelOf,
   playerKey,
+  type HoleScore,
 } from '../../../igc/weekly-results-helpers.ts'
 import type { ResultEntry, Scorecard, ScoringMode } from '../../types.ts'
 
@@ -57,6 +58,39 @@ function totalOut(totals: GGAggregate['totals'], key: 'net_scores' | 'gross_scor
   return totals?.[key]?.out ?? totals?.[key]?.total ?? null
 }
 
+// Live-play fallback. GG populates `a.totals` (out/in/total) only at
+// finalization — a card in progress has null summary totals even though
+// per-hole scores are present in `holes`. Derive the running totals from
+// the scored holes so the live leaderboard shows actual Gross/Net and To
+// Par mid-round. Finalized `a.totals` always takes precedence: callers
+// use `totalOut(...) ?? derivedFromHoles(...)`, so a real finalized total
+// is never overwritten. Unplayed holes (null) never contribute, and a
+// card with zero scored holes yields null (not a fake 0 / E).
+function sumScored(holes: HoleScore[], pick: (h: HoleScore) => number | null): number | null {
+  let sum = 0
+  let any = false
+  for (const h of holes) {
+    const v = pick(h)
+    if (v !== null) {
+      sum += v
+      any = true
+    }
+  }
+  return any ? sum : null
+}
+// `cumulativeToPar` on HoleScore is the running NET to-par through each
+// hole (advanced only when the net delta is present). The latest non-null
+// value is therefore the live net to-par. There is no stored cumulative
+// gross field, so the gross fallback sums the per-hole gross deltas
+// (== cumulative gross to-par) — see usage below.
+function latestCumulativeToPar(holes: HoleScore[]): number | null {
+  let latest: number | null = null
+  for (const h of holes) {
+    if (h.cumulativeToPar !== null) latest = h.cumulativeToPar
+  }
+  return latest
+}
+
 export function normalizeTournament(
   results: GGResultsFixture,
   competition: ScoringMode,
@@ -85,10 +119,10 @@ export function normalizeTournament(
           key,
           memberCardId,
           name: a.name,
-          netTotal: totalOut(a.totals, 'net_scores'),
-          grossTotal: totalOut(a.totals, 'gross_scores'),
-          toParNet: totalOut(a.totals, 'to_par_net'),
-          toParGross: totalOut(a.totals, 'to_par_gross'),
+          netTotal: totalOut(a.totals, 'net_scores') ?? sumScored(holes, (h) => h.net),
+          grossTotal: totalOut(a.totals, 'gross_scores') ?? sumScored(holes, (h) => h.gross),
+          toParNet: totalOut(a.totals, 'to_par_net') ?? latestCumulativeToPar(holes),
+          toParGross: totalOut(a.totals, 'to_par_gross') ?? sumScored(holes, (h) => h.toParGross),
           holesCompleted,
           scorecardStatus: a.scorecard_statuses?.[0]?.status ?? null,
           isLive: holesCompleted > 0 && holesCompleted < totalHoles,
