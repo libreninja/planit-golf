@@ -7,7 +7,7 @@
 // stale-while-error are all handled here. Auth is the route's responsibility.
 
 import { discoverOccurrence, type GGClient } from './adapters/golfgenius/discovery.ts'
-import { buildLeagueActiveWindow, leagueOccurrenceLabel, mapLeagueEventToOccurrence } from './adapters/golfgenius/mapping.ts'
+import { buildLeagueActiveWindow, labelRuleSeparator, leagueOccurrenceLabel, mapLeagueEventToOccurrence, specialOccurrenceLabel } from './adapters/golfgenius/mapping.ts'
 import { deriveResultStatus, type UpstreamStatus } from './result-status.ts'
 import { isDurableCurrent } from './durable-current.ts'
 import { isOccurrenceActive } from './active-window.ts'
@@ -102,13 +102,18 @@ async function fetchFresh(
   const ev = await readEvent(input.competitionKey, input.occurrenceId)
   const occurrenceNumber = Number(input.occurrenceId)
 
-  // When no persisted row exists, a configured special occurrence (e.g. a Club
-  // Championship round) supplies its date + GG event/round ids from config so live
-  // discovery resolves it WITHOUT a durable row — the Standings live-discovery
-  // contract. A persisted row, when present, still wins (it carries the
-  // durable-current columns + freshly reconciled ids).
-  const spec = ev ? null : getSpecialOccurrence(input.competitionKey, occurrenceNumber)
+  // A configured special occurrence (e.g. a Club Championship round) is the
+  // source of truth for its DISPLAY LABEL + PLAY WINDOW, consulted regardless
+  // of whether a durable row exists — reconcile upserts durable rows for
+  // configured specials, and without this lookup those rows would fall back to
+  // the league's evening window + generic "Week N" label (P0-A/P0-B). The
+  // persisted row still wins for durable state + freshly reconciled GG ids
+  // (persistedHints below); the spec only supplies label/window/date fallback.
+  const spec = getSpecialOccurrence(input.competitionKey, occurrenceNumber)
   const occurrenceDate = ev?.event_date ?? spec?.date ?? null
+  // Per-occurrence schedule override (specials with a different play time, e.g.
+  // a morning championship round); falls back to the competition-level schedule.
+  const schedule = spec?.schedule ?? config.schedule
 
   const teamOverride = (adapterConfig.teamFormatOverrides ?? []).includes(occurrenceNumber)
   const persistedHints = ev ? {
@@ -145,11 +150,12 @@ async function fetchFresh(
     // discovered date is the authoritative temporal signal when no row exists.
     const effectiveDate = occurrenceDate ?? r.resolved.roundDate ?? null
 
-    // Build the active window from config (no hardcoded start). Built AFTER
+    // Build the active window from the effective schedule (per-occurrence
+    // override for specials, else the competition-level schedule). Built AFTER
     // discovery so it can use the discovered round date.
     const window = buildLeagueActiveWindow({
-      date: effectiveDate, tz: config.schedule?.timezone ?? 'America/Los_Angeles',
-      playStartLocal: config.schedule?.playStartLocal, windowHours: config.schedule?.windowHours,
+      date: effectiveDate, tz: schedule?.timezone ?? 'America/Los_Angeles',
+      playStartLocal: schedule?.playStartLocal, windowHours: schedule?.windowHours,
     }) ?? { start: effectiveDate ?? '', end: null }
 
     const active = isOccurrenceActive(window, nowIso, r.resolved.upstreamStatus === 'in_progress')
@@ -161,7 +167,9 @@ async function fetchFresh(
       durableFinalized: durableCurrent,
     })
 
-    const label = spec?.label ?? leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? r.resolved.eventName ?? null)
+    const label = spec
+      ? specialOccurrenceLabel(spec.label, effectiveDate, labelRuleSeparator(config.navigation.labelRule))
+      : leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? r.resolved.eventName ?? null)
     const occurrence: Occurrence = mapLeagueEventToOccurrence(
       { week_number: occurrenceNumber, event_name: ev?.event_name ?? r.resolved.eventName ?? null, event_date: effectiveDate, event_format: r.eventFormat, discovery_state: r.discoveryState },
       label, window, resultStatus,
@@ -183,10 +191,12 @@ async function fetchFresh(
     if (stale) return { ...stale, showingLastKnown: true }
     // No stale row: honest unknown state (NOT a team verdict).
     const fallbackWindow = buildLeagueActiveWindow({
-      date: occurrenceDate, tz: config.schedule?.timezone ?? 'America/Los_Angeles',
-      playStartLocal: config.schedule?.playStartLocal, windowHours: config.schedule?.windowHours,
+      date: occurrenceDate, tz: schedule?.timezone ?? 'America/Los_Angeles',
+      playStartLocal: schedule?.playStartLocal, windowHours: schedule?.windowHours,
     }) ?? { start: occurrenceDate ?? '', end: null }
-    const label = spec?.label ?? leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? null)
+    const label = spec
+      ? specialOccurrenceLabel(spec.label, occurrenceDate, labelRuleSeparator(config.navigation.labelRule))
+      : leagueOccurrenceLabel(config.navigation.labelRule, Number.isFinite(occurrenceNumber) ? occurrenceNumber : null, ev?.event_name ?? null)
     return {
       occurrence: mapLeagueEventToOccurrence(
         { week_number: occurrenceNumber, event_name: ev?.event_name ?? null, event_date: occurrenceDate, event_format: 'unknown', discovery_state: 'pending' },

@@ -23,8 +23,10 @@ import { isDurableCurrent } from '@/lib/competition/durable-current'
 import { isOccurrenceActive } from '@/lib/competition/active-window'
 import {
   buildLeagueActiveWindow,
+  labelRuleSeparator,
   leagueOccurrenceLabel,
   mapLeagueEventToOccurrence,
+  specialOccurrenceLabel,
 } from '@/lib/competition/adapters/golfgenius/mapping'
 import {
   buildHoles,
@@ -79,11 +81,21 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
   const tz = config.schedule?.timezone ?? 'America/Los_Angeles'
   const playStartLocal = config.schedule?.playStartLocal
   const windowHours = config.schedule?.windowHours
+  // Configured special occurrences (e.g. Club Championship rounds) are the
+  // source of truth for their DISPLAY LABEL + PLAY WINDOW, looked up by storage
+  // week_number — consulted here for DB rows too, because reconcile upserts
+  // durable rows for configured specials and without this the durable row would
+  // fall back to the league's evening window + generic "Week N" label (P0-A/B).
+  const specByWeek = new Map(
+    (config.adapterConfig.specialOccurrences ?? []).map((s) => [s.weekNumber, s]),
+  )
+  const sep = labelRuleSeparator(config.navigation.labelRule)
 
   const occurrences: Occurrence[] = []
   const seenWeeks = new Set<number>()
   for (const e of data as EventRow[]) {
     seenWeeks.add(e.week_number)
+    const spec = specByWeek.get(e.week_number)
     const durableFinalized = isDurableCurrent({
       sourceFinalizedAt: e.source_finalized_at ?? null,
       sourceVersion: e.source_version ?? null,
@@ -93,8 +105,15 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
     // Persisted finalized rounds carry source_finalized_at → upstream 'completed'.
     // Rounds without it are unknown here; the live path re-derives authoritatively.
     const upstreamStatus = e.source_finalized_at ? 'completed' : 'unknown'
-    const window = buildLeagueActiveWindow({ date: e.event_date, tz, playStartLocal, windowHours })
-      ?? { start: e.event_date ?? '', end: null }
+    // Per-occurrence schedule override (specials with a different play time);
+    // falls back to the competition-level schedule.
+    const sched = spec?.schedule
+    const window = buildLeagueActiveWindow({
+      date: e.event_date,
+      tz: sched?.timezone ?? tz,
+      playStartLocal: sched?.playStartLocal ?? playStartLocal,
+      windowHours: sched?.windowHours ?? windowHours,
+    }) ?? { start: e.event_date ?? '', end: null }
     const active = isOccurrenceActive(window, nowIso, false)
     const resultStatus = deriveResultStatus({
       upstreamStatus,
@@ -105,12 +124,16 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
       anyPartial: false,
       durableFinalized,
     })
-    const label = leagueOccurrenceLabel(
-      config.navigation.labelRule,
-      e.week_number,
-      e.event_name ?? null,
-      e.event_date ?? null,
-    )
+    // A configured special occurrence's label never exposes its storage
+    // week_number (101/102) — the spec label + date is the user-facing name.
+    const label = spec
+      ? specialOccurrenceLabel(spec.label, e.event_date ?? null, sep)
+      : leagueOccurrenceLabel(
+        config.navigation.labelRule,
+        e.week_number,
+        e.event_name ?? null,
+        e.event_date ?? null,
+      )
     occurrences.push(
       mapLeagueEventToOccurrence(
         {
@@ -135,8 +158,13 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
   // and is never shown. Sorted into date order below with the DB rows.
   for (const spec of config.adapterConfig.specialOccurrences ?? []) {
     if (seenWeeks.has(spec.weekNumber)) continue
-    const window = buildLeagueActiveWindow({ date: spec.date, tz, playStartLocal, windowHours })
-      ?? { start: spec.date, end: null }
+    const sched = spec.schedule
+    const window = buildLeagueActiveWindow({
+      date: spec.date,
+      tz: sched?.timezone ?? tz,
+      playStartLocal: sched?.playStartLocal ?? playStartLocal,
+      windowHours: sched?.windowHours ?? windowHours,
+    }) ?? { start: spec.date, end: null }
     const active = isOccurrenceActive(window, nowIso, false)
     const resultStatus = deriveResultStatus({
       upstreamStatus: 'unknown',
@@ -148,7 +176,7 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
     occurrences.push(
       mapLeagueEventToOccurrence(
         { week_number: spec.weekNumber, event_name: spec.label, event_date: spec.date, event_format: 'unknown', discovery_state: 'pending' },
-        spec.label,
+        specialOccurrenceLabel(spec.label, spec.date, sep),
         window,
         resultStatus,
       ),

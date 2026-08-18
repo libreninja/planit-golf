@@ -30,6 +30,13 @@ export const mensLeagueConfig: CompetitionConfig = {
         ggRoundId: '12263658868441114147',
         championshipKey: 'club-championship',
         championshipRound: 1,
+        // Club Championship is a MORNING event (tee ~07:00 PT), not the league's
+        // 16:00 evening cadence. Override the play window so the active-window
+        // + live-detection logic covers actual play — without this, a durable
+        // row from reconcile would fall back to the 16:00 league window, read
+        // inactive mid-morning, and gate the live render off (P0-A). 14h covers
+        // 07:00–21:00 PT: the round, slow play, and post-round scoring.
+        schedule: { timezone: 'America/Los_Angeles', playDay: 1, windowHours: 14, playStartLocal: '07:00' },
       },
       {
         weekNumber: 102,
@@ -39,6 +46,7 @@ export const mensLeagueConfig: CompetitionConfig = {
         ggRoundId: '12263654969047016987',
         championshipKey: 'club-championship',
         championshipRound: 2,
+        schedule: { timezone: 'America/Los_Angeles', playDay: 2, windowHours: 14, playStartLocal: '07:00' },
       },
     ],
   },

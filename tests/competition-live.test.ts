@@ -138,7 +138,10 @@ test('Club Championship Round 1 resolves from the config spec with NO persisted 
     nowIso: '2026-08-17T18:00:00-07:00',
     deps: { adapterConfig, ggClient: gg, readEvent: fakeEventReader(null), cacheStore: cache },
   })
-  assert.equal(r.occurrence.label, 'Club Championship - Round 1', 'spec label used, never "Week 101"')
+  // P0-B: the spec label + date is the user-facing name; the storage
+  // week_number 101 is never shown. The date is appended with the league's
+  // weekDate separator so specials read consistently alongside normal weeks.
+  assert.equal(r.occurrence.label, 'Club Championship - Round 1 - 08/17/2026', 'spec label + date, never "Week 101"')
   assert.equal(r.occurrence.date, '2026-08-17', 'spec date drives the active window')
   assert.equal(r.occurrence.number, 101, 'storage id retained internally for routing')
   assert.equal(r.eventFormat, 'individual', 'discovery classified the round from the config hint')

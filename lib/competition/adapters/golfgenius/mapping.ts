@@ -152,3 +152,28 @@ export function leagueOccurrenceLabel(
   }
   return eventName ? `${prefix}${rule.separator}${eventName}` : prefix
 }
+
+// Display label for a configured special occurrence (e.g. a Club Championship
+// round). The spec's `label` is the user-facing name ("Club Championship -
+// Round 2"); the storage `weekNumber` (101/102) is NEVER shown. The date is
+// appended with the same separator the league's labelRule uses for normal
+// weeks, so specials read consistently alongside "Week 19 - 08/11/2026" in the
+// nav. Used for BOTH the DB-row path (reconcile has upserted a durable row) and
+// the config-only path — the spec is the single source of truth for the label
+// regardless of durable-row existence.
+export function specialOccurrenceLabel(
+  specLabel: string,
+  date: string | null,
+  separator: string,
+): string {
+  const ds = formatDateUS(date)
+  return ds ? `${specLabel}${separator}${ds}` : specLabel
+}
+
+// The separator a LabelRule uses between the prefix and its suffix (date for
+// weekDate, event name for composite). numberPrefix/event_name carry none, so
+// fall back to ' - ' — specials always append a date, so they need a separator.
+export function labelRuleSeparator(rule: LabelRule): string {
+  if (rule.kind === 'composite' || rule.kind === 'weekDate') return rule.separator
+  return ' - '
+}

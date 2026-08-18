@@ -107,6 +107,12 @@ export interface SpecialOccurrence {
   ggRoundId?: string                 // configured hint (verified against GG)
   championshipKey?: string            // groups rounds into one aggregate ('club-championship')
   championshipRound?: number          // 1-based order within the championship
+  // Per-occurrence play window override. A special occurrence that plays at a
+  // different time than the league's regular cadence (e.g. a morning Club
+  // Championship round vs the league's 16:00 evening rounds) supplies its own
+  // start/length here so the active-window + live-detection logic covers actual
+  // play. Omitted → falls back to the competition-level schedule.
+  schedule?: CompetitionSchedule
 }
 
 export interface CompetitionConfig {
