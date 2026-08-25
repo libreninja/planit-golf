@@ -1,0 +1,6388 @@
+{
+ "event": {
+  "name": "Singles",
+  "adjusted": false,
+  "scopes": [
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753202785119398000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753202785119398000,
+        "member_card_id": 8753204795398973000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753204795398973000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "50",
+      "name": "Jackson Park (Lipe, Matt)",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       2,
+       3,
+       3,
+       3,
+       4,
+       2,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       2,
+       3
+      ],
+      "gross_scores": [
+       4,
+       2,
+       3,
+       3,
+       3,
+       4,
+       2,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       2,
+       3
+      ],
+      "to_par_net": [
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       -1,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 30,
+        "total": 58
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 30,
+        "total": 58
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": 2,
+        "total": 2
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": 2,
+        "total": 2
+       }
+      }
+     },
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753219918079486000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753219918079486000,
+        "member_card_id": 7701317062181808000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317062181808000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "100",
+      "name": "West Seattle (Gants, Colin)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       4,
+       2,
+       5,
+       2,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       4,
+       2,
+       5,
+       2,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       2,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       2,
+       -1,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 30,
+        "total": 59
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 30,
+        "total": 59
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": 2,
+        "total": 3
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": 2,
+        "total": 3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753211947391937000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753211947391937000,
+        "member_card_id": 3021599121153747000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 3021599121153747000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "75",
+      "name": "Jefferson Park (Soderberg, Andrew)",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       2,
+       3,
+       3,
+       3,
+       3,
+       5,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3
+      ],
+      "gross_scores": [
+       5,
+       2,
+       3,
+       3,
+       3,
+       3,
+       5,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3
+      ],
+      "to_par_net": [
+       1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       2,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       2,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 28,
+        "total": 56
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 28,
+        "total": 56
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": 0,
+        "total": 0
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": 0,
+        "total": 0
+       }
+      }
+     },
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753189091656362000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753189091656362000,
+        "member_card_id": 3021599120616876000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 3021599120616876000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "25",
+      "name": "Interbay (Slemp, Adam)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       4,
+       3
+      ],
+      "gross_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       4,
+       3
+      ],
+      "to_par_net": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       1,
+       0
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       1,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 27,
+        "total": 57
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 27,
+        "total": 57
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": -1,
+        "total": 1
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": -1,
+        "total": 1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753194163710749000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753194163710749000,
+        "member_card_id": 5570402346246105000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570402346246105000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "32",
+      "name": "Jackson Park (Foreman, Dave)",
+      "score": "6 & 4",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       null,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       null,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 14,
+        "total": 44
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 14,
+        "total": 44
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": -2,
+        "total": 0
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": -2,
+        "total": 0
+       }
+      }
+     },
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753217558229838000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753217558229838000,
+        "member_card_id": 6147861167344740000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6147861167344740000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "93",
+      "name": "West Seattle (Morris, Tom)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       2,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       5,
+       3,
+       4,
+       3,
+       4,
+       null,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       4,
+       2,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       5,
+       3,
+       4,
+       3,
+       4,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       1,
+       -1,
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       -1,
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       null,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 32,
+        "in": 19,
+        "total": 51
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 19,
+        "total": 51
+       },
+       "to_par_net": {
+        "out": 4,
+        "in": 3,
+        "total": 7
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 3,
+        "total": 7
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753209979055401000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753209979055401000,
+        "member_card_id": 8753210076027709000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753210076027709000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "68",
+      "name": "Jefferson Park (Black, Sam)",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       4,
+       3,
+       4,
+       4,
+       2,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       2,
+       3,
+       3,
+       1,
+       3,
+       null
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       3,
+       4,
+       3,
+       4,
+       2,
+       3,
+       4,
+       2,
+       3,
+       null
+      ],
+      "to_par_net": [
+       -1,
+       1,
+       0,
+       1,
+       1,
+       -1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       1,
+       -1,
+       0,
+       0,
+       -2,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       0,
+       1,
+       -1,
+       0,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 22,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 33,
+        "in": 25,
+        "total": 58
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": -3,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": 5,
+        "in": 0,
+        "total": 5
+       }
+      }
+     },
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753184192004647000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753184192004647000,
+        "member_card_id": 2925267424360031700
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267424360031700,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "13",
+      "name": "Interbay (Silverberg, Jonny)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       2,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       null
+      ],
+      "gross_scores": [
+       5,
+       2,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       null
+      ],
+      "to_par_net": [
+       1,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       1,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 27,
+        "total": 56
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 27,
+        "total": 56
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": 2,
+        "total": 3
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": 2,
+        "total": 3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753186657181657000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753186657181657000,
+        "member_card_id": 2925267445700651000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267445700651000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "20",
+      "name": "Interbay (Schumaker, Jason)",
+      "score": "5 & 3",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       4,
+       3,
+       4,
+       4,
+       2,
+       3,
+       3,
+       2,
+       4,
+       3,
+       3,
+       3,
+       4,
+       2,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       3,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       2,
+       4,
+       3,
+       3,
+       3,
+       4,
+       3,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       -1,
+       1,
+       0,
+       1,
+       1,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       -1,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753206883961039000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753206883961039000,
+        "member_card_id": 5570584011115358000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570584011115358000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "58",
+      "name": "Jefferson Park (Gasparich, Kevin)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       4,
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       4,
+       5,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       4,
+       4,
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       4,
+       5,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       1,
+       1,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       2,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       1,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       2,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753192805360232000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753192805360232000,
+        "member_card_id": 7701317049800223000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317049800223000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "29",
+      "name": "Jackson Park (Ohrenschall, Mark)",
+      "score": "3 & 2",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       2,
+       4,
+       4,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       2,
+       4,
+       4,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       1,
+       1,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       1,
+       1,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753215256194476000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753215256194476000,
+        "member_card_id": 6645230694832302000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230694832302000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "86",
+      "name": "West Seattle (Kramlich, Dan)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       null,
+       null
+      ],
+      "gross_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       null,
+       null
+      ],
+      "to_par_net": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 33,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 33,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 5,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 5,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491597892000,
+      "member_ids": [
+       8753205307573823000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753205307573823000,
+        "member_card_id": 7701317055672248000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317055672248000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "54",
+      "name": "Jefferson Park (Hiranphanit, Krit)",
+      "score": "4 & 3",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       2,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       5,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       1,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": 29,
+        "total": 56
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 29,
+        "total": 57
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": 1,
+        "total": 0
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": 1,
+        "total": 1
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753214236508842000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753214236508842000,
+        "member_card_id": 6645230694597421000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230694597421000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "82",
+      "name": "West Seattle (Kunugi, Elliott)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       4,
+       2,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       4,
+       2,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       1,
+       0,
+       1,
+       -1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       1,
+       -1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 31,
+        "in": 29,
+        "total": 60
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": 29,
+        "total": 60
+       },
+       "to_par_net": {
+        "out": 3,
+        "in": 1,
+        "total": 4
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": 1,
+        "total": 4
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753180123697539000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753180123697539000,
+        "member_card_id": 7225571679404059000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7225571679404059000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "5",
+      "name": "Interbay (Chiupka, Russell)",
+      "score": "4 & 3",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       4,
+       2,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       5,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       4,
+       2,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 28,
+        "total": 58
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 28,
+        "total": 58
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753191928683588000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753191928683588000,
+        "member_card_id": 8753204791909313000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753204791909313000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "27",
+      "name": "Jackson Park (Coghill, Ryan)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       5,
+       4,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       5,
+       4,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 31,
+        "in": 33,
+        "total": 64
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": 33,
+        "total": 64
+       },
+       "to_par_net": {
+        "out": 3,
+        "in": 5,
+        "total": 8
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": 5,
+        "total": 8
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753205548997962000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753205548997962000,
+        "member_card_id": 7701317057685514000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317057685514000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "55",
+      "name": "Jefferson Park (Than, Mark)",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       2,
+       2,
+       2,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       null
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       null
+      ],
+      "to_par_net": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 26,
+        "in": 26,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": 26,
+        "total": 53
+       },
+       "to_par_net": {
+        "out": -2,
+        "in": 1,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": 1,
+        "total": 0
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753214781097273000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753214781097273000,
+        "member_card_id": 6645230689966909000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230689966909000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "84",
+      "name": "West Seattle (McCain, Max)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       3,
+       5,
+       4,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       3,
+       5,
+       4,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       null
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 25,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 25,
+        "total": 55
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753197957139950000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753197957139950000,
+        "member_card_id": 6645230694362540000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230694362540000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "36",
+      "name": "Jackson Park (Schoening, Jeff)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       2,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       2,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       2,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       2,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       -1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       -1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 30,
+        "total": 59
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 30,
+        "total": 59
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": 2,
+        "total": 3
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": 2,
+        "total": 3
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753185481602132000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753185481602132000,
+        "member_card_id": 6433845826530863000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6433845826530863000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "17",
+      "name": "Interbay (Truckle, James)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       null,
+       3,
+       3
+      ],
+      "gross_scores": [
+       5,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       null,
+       3,
+       3
+      ],
+      "to_par_net": [
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       null,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       null,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": 27,
+        "total": 54
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": 27,
+        "total": 54
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": 2,
+        "total": 1
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": 2,
+        "total": 1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753201693023300000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753201693023300000,
+        "member_card_id": 7701317052484577000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317052484577000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "47",
+      "name": "Jackson Park (Osuga, JR)",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       2,
+       3,
+       4,
+       5,
+       4,
+       4,
+       4,
+       5,
+       3,
+       3,
+       4,
+       3,
+       3,
+       2,
+       3,
+       null
+      ],
+      "gross_scores": [
+       5,
+       4,
+       2,
+       3,
+       4,
+       5,
+       4,
+       4,
+       4,
+       5,
+       3,
+       3,
+       4,
+       3,
+       3,
+       2,
+       3,
+       null
+      ],
+      "to_par_net": [
+       1,
+       1,
+       -1,
+       0,
+       1,
+       2,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       1,
+       1,
+       -1,
+       0,
+       1,
+       2,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       0,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 35,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 35,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 7,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 7,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753210272824453000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753210272824453000,
+        "member_card_id": 7701317058759256000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317058759256000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "69",
+      "name": "Jefferson Park (Cumlat, Julius)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       5,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       null
+      ],
+      "gross_scores": [
+       6,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       5,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       null
+      ],
+      "to_par_net": [
+       2,
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       2,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       2,
+       1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       2,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 35,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 36,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 7,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 8,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087512685000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753215071544437000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753215071544437000,
+        "member_card_id": 6645230696476469000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230696476469000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "85",
+      "name": "West Seattle (DeFaccio, Aron)",
+      "score": "3 & 2",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       null,
+       null
+      ],
+      "gross_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       null,
+       null
+      ],
+      "to_par_net": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753181703171762000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753181703171762000,
+        "member_card_id": 7205518126723656000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7205518126723656000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "9",
+      "name": "Interbay (White, Mitch)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       4,
+       3,
+       4,
+       2,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       2,
+       5,
+       4,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       4,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       2,
+       5,
+       4,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       0,
+       1,
+       0,
+       1,
+       -1,
+       1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       1,
+       -1,
+       2,
+       1,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       1,
+       -1,
+       2,
+       1,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753213725642615000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753213725642615000,
+        "member_card_id": 5570422733717662000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570422733717662000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "80",
+      "name": "West Seattle (Distefano, Patrick)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 26,
+        "in": 29,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 26,
+        "in": 29,
+        "total": 55
+       },
+       "to_par_net": {
+        "out": -2,
+        "in": 1,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": -2,
+        "in": 1,
+        "total": -1
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753192361703533000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753192361703533000,
+        "member_card_id": 7701317032351918000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317032351918000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "28",
+      "name": "Jackson Park (Hartley, Jack)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       2,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       -1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 26,
+        "in": 29,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": 29,
+        "total": 56
+       },
+       "to_par_net": {
+        "out": -2,
+        "in": 1,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": 1,
+        "total": 0
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753209115800529000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753209115800529000,
+        "member_card_id": 5570417763668748000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570417763668748000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "65",
+      "name": "Jefferson Park (O'Donnell, Mike)",
+      "score": "2 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       5,
+       4,
+       4,
+       3,
+       4,
+       5,
+       3,
+       2,
+       3,
+       4,
+       5,
+       4,
+       2
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       5,
+       4,
+       4,
+       3,
+       4,
+       5,
+       3,
+       2,
+       3,
+       4,
+       5,
+       4,
+       2
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       2,
+       1,
+       1,
+       0,
+       0,
+       2,
+       0,
+       -1,
+       0,
+       1,
+       2,
+       1,
+       -1
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       2,
+       1,
+       1,
+       0,
+       0,
+       2,
+       0,
+       -1,
+       0,
+       1,
+       2,
+       1,
+       -1
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 32,
+        "in": 32,
+        "total": 64
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 32,
+        "total": 64
+       },
+       "to_par_net": {
+        "out": 4,
+        "in": 4,
+        "total": 8
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 4,
+        "total": 8
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753188007110011000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753188007110011000,
+        "member_card_id": 2925267441741227500
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267441741227500,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "22",
+      "name": "Interbay (Togawa, Chris)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       4,
+       3,
+       4,
+       2,
+       3,
+       4,
+       3,
+       5,
+       3,
+       4,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       5,
+       3,
+       4,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       1,
+       0,
+       1,
+       -1,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 33,
+        "total": 63
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": 33,
+        "total": 64
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 5,
+        "total": 7
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": 5,
+        "total": 8
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753218271194409000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753218271194409000,
+        "member_card_id": 5570424524450589000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570424524450589000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "95",
+      "name": "West Seattle (Kummerow, Chris)",
+      "score": "2 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       4,
+       3,
+       2,
+       5,
+       5,
+       4,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       4,
+       3,
+       2,
+       5,
+       5,
+       4,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       2,
+       2,
+       1,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       2,
+       2,
+       1,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 33,
+        "total": 63
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 33,
+        "total": 63
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 5,
+        "total": 7
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 5,
+        "total": 7
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753199854508861000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753199854508861000,
+        "member_card_id": 6433826552294697000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6433826552294697000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "41",
+      "name": "Jackson Park (Wang, James)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       5,
+       5,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       4
+      ],
+      "gross_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       5,
+       5,
+       4,
+       4,
+       4,
+       4,
+       4,
+       3,
+       4
+      ],
+      "to_par_net": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       2,
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       2,
+       1,
+       1,
+       1,
+       1,
+       1,
+       0,
+       1
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 36,
+        "total": 65
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 37,
+        "total": 67
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": 8,
+        "total": 9
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 9,
+        "total": 11
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753188369598540000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753188369598540000,
+        "member_card_id": 2925267413723277000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267413723277000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "23",
+      "name": "Interbay (Benner, Josh)",
+      "score": "6 & 5",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       5,
+       3,
+       3,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       2,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753208688820382000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753208688820382000,
+        "member_card_id": 6645230697080449000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230697080449000,
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "64",
+      "name": "Jefferson Park (Wilson, Ross)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       4,
+       4,
+       4,
+       4,
+       4,
+       5,
+       3,
+       4,
+       4,
+       3,
+       4,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       5,
+       4,
+       4,
+       4,
+       4,
+       4,
+       4,
+       5,
+       3,
+       4,
+       4,
+       3,
+       4,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       1,
+       1,
+       1,
+       1,
+       1,
+       1,
+       1,
+       2,
+       0,
+       0,
+       1,
+       0,
+       1,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       1,
+       1,
+       1,
+       1,
+       1,
+       1,
+       1,
+       2,
+       0,
+       0,
+       1,
+       0,
+       1,
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 37,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 37,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 9,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 9,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753180434008926000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753180434008926000,
+        "member_card_id": 2925267424997566000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267424997566000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "6",
+      "name": "Interbay (Sulpizio, Luke)",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       2,
+       4,
+       2,
+       2,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       2,
+       4,
+       3,
+       2,
+       3,
+       3
+      ],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       -1,
+       1,
+       -1,
+       -1,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       -1,
+       1,
+       0,
+       -1,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 26,
+        "in": 27,
+        "total": 53
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 28,
+        "total": 56
+       },
+       "to_par_net": {
+        "out": -2,
+        "in": -1,
+        "total": -3
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": 0,
+        "total": 0
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753213266114669000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753213266114669000,
+        "member_card_id": 8753213437108054000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753213437108054000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "78",
+      "name": "West Seattle (Dunkel, Eric)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       4,
+       3,
+       4,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       4,
+       3,
+       4,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       -1,
+       1,
+       0,
+       1,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       -1,
+       1,
+       0,
+       1,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 27,
+        "total": 56
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 27,
+        "total": 56
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": -1,
+        "total": 0
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": -1,
+        "total": 0
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753200183241632000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753200183241632000,
+        "member_card_id": 8753204793486371000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753204793486371000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "42",
+      "name": "Jackson Park (Dodgion, Brad)",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 31,
+        "total": 61
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 31,
+        "total": 61
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 3,
+        "total": 5
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 3,
+        "total": 5
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753208500647127000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753208500647127000,
+        "member_card_id": 7701317056846653000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317056846653000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "63",
+      "name": "Jefferson Park (Provins, Ted)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       5,
+       3,
+       2,
+       3,
+       3,
+       4,
+       5,
+       4,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       5,
+       3,
+       3,
+       3,
+       3,
+       4,
+       5,
+       4,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       2,
+       0,
+       -1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       2,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 32,
+        "total": 62
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": 32,
+        "total": 63
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 4,
+        "total": 6
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": 4,
+        "total": 7
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753207965823035000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753207965823035000,
+        "member_card_id": 7701317056007793000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317056007793000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "61",
+      "name": "Jefferson Park (Palmer, Matt)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       -1,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 27,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 29,
+        "total": 59
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": -1,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 1,
+        "total": 3
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753214434178001000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753214434178001000,
+        "member_card_id": 5570423914129025000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570423914129025000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "83",
+      "name": "West Seattle (Barker, Dan)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 26,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 26,
+        "total": 55
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": -2,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": -2,
+        "total": -1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753188717088238000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753188717088238000,
+        "member_card_id": 2925267436406073000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267436406073000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "24",
+      "name": "Interbay (Schlosser, Miles)",
+      "score": "4 & 3",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       4,
+       3,
+       3,
+       5,
+       2,
+       4,
+       4,
+       2,
+       4,
+       2,
+       3,
+       5,
+       3,
+       2,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       3,
+       5,
+       3,
+       4,
+       4,
+       2,
+       4,
+       2,
+       3,
+       5,
+       3,
+       3,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       -1,
+       1,
+       0,
+       0,
+       2,
+       -1,
+       1,
+       1,
+       -1,
+       0,
+       -1,
+       0,
+       2,
+       0,
+       -1,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       0,
+       2,
+       0,
+       1,
+       1,
+       -1,
+       0,
+       -1,
+       0,
+       2,
+       0,
+       0,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 19,
+        "total": 49
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 20,
+        "total": 52
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 1,
+        "total": 5
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753199247240751000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753199247240751000,
+        "member_card_id": 5570584009303419000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570584009303419000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "39",
+      "name": "Jackson Park (Bucher, Jimmy)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       4,
+       5,
+       3,
+       3,
+       5,
+       4,
+       3,
+       2,
+       3,
+       6,
+       null,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       4,
+       5,
+       3,
+       3,
+       5,
+       4,
+       3,
+       2,
+       3,
+       6,
+       null,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       2,
+       0,
+       0,
+       1,
+       1,
+       0,
+       -1,
+       0,
+       3,
+       null,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       2,
+       0,
+       0,
+       1,
+       1,
+       0,
+       -1,
+       0,
+       3,
+       null,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 32,
+        "in": 23,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 23,
+        "total": 55
+       },
+       "to_par_net": {
+        "out": 4,
+        "in": 4,
+        "total": 8
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 4,
+        "total": 8
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753213501868108000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753213501868108000,
+        "member_card_id": 6645230697348884000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230697348884000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "79",
+      "name": "West Seattle (McCabe, Eric)",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       2
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       2
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       -1
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       -1
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 28,
+        "total": 58
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 28,
+        "total": 58
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753204850059143000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753204850059143000,
+        "member_card_id": 8753205012965911000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753205012965911000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "53",
+      "name": "Jefferson Park (Reister, Cameron)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       4
+      ],
+      "gross_scores": [
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       5,
+       3,
+       2,
+       4
+      ],
+      "to_par_net": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       1
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       2,
+       0,
+       -1,
+       1
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 31,
+        "in": 29,
+        "total": 60
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 30,
+        "total": 62
+       },
+       "to_par_net": {
+        "out": 3,
+        "in": 1,
+        "total": 4
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 2,
+        "total": 6
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753184432220826000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753184432220826000,
+        "member_card_id": 2925267440197723600
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267440197723600,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "14",
+      "name": "Interbay (Ray, Larry)",
+      "score": "3 & 2",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 32,
+        "in": 22,
+        "total": 54
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 22,
+        "total": 54
+       },
+       "to_par_net": {
+        "out": 4,
+        "in": 0,
+        "total": 4
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 0,
+        "total": 4
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753198491527834000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753198491527834000,
+        "member_card_id": 7701317051243063000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317051243063000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "37",
+      "name": "Jackson Park (Asplund, Brian)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       3,
+       5,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       null,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       4,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       5,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       null,
+       null
+      ],
+      "to_par_net": [
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       null,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       null,
+       null
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 31,
+        "in": 26,
+        "total": 57
+       },
+       "gross_scores": {
+        "out": 32,
+        "in": 26,
+        "total": 58
+       },
+       "to_par_net": {
+        "out": 3,
+        "in": 4,
+        "total": 7
+       },
+       "to_par_gross": {
+        "out": 4,
+        "in": 4,
+        "total": 8
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753205802703022000
+      ],
+      "points_summary_team_id": 8753270503264774000,
+      "member_cards": [
+       {
+        "member_id": 8753205802703022000,
+        "member_card_id": 8753205898433817000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8753205898433817000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "56",
+      "name": "Jefferson Park (Kortum, David)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       2,
+       3,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       4
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       2,
+       3,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       4
+      ],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       1
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       1
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 29,
+        "total": 59
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 29,
+        "total": 59
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 1,
+        "total": 3
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 1,
+        "total": 3
+       }
+      }
+     },
+     {
+      "id": 8781406491631446000,
+      "member_ids": [
+       8753198822273870000
+      ],
+      "points_summary_team_id": 8753270504170744000,
+      "member_cards": [
+       {
+        "member_id": 8753198822273870000,
+        "member_card_id": 4119979808207693300
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 4119979808207693300,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "38",
+      "name": "Jackson Park (Rockey, Cory)",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       2,
+       3,
+       4,
+       2,
+       5,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       2,
+       3,
+       4,
+       3,
+       5,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       0,
+       0,
+       -1,
+       0,
+       1,
+       -1,
+       2,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       2,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": 28,
+        "total": 58
+       },
+       "gross_scores": {
+        "out": 31,
+        "in": 28,
+        "total": 59
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": 0,
+        "total": 2
+       },
+       "to_par_gross": {
+        "out": 3,
+        "in": 0,
+        "total": 3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 8781405087546239000,
+    "aggregates": [
+     {
+      "id": 8781406491665000000,
+      "member_ids": [
+       8753212768535996000
+      ],
+      "points_summary_team_id": 8753270502358804000,
+      "member_cards": [
+       {
+        "member_id": 8753212768535996000,
+        "member_card_id": 7701317060436978000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317060436978000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "76",
+      "name": "West Seattle (Gants, Garrett)",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       -1,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       -1,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 28,
+        "total": 57
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 28,
+        "total": 57
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": 0,
+        "total": 1
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": 0,
+        "total": 1
+       }
+      }
+     },
+     {
+      "id": 8781406491665000000,
+      "member_ids": [
+       8753182007510460000
+      ],
+      "points_summary_team_id": 8753270505076713000,
+      "member_cards": [
+       {
+        "member_id": 8753182007510460000,
+        "member_card_id": 2925267418253125000
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267418253125000,
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "10",
+      "name": "Interbay (Lewis, Kael)",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       3,
+       2,
+       2,
+       4,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       2,
+       2,
+       4,
+       3,
+       4,
+       4,
+       4,
+       3,
+       5,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       3
+      ],
+      "to_par_net": [
+       -1,
+       -1,
+       -1,
+       1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       -1,
+       1,
+       0,
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 29,
+        "total": 57
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 31,
+        "total": 61
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": 1,
+        "total": 1
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": 3,
+        "total": 5
+       }
+      }
+     }
+    ]
+   }
+  ],
+  "season_points": [],
+  "id": 8753287477579508000,
+  "column_visibility": {
+   "position": false,
+   "name": true,
+   "affiliation": false,
+   "score": true,
+   "thru": true,
+   "total": false,
+   "purse": false,
+   "points": true,
+   "details": false
+  },
+  "column_names": {
+   "name": "Player",
+   "score": "Match",
+   "thru": "Thru",
+   "points": "Points"
+  },
+  "horizontal_leaderboard": false
+ }
+}

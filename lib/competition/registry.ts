@@ -1,10 +1,12 @@
 import type { CompetitionConfig, SpecialOccurrence } from './types.ts'
 import { mensLeagueConfig } from './configs/mens-league.ts'
 import { womensLeagueConfig } from './configs/womens-league.ts'
+import { seattleCupConfig } from './configs/seattle-cup.ts'
 
 const REGISTRY: Record<string, CompetitionConfig> = {
   'mens-league': mensLeagueConfig,
   'womens-league': womensLeagueConfig,
+  'seattle-cup': seattleCupConfig,
 }
 
 export function getCompetitionConfig(key: string): CompetitionConfig | null {

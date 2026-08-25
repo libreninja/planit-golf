@@ -1,0 +1,4326 @@
+{
+ "event": {
+  "name": "Scramble",
+  "adjusted": false,
+  "scopes": [
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336924",
+    "aggregates": [
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699991",
+      "member_ids": [
+       10860022589770721000,
+       10860023418967845000
+      ],
+      "member_ids_str": [
+       "10860022589770720802",
+       "10860023418967844389"
+      ],
+      "points_summary_team_id": 10860031061929257000,
+      "member_cards": [
+       {
+        "member_id": 10860022589770721000,
+        "member_id_str": "10860022589770720802",
+        "member_card_id": 7701317059866552000,
+        "member_card_id_str": "7701317059866551980"
+       },
+       {
+        "member_id": 10860023418967845000,
+        "member_id_str": "10860023418967844389",
+        "member_card_id": 6645230696476469000,
+        "member_card_id_str": "6645230696476468890"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317059866552000,
+        "member_card_id_str": "7701317059866551980",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 6645230696476469000,
+        "member_card_id_str": "6645230696476468890",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "77",
+      "name": "West Seattle (St. Louis, Chandler + DeFaccio, Aron)",
+      "affiliation": "West Seattle Golf Club",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "T",
+       "T",
+       "1 up",
+       "1 up",
+       "T",
+       "",
+       "",
+       "T",
+       "1 up",
+       "2 up",
+       "3 up",
+       "3 up",
+       "3 up",
+       "2 up",
+       "1 up",
+       "1 up",
+       "1 up"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 25,
+        "in": 26,
+        "total": 51
+       },
+       "gross_scores": {
+        "out": 25,
+        "in": 26,
+        "total": 51
+       },
+       "to_par_net": {
+        "out": -3,
+        "in": -2,
+        "total": -5
+       },
+       "to_par_gross": {
+        "out": -3,
+        "in": -2,
+        "total": -5
+       }
+      }
+     },
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699992",
+      "member_ids": [
+       10860011126972770000,
+       10860012844590590000
+      ],
+      "member_ids_str": [
+       "10860011126972769804",
+       "10860012844590589457"
+      ],
+      "points_summary_team_id": 10860031063103662000,
+      "member_cards": [
+       {
+        "member_id": 10860011126972770000,
+        "member_id_str": "10860011126972769804",
+        "member_card_id": 5570584009034983000,
+        "member_card_id_str": "5570584009034982932"
+       },
+       {
+        "member_id": 10860012844590590000,
+        "member_id_str": "10860012844590589457",
+        "member_card_id": 4119979808207693300,
+        "member_card_id_str": "4119979808207693559"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570584009034983000,
+        "member_card_id_str": "5570584009034982932",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 4119979808207693300,
+        "member_card_id_str": "4119979808207693559",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "55",
+      "name": "Jackson Park (Gutierrez, Ryan + Rockey, Cory)",
+      "affiliation": "Jackson Park Men's Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       2,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       4,
+       3,
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "",
+       "T",
+       "T",
+       "",
+       "",
+       "T",
+       "1 up",
+       "1 up",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 25,
+        "in": 27,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 26,
+        "in": 28,
+        "total": 54
+       },
+       "to_par_net": {
+        "out": -3,
+        "in": -1,
+        "total": -4
+       },
+       "to_par_gross": {
+        "out": -2,
+        "in": 0,
+        "total": -2
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336925",
+    "aggregates": [
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699994",
+      "member_ids": [
+       10857706057954781000,
+       10857699067962616000
+      ],
+      "member_ids_str": [
+       "10857706057954780674",
+       "10857699067962615798"
+      ],
+      "points_summary_team_id": 10860031064210958000,
+      "member_cards": [
+       {
+        "member_id": 10857706057954781000,
+        "member_id_str": "10857706057954780674",
+        "member_card_id": 6645230697080449000,
+        "member_card_id_str": "6645230697080448668"
+       },
+       {
+        "member_id": 10857699067962616000,
+        "member_id_str": "10857699067962615798",
+        "member_card_id": 5570420381820414000,
+        "member_card_id_str": "5570420381820413448"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 6645230697080449000,
+        "member_card_id_str": "6645230697080448668",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 5570420381820414000,
+        "member_card_id_str": "5570420381820413448",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "45",
+      "name": "Jefferson Park (Wilson, Ross + Arnesen, Don)",
+      "affiliation": "Jefferson Park Golf Course",
+      "score": "3 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "T",
+       "T",
+       "T",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "T",
+       "T",
+       "1 up",
+       "2 up",
+       "1 up",
+       "2 up",
+       "3 up",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699993",
+      "member_ids": [
+       10860015574210079000,
+       10860017126303885000
+      ],
+      "member_ids_str": [
+       "10860015574210078234",
+       "10860017126303884831"
+      ],
+      "points_summary_team_id": 10860031063103662000,
+      "member_cards": [
+       {
+        "member_id": 10860015574210079000,
+        "member_id_str": "10860015574210078234",
+        "member_card_id": 10860015694435609000,
+        "member_card_id_str": "10860015694435608095"
+       },
+       {
+        "member_id": 10860017126303885000,
+        "member_id_str": "10860017126303884831",
+        "member_card_id": 7857527549520275000,
+        "member_card_id_str": "7857527549520275369"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 10860015694435609000,
+        "member_card_id_str": "10860015694435608095",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 7857527549520275000,
+        "member_card_id_str": "7857527549520275369",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "69",
+      "name": "Jackson Park (Grant, Cecil + Becker, Marty)",
+      "affiliation": "Jackson Park Men's Golf Club, Interbay Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       2,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       4,
+       2,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       1,
+       0,
+       1,
+       1,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       1,
+       0,
+       1,
+       1,
+       null
+      ],
+      "hbh_match_status": [
+       "T",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 2,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336926",
+    "aggregates": [
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699995",
+      "member_ids": [
+       10860064822016370000,
+       10857696425718868000
+      ],
+      "member_ids_str": [
+       "10860064822016370244",
+       "10857696425718867952"
+      ],
+      "points_summary_team_id": 10860031064210958000,
+      "member_cards": [
+       {
+        "member_id": 10860064822016370000,
+        "member_id_str": "10860064822016370244",
+        "member_card_id": 9805781616189008000,
+        "member_card_id_str": "9805781616189007849"
+       },
+       {
+        "member_id": 10857696425718868000,
+        "member_id_str": "10857696425718867952",
+        "member_card_id": 7701317058490821000,
+        "member_card_id_str": "7701317058490820263"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 9805781616189008000,
+        "member_card_id_str": "9805781616189007849",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 7701317058490821000,
+        "member_card_id_str": "7701317058490820263",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "101",
+      "name": "Jefferson Park (Van, Diet + Zapata, AJ)",
+      "affiliation": "Jefferson Park Golf Course",
+      "score": "3 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0
+      ],
+      "hbh_match_status": [
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T",
+       "T",
+       "T",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "3 up",
+       "3 up"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 24,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 29,
+        "in": 25,
+        "total": 54
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": -4,
+        "total": -4
+       },
+       "to_par_gross": {
+        "out": 1,
+        "in": -3,
+        "total": -2
+       }
+      }
+     },
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699996",
+      "member_ids": [
+       10857441683021260000,
+       10857440832986835000
+      ],
+      "member_ids_str": [
+       "10857441683021260529",
+       "10857440832986834669"
+      ],
+      "points_summary_team_id": 10860031065217591000,
+      "member_cards": [
+       {
+        "member_id": 10857441683021260000,
+        "member_id_str": "10857441683021260529",
+        "member_card_id": 4682986210686167000,
+        "member_card_id_str": "4682986210686166757"
+       },
+       {
+        "member_id": 10857440832986835000,
+        "member_id_str": "10857440832986834669",
+        "member_card_id": 9396527206504622000,
+        "member_card_id_str": "9396527206504622060"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 4682986210686167000,
+        "member_card_id_str": "4682986210686166757",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 9396527206504622000,
+        "member_card_id_str": "9396527206504622060",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "5",
+      "name": "Interbay (Wheatcraft, Eric + Frary, Kevin)",
+      "affiliation": "Interbay Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       2,
+       3,
+       2,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       2,
+       3,
+       2,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "T",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "1 up",
+       "T",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 27,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 27,
+        "total": 55
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": -1,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": -1,
+        "total": -1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336927",
+    "aggregates": [
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699997",
+      "member_ids": [
+       10857444591351654000,
+       10857443626594626000
+      ],
+      "member_ids_str": [
+       "10857444591351654145",
+       "10857443626594625276"
+      ],
+      "points_summary_team_id": 10860031065217591000,
+      "member_cards": [
+       {
+        "member_id": 10857444591351654000,
+        "member_id_str": "10857444591351654145",
+        "member_card_id": 5460679727872240000,
+        "member_card_id_str": "5460679727872239426"
+       },
+       {
+        "member_id": 10857443626594626000,
+        "member_id_str": "10857443626594625276",
+        "member_card_id": 2925267416139196000,
+        "member_card_id_str": "2925267416139195990"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5460679727872240000,
+        "member_card_id_str": "5460679727872239426",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 2925267416139196000,
+        "member_card_id_str": "2925267416139195990",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "21",
+      "name": "Interbay (Sanderson, Bart + Beatty, Chad)",
+      "affiliation": "Interbay Golf Club",
+      "score": "3 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       2,
+       3,
+       3,
+       3,
+       1,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       2,
+       null
+      ],
+      "gross_scores": [
+       4,
+       2,
+       3,
+       3,
+       3,
+       2,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -2,
+       -1,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "3 up",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 23,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 24,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -5,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -4,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699998",
+      "member_ids": [
+       10860025260166638000,
+       10860027069388057000
+      ],
+      "member_ids_str": [
+       "10860025260166637099",
+       "10860027069388056113"
+      ],
+      "points_summary_team_id": 10860031061929257000,
+      "member_cards": [
+       {
+        "member_id": 10860025260166638000,
+        "member_id_str": "10860025260166637099",
+        "member_card_id": 5570425434279012000,
+        "member_card_id_str": "5570425434279011853"
+       },
+       {
+        "member_id": 10860027069388057000,
+        "member_id_str": "10860027069388056113",
+        "member_card_id": 7701317060839631000,
+        "member_card_id_str": "7701317060839630511"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570425434279012000,
+        "member_card_id_str": "5570425434279011853",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 7701317060839631000,
+        "member_card_id_str": "7701317060839630511",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "86",
+      "name": "West Seattle (Starkey, Scott + Sullivan, Mark)",
+      "affiliation": "West Seattle Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       2,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       null
+      ],
+      "gross_scores": [
+       3,
+       2,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       -1,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       -1,
+       -1,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       null
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "2 up",
+       "1 up",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 24,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 24,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -4,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -4,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336928",
+    "aggregates": [
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567699999",
+      "member_ids": [
+       10860023146673630000,
+       10860024016773605000
+      ],
+      "member_ids_str": [
+       "10860023146673628708",
+       "10860024016773604903"
+      ],
+      "points_summary_team_id": 10860031061929257000,
+      "member_cards": [
+       {
+        "member_id": 10860023146673630000,
+        "member_id_str": "10860023146673628708",
+        "member_card_id": 5570423914129025000,
+        "member_card_id_str": "5570423914129024523"
+       },
+       {
+        "member_id": 10860024016773605000,
+        "member_id_str": "10860024016773604903",
+        "member_card_id": 6645230689966909000,
+        "member_card_id_str": "6645230689966909069"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570423914129025000,
+        "member_card_id_str": "5570423914129024523",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 6645230689966909000,
+        "member_card_id_str": "6645230689966909069",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "79",
+      "name": "West Seattle (Barker, Dan + McCain, Max)",
+      "affiliation": "Interbay Golf Club, West Seattle Golf Club",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       2,
+       3,
+       3,
+       2,
+       3,
+       2,
+       2,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       null
+      ],
+      "gross_scores": [
+       4,
+       2,
+       3,
+       3,
+       2,
+       3,
+       2,
+       2,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "T",
+       "T",
+       "",
+       "",
+       "T",
+       "T",
+       "T",
+       "1 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 23,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 23,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -5,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -5,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567700000",
+      "member_ids": [
+       10857700173413378000,
+       10857704024623310000
+      ],
+      "member_ids_str": [
+       "10857700173413378039",
+       "10857704024623310845"
+      ],
+      "points_summary_team_id": 10860031064210958000,
+      "member_cards": [
+       {
+        "member_id": 10857700173413378000,
+        "member_id_str": "10857700173413378039",
+        "member_card_id": 10857731972344605000,
+        "member_card_id_str": "10857731972344604412"
+       },
+       {
+        "member_id": 10857704024623310000,
+        "member_id_str": "10857704024623310845",
+        "member_card_id": 7701317057685514000,
+        "member_card_id_str": "7701317057685513892"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 10857731972344605000,
+        "member_card_id_str": "10857731972344604412",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 7701317057685514000,
+        "member_card_id_str": "7701317057685513892",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "34",
+      "name": "Jefferson Park (Quitlong, Jayden + Than, Mark)",
+      "affiliation": "Jefferson Park Golf Course",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       2,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       4,
+       3,
+       3,
+       3,
+       2,
+       null
+      ],
+      "gross_scores": [
+       4,
+       2,
+       2,
+       3,
+       3,
+       4,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       4,
+       3,
+       3,
+       3,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       1,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "T",
+       "T",
+       "1 up",
+       "1 up",
+       "T",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 25,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 26,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -3,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -2,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336929",
+    "aggregates": [
+     {
+      "id": 10871879718567700000,
+      "id_str": "10871879718567700001",
+      "member_ids": [
+       10860010715259890000,
+       10860013465951562000
+      ],
+      "member_ids_str": [
+       "10860010715259889163",
+       "10860013465951561235"
+      ],
+      "points_summary_team_id": 10860031063103662000,
+      "member_cards": [
+       {
+        "member_id": 10860010715259890000,
+        "member_id_str": "10860010715259889163",
+        "member_card_id": 10860010827767900000,
+        "member_card_id_str": "10860010827767899673"
+       },
+       {
+        "member_id": 10860013465951562000,
+        "member_id_str": "10860013465951561235",
+        "member_card_id": 10860013577050286000,
+        "member_card_id_str": "10860013577050285596"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 10860010827767900000,
+        "member_card_id_str": "10860010827767899673",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 10860013577050286000,
+        "member_card_id_str": "10860013577050285596",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "54",
+      "name": "Jackson Park (Ohrenschall, Mark + Nguyen, Steven)",
+      "affiliation": "Jackson Park Men's Golf Club",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       2,
+       3,
+       2,
+       3,
+       4
+      ],
+      "gross_scores": [
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       2,
+       3,
+       2,
+       3,
+       4
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       1
+      ],
+      "to_par_gross": [
+       -1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       1
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "1 up",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "T"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": 24,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 24,
+        "total": 52
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": -4,
+        "total": -4
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": -4,
+        "total": -4
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254434",
+      "member_ids": [
+       10857445480577657000,
+       10857442953492720000
+      ],
+      "member_ids_str": [
+       "10857445480577656581",
+       "10857442953492719352"
+      ],
+      "points_summary_team_id": 10860031065217591000,
+      "member_cards": [
+       {
+        "member_id": 10857445480577657000,
+        "member_id_str": "10857445480577656581",
+        "member_card_id": 2925267445700651000,
+        "member_card_id_str": "2925267445700650771"
+       },
+       {
+        "member_id": 10857442953492720000,
+        "member_id_str": "10857442953492719352",
+        "member_card_id": 2925267441741227500,
+        "member_card_id_str": "2925267441741227769"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267445700651000,
+        "member_card_id_str": "2925267445700650771",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 2925267441741227500,
+        "member_card_id_str": "2925267441741227769",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "25",
+      "name": "Interbay (Schumaker, Jason + Togawa, Christopher)",
+      "affiliation": "Interbay Golf Club",
+      "score": "Tied",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       2,
+       3,
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "",
+       "",
+       "T",
+       "T",
+       "1 up",
+       "2 up",
+       "2 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": 25,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 25,
+        "total": 53
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": -3,
+        "total": -4
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": -3,
+        "total": -3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336930",
+    "aggregates": [
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254436",
+      "member_ids": [
+       10860026787832818000,
+       10860027411509045000
+      ],
+      "member_ids_str": [
+       "10860026787832817200",
+       "10860027411509044786"
+      ],
+      "points_summary_team_id": 10860031061929257000,
+      "member_cards": [
+       {
+        "member_id": 10860026787832818000,
+        "member_id_str": "10860026787832817200",
+        "member_card_id": 9805793973111908000,
+        "member_card_id_str": "9805793973111908340"
+       },
+       {
+        "member_id": 10860027411509045000,
+        "member_id_str": "10860027411509044786",
+        "member_card_id": 6645230693557234000,
+        "member_card_id_str": "6645230693557233295"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 9805793973111908000,
+        "member_card_id_str": "9805793973111908340",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 6645230693557234000,
+        "member_card_id_str": "6645230693557233295",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "91",
+      "name": "West Seattle (Flohr, Ryan + Leighton, Brennon)",
+      "affiliation": "Interbay Golf Club, West Seattle Golf Club",
+      "score": "2 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       4,
+       2,
+       3,
+       4,
+       2,
+       null
+      ],
+      "gross_scores": [
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       4,
+       2,
+       3,
+       4,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       1,
+       -1,
+       0,
+       1,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       1,
+       -1,
+       0,
+       1,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "1 up",
+       "T",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "3 up",
+       "2 up",
+       "2 up",
+       "3 up",
+       "2 up",
+       "2 up",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 25,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 25,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -3,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -3,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254435",
+      "member_ids": [
+       10857704867141544000,
+       10857704340773170000
+      ],
+      "member_ids_str": [
+       "10857704867141543935",
+       "10857704340773169150"
+      ],
+      "points_summary_team_id": 10860031064210958000,
+      "member_cards": [
+       {
+        "member_id": 10857704867141544000,
+        "member_id_str": "10857704867141543935",
+        "member_card_id": 7701317056007793000,
+        "member_card_id_str": "7701317056007792286"
+       },
+       {
+        "member_id": 10857704340773170000,
+        "member_id_str": "10857704340773169150",
+        "member_card_id": 7701317057148643000,
+        "member_card_id_str": "7701317057148642978"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317056007793000,
+        "member_card_id_str": "7701317056007792286",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 7701317057148643000,
+        "member_card_id_str": "7701317057148642978",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "42",
+      "name": "Jefferson Park (Palmer, Matthew + Sayre, Matt)",
+      "affiliation": "Jefferson Park Golf Course",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       4,
+       3,
+       2,
+       null
+      ],
+      "gross_scores": [
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       4,
+       3,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       1,
+       0,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       1,
+       0,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "",
+       "",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336931",
+    "aggregates": [
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254437",
+      "member_ids": [
+       10857444798516718000,
+       10860070854197275000
+      ],
+      "member_ids_str": [
+       "10857444798516717314",
+       "10860070854197274181"
+      ],
+      "points_summary_team_id": 10860031065217591000,
+      "member_cards": [
+       {
+        "member_id": 10857444798516718000,
+        "member_id_str": "10857444798516717314",
+        "member_card_id": 3021599121321519000,
+        "member_card_id_str": "3021599121321518922"
+       },
+       {
+        "member_id": 10860070854197275000,
+        "member_id_str": "10860070854197274181",
+        "member_card_id": 8277910219971914000,
+        "member_card_id_str": "8277910219971913376"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 3021599121321519000,
+        "member_card_id_str": "3021599121321518922",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 8277910219971914000,
+        "member_card_id_str": "8277910219971913376",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "22",
+      "name": "Interbay (Reisinger, Erik + Ochsner, Johnny)",
+      "affiliation": "Interbay Golf Club",
+      "score": "2 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3
+      ],
+      "gross_scores": [
+       3,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "1 up",
+       "T",
+       "T",
+       "T",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "T",
+       "1 up",
+       "2 up"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 25,
+        "in": 26,
+        "total": 51
+       },
+       "gross_scores": {
+        "out": 25,
+        "in": 26,
+        "total": 51
+       },
+       "to_par_net": {
+        "out": -3,
+        "in": -2,
+        "total": -5
+       },
+       "to_par_gross": {
+        "out": -3,
+        "in": -2,
+        "total": -5
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254438",
+      "member_ids": [
+       10860013119736932000,
+       10860015320538573000
+      ],
+      "member_ids_str": [
+       "10860013119736931858",
+       "10860015320538572313"
+      ],
+      "points_summary_team_id": 10860031063103662000,
+      "member_cards": [
+       {
+        "member_id": 10860013119736932000,
+        "member_id_str": "10860013119736931858",
+        "member_card_id": 5570584009303419000,
+        "member_card_id_str": "5570584009303418389"
+       },
+       {
+        "member_id": 10860015320538573000,
+        "member_id_str": "10860015320538572313",
+        "member_card_id": 8753204793889024000,
+        "member_card_id_str": "8753204793889023955"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570584009303419000,
+        "member_card_id_str": "5570584009303418389",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 8753204793889024000,
+        "member_card_id_str": "8753204793889023955",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "61",
+      "name": "Jackson Park (Bucher, James + Sifferman, Greg)",
+      "affiliation": "Jackson Park Men's Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       4
+      ],
+      "gross_scores": [
+       4,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       4
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1
+      ],
+      "hbh_match_status": [
+       "",
+       "",
+       "T",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 26,
+        "in": 27,
+        "total": 53
+       },
+       "gross_scores": {
+        "out": 26,
+        "in": 27,
+        "total": 53
+       },
+       "to_par_net": {
+        "out": -2,
+        "in": -1,
+        "total": -3
+       },
+       "to_par_gross": {
+        "out": -2,
+        "in": -1,
+        "total": -3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336932",
+    "aggregates": [
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254439",
+      "member_ids": [
+       10860025563934910000,
+       10860022305732454000
+      ],
+      "member_ids_str": [
+       "10860025563934909996",
+       "10860022305732453921"
+      ],
+      "points_summary_team_id": 10860031061929257000,
+      "member_cards": [
+       {
+        "member_id": 10860025563934910000,
+        "member_id_str": "10860025563934909996",
+        "member_card_id": 7701317060134988000,
+        "member_card_id_str": "7701317060134987437"
+       },
+       {
+        "member_id": 10860022305732454000,
+        "member_id_str": "10860022305732453921",
+        "member_card_id": 7701317060436978000,
+        "member_card_id_str": "7701317060436977326"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317060134988000,
+        "member_card_id_str": "7701317060134987437",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 7701317060436978000,
+        "member_card_id_str": "7701317060436977326",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "87",
+      "name": "West Seattle (Gants, Beau + Gants, Garrett)",
+      "affiliation": "West Seattle Golf Club",
+      "score": "5 & 4",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       2,
+       null,
+       2,
+       null
+      ],
+      "gross_scores": [
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       2,
+       null,
+       2,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       -1,
+       -1,
+       null,
+       -1,
+       null
+      ],
+      "to_par_gross": [
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       -1,
+       -1,
+       null,
+       -1,
+       null
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "1 up",
+       "2 up",
+       "3 up",
+       "3 up",
+       "3 up",
+       "4 up",
+       "5 up",
+       "5 up",
+       "5 up",
+       "4 up",
+       "5 up",
+       "5 up",
+       "6 up",
+       "6 up",
+       "",
+       "1 up",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 24,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 24,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": -4,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": -4,
+        "in": null,
+        "total": null
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254440",
+      "member_ids": [
+       10857443096367491000,
+       10857443275850148000
+      ],
+      "member_ids_str": [
+       "10857443096367490809",
+       "10857443275850147578"
+      ],
+      "points_summary_team_id": 10860031065217591000,
+      "member_cards": [
+       {
+        "member_id": 10857443096367491000,
+        "member_id_str": "10857443096367490809",
+        "member_card_id": 2925267413723277000,
+        "member_card_id_str": "2925267413723276873"
+       },
+       {
+        "member_id": 10857443275850148000,
+        "member_id_str": "10857443275850147578",
+        "member_card_id": 8277910226078820000,
+        "member_card_id_str": "8277910226078820019"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 2925267413723277000,
+        "member_card_id_str": "2925267413723276873",
+        "status": "partial"
+       },
+       {
+        "member_card_id": 8277910226078820000,
+        "member_card_id_str": "8277910226078820019",
+        "status": "partial"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "13",
+      "name": "Interbay (Benner, Josh + Williams, Travis)",
+      "affiliation": "Interbay Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       2,
+       3,
+       4,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       null,
+       3,
+       null
+      ],
+      "gross_scores": [
+       4,
+       2,
+       3,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       2,
+       3,
+       3,
+       3,
+       3,
+       null,
+       3,
+       null
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       null,
+       0,
+       null
+      ],
+      "to_par_gross": [
+       0,
+       -1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       null,
+       0,
+       null
+      ],
+      "hbh_match_status": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 28,
+        "in": null,
+        "total": null
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": null,
+        "total": null
+       },
+       "to_par_net": {
+        "out": 0,
+        "in": null,
+        "total": null
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": null,
+        "total": null
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336933",
+    "aggregates": [
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254441",
+      "member_ids": [
+       10860011855137500000,
+       10860014434064034000
+      ],
+      "member_ids_str": [
+       "10860011855137498638",
+       "10860014434064033302"
+      ],
+      "points_summary_team_id": 10860031063103662000,
+      "member_cards": [
+       {
+        "member_id": 10860011855137500000,
+        "member_id_str": "10860011855137498638",
+        "member_card_id": 5570402346246105000,
+        "member_card_id_str": "5570402346246105083"
+       },
+       {
+        "member_id": 10860014434064034000,
+        "member_id_str": "10860014434064033302",
+        "member_card_id": 5570403473775684000,
+        "member_card_id_str": "5570403473775683580"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 5570402346246105000,
+        "member_card_id_str": "5570402346246105083",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 5570403473775684000,
+        "member_card_id_str": "5570403473775683580",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "57",
+      "name": "Jackson Park (Foreman, David + Jones, Travis)",
+      "affiliation": "Jackson Park Men's Golf Club",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       2,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -2,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       -1,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       -2,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "1 up",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "3 up",
+       "4 up",
+       "5 up",
+       "5 up",
+       "5 up",
+       "4 up",
+       "4 up",
+       "4 up",
+       "3 up",
+       "2 up",
+       "1 up",
+       "1 up"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 24,
+        "in": 26,
+        "total": 50
+       },
+       "gross_scores": {
+        "out": 24,
+        "in": 26,
+        "total": 50
+       },
+       "to_par_net": {
+        "out": -4,
+        "in": -2,
+        "total": -6
+       },
+       "to_par_gross": {
+        "out": -4,
+        "in": -2,
+        "total": -6
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254442",
+      "member_ids": [
+       10860027624848124000,
+       10860028216781859000
+      ],
+      "member_ids_str": [
+       "10860027624848123443",
+       "10860028216781858357"
+      ],
+      "points_summary_team_id": 10860031061929257000,
+      "member_cards": [
+       {
+        "member_id": 10860027624848124000,
+        "member_id_str": "10860027624848123443",
+        "member_card_id": 10860027740208261000,
+        "member_card_id_str": "10860027740208260646"
+       },
+       {
+        "member_id": 10860028216781859000,
+        "member_id_str": "10860028216781858357",
+        "member_card_id": 8753219793860979000,
+        "member_card_id_str": "8753219793860978657"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 10860027740208261000,
+        "member_card_id_str": "10860027740208260646",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 8753219793860979000,
+        "member_card_id_str": "8753219793860978657",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "94",
+      "name": "West Seattle (Bates, Joey + Lang, Brian)",
+      "affiliation": "West Seattle Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       2,
+       3,
+       2,
+       3,
+       3,
+       2,
+       2,
+       2,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       2,
+       3,
+       3,
+       4,
+       3,
+       4,
+       4,
+       2,
+       3,
+       2,
+       3,
+       3,
+       3,
+       2,
+       2,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       -2,
+       0,
+       -1,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       1,
+       1,
+       -2,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0
+      ],
+      "hbh_match_status": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 29,
+        "in": 22,
+        "total": 51
+       },
+       "gross_scores": {
+        "out": 30,
+        "in": 23,
+        "total": 53
+       },
+       "to_par_net": {
+        "out": 1,
+        "in": -6,
+        "total": -5
+       },
+       "to_par_gross": {
+        "out": 2,
+        "in": -5,
+        "total": -3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336934",
+    "aggregates": [
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254443",
+      "member_ids": [
+       10857698599274310000,
+       10857705241206352000
+      ],
+      "member_ids_str": [
+       "10857698599274309621",
+       "10857705241206351360"
+      ],
+      "points_summary_team_id": 10860031064210958000,
+      "member_cards": [
+       {
+        "member_id": 10857698599274310000,
+        "member_id_str": "10857698599274309621",
+        "member_card_id": 7701317057417079000,
+        "member_card_id_str": "7701317057417078435"
+       },
+       {
+        "member_id": 10857705241206352000,
+        "member_id_str": "10857705241206351360",
+        "member_card_id": 5570584008598776000,
+        "member_card_id_str": "5570584008598775315"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 7701317057417079000,
+        "member_card_id_str": "7701317057417078435",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 5570584008598776000,
+        "member_card_id_str": "5570584008598775315",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "32",
+      "name": "Jefferson Park (Dummer, Dan + Grummer, Michael)",
+      "affiliation": "Jefferson Park Golf Course",
+      "score": "1 up",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       2,
+       2,
+       2,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       3,
+       3,
+       2,
+       2,
+       3,
+       3,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       -1,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       -1,
+       -1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "T",
+       "",
+       "",
+       "T",
+       "1 up",
+       "2 up",
+       "2 up",
+       "2 up",
+       "1 up",
+       "1 up",
+       "T",
+       "T",
+       "1 up",
+       "2 up",
+       "3 up",
+       "2 up",
+       "1 up",
+       "1 up"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 26,
+        "in": 25,
+        "total": 51
+       },
+       "gross_scores": {
+        "out": 28,
+        "in": 26,
+        "total": 54
+       },
+       "to_par_net": {
+        "out": -2,
+        "in": -3,
+        "total": -5
+       },
+       "to_par_gross": {
+        "out": 0,
+        "in": -2,
+        "total": -2
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254444",
+      "member_ids": [
+       10860014103921977000,
+       10860016156345920000
+      ],
+      "member_ids_str": [
+       "10860014103921976853",
+       "10860016156345919004"
+      ],
+      "points_summary_team_id": 10860031063103662000,
+      "member_cards": [
+       {
+        "member_id": 10860014103921977000,
+        "member_id_str": "10860014103921976853",
+        "member_card_id": 10860014227033188000,
+        "member_card_id_str": "10860014227033187869"
+       },
+       {
+        "member_id": 10860016156345920000,
+        "member_id_str": "10860016156345919004",
+        "member_card_id": 7701317050974628000,
+        "member_card_id_str": "7701317050974627470"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 10860014227033188000,
+        "member_card_id_str": "10860014227033187869",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 7701317050974628000,
+        "member_card_id_str": "7701317050974627470",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "64",
+      "name": "Jackson Park (Nathan, Gino + Rutz, Oliver)",
+      "affiliation": "Jackson Park Men's Golf Club",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       3,
+       2,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       2,
+       3,
+       4,
+       3,
+       3,
+       2,
+       2,
+       3
+      ],
+      "gross_scores": [
+       3,
+       2,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       4,
+       2,
+       3,
+       4,
+       3,
+       3,
+       2,
+       2,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       -1,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       -1,
+       -1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       1,
+       0,
+       0,
+       -1,
+       -1,
+       0
+      ],
+      "hbh_match_status": [
+       "T",
+       "1 up",
+       "1 up",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": 26,
+        "total": 53
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": 26,
+        "total": 53
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": -2,
+        "total": -3
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": -2,
+        "total": -3
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 10871877177658337000,
+    "id_str": "10871877177658336935",
+    "aggregates": [
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254445",
+      "member_ids": [
+       10857441266208106000,
+       10857443467076856000
+      ],
+      "member_ids_str": [
+       "10857441266208106223",
+       "10857443467076855547"
+      ],
+      "points_summary_team_id": 10860031065217591000,
+      "member_cards": [
+       {
+        "member_id": 10857441266208106000,
+        "member_id_str": "10857441266208106223",
+        "member_card_id": 8912205113272068000,
+        "member_card_id_str": "8912205113272067678"
+       },
+       {
+        "member_id": 10857443467076856000,
+        "member_id_str": "10857443467076855547",
+        "member_card_id": 2925267436406073000,
+        "member_card_id_str": "2925267436406073046"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 8912205113272068000,
+        "member_card_id_str": "8912205113272067678",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 2925267436406073000,
+        "member_card_id_str": "2925267436406073046",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "3",
+      "name": "Interbay (Kuehn, Joseph + Schlosser, Miles)",
+      "affiliation": "Interbay Golf Club",
+      "score": "3 & 1",
+      "stableford": null,
+      "thru": "F",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       2,
+       3,
+       2,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       -1,
+       0
+      ],
+      "hbh_match_status": [
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "1 up",
+       "2 up",
+       "2 up",
+       "3 up",
+       "3 up"
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": 25,
+        "total": 52
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": 25,
+        "total": 52
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": -3,
+        "total": -4
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": -3,
+        "total": -4
+       }
+      }
+     },
+     {
+      "id": 10871879718601255000,
+      "id_str": "10871879718601254446",
+      "member_ids": [
+       10857697770882492000,
+       10857696885582359000
+      ],
+      "member_ids_str": [
+       "10857697770882492403",
+       "10857696885582358513"
+      ],
+      "points_summary_team_id": 10860031064210958000,
+      "member_cards": [
+       {
+        "member_id": 10857697770882492000,
+        "member_id_str": "10857697770882492403",
+        "member_card_id": 9805781613102000000,
+        "member_card_id_str": "9805781613102000103"
+       },
+       {
+        "member_id": 10857696885582359000,
+        "member_id_str": "10857696885582358513",
+        "member_card_id": 10857731947749206000,
+        "member_card_id_str": "10857731947749205755"
+       }
+      ],
+      "scorecard_statuses": [
+       {
+        "member_card_id": 9805781613102000000,
+        "member_card_id_str": "9805781613102000103",
+        "status": "completed"
+       },
+       {
+        "member_card_id": 10857731947749206000,
+        "member_card_id_str": "10857731947749205755",
+        "status": "completed"
+       }
+      ],
+      "tour_id": "",
+      "team_id": "30",
+      "name": "Jefferson Park (Duncan, Cameron + Weaver, Brandon Paul)",
+      "affiliation": "Jefferson Park Golf Course",
+      "score": "",
+      "stableford": null,
+      "thru": "F",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "country_isos": [],
+      "country_code_3_letters": [],
+      "country": [],
+      "net_scores": [
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "gross_scores": [
+       4,
+       3,
+       3,
+       3,
+       2,
+       3,
+       3,
+       3,
+       3,
+       4,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3,
+       3
+      ],
+      "net_extra_holes": [],
+      "gross_extra_holes": [],
+      "to_par_net": [
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "to_par_gross": [
+       0,
+       0,
+       0,
+       0,
+       -1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "hbh_match_status": [
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "T",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       ""
+      ],
+      "totals": {
+       "net_scores": {
+        "out": 27,
+        "in": 28,
+        "total": 55
+       },
+       "gross_scores": {
+        "out": 27,
+        "in": 28,
+        "total": 55
+       },
+       "to_par_net": {
+        "out": -1,
+        "in": 0,
+        "total": -1
+       },
+       "to_par_gross": {
+        "out": -1,
+        "in": 0,
+        "total": -1
+       }
+      }
+     }
+    ]
+   }
+  ],
+  "season_points": [],
+  "id": 10857403636925884000,
+  "id_str": "10857403636925884200",
+  "column_visibility": {
+   "position": false,
+   "name": true,
+   "affiliation": true,
+   "score": true,
+   "thru": true,
+   "total": false,
+   "purse": false,
+   "points": true,
+   "details": false
+  },
+  "column_names": {
+   "name": "Players",
+   "affiliation": "empty field",
+   "score": "Match",
+   "thru": "Thru",
+   "points": "Points"
+  },
+  "horizontal_leaderboard": false
+ }
+}

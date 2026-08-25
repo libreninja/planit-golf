@@ -1,0 +1,4300 @@
+{
+  "event": {
+    "name": "Chapman",
+    "adjusted": false,
+    "scopes": [
+      {
+        "id": 11944882423826770000,
+        "id_str": "11944882423826769908",
+        "aggregates": [
+          {
+            "id": 11944885868054997000,
+            "id_str": "11944885868054996727",
+            "member_ids": [
+              11912416935855286000,
+              11912419765198547000
+            ],
+            "member_ids_str": [
+              "11912416935855285827",
+              "11912419765198546510"
+            ],
+            "points_summary_team_id": 11918329081684322000,
+            "member_cards": [
+              {
+                "member_id": 11912416935855286000,
+                "member_id_str": "11912416935855285827",
+                "member_card_id": 3021665274991503400,
+                "member_card_id_str": "3021665274991503182"
+              },
+              {
+                "member_id": 11912419765198547000,
+                "member_id_str": "11912419765198546510",
+                "member_card_id": 11581853788130011000,
+                "member_card_id_str": "11581853788130010867"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 3021665274991503400,
+                "member_card_id_str": "3021665274991503182",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 11581853788130011000,
+                "member_card_id_str": "11581853788130010867",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "17",
+            "name": "Interbay (Ericson, Carl + Rediger, Mike)",
+            "score": "3 & 2",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              5,
+              3,
+              2,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              3,
+              null,
+              null
+            ],
+            "gross_scores": [
+              5,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              3,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              1,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "T",
+              "1 up",
+              "1 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "3 up",
+              "2 up",
+              "3 up",
+              "3 up",
+              "3 up",
+              "3 up",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 27,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 28,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -1,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": 0,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551160",
+            "member_ids": [
+              11912429238520670000,
+              11912430678374902000
+            ],
+            "member_ids_str": [
+              "11912429238520669791",
+              "11912430678374901347"
+            ],
+            "points_summary_team_id": 11918329083261380000,
+            "member_cards": [
+              {
+                "member_id": 11912429238520670000,
+                "member_id_str": "11912429238520669791",
+                "member_card_id": 5570403473775684000,
+                "member_card_id_str": "5570403473775683580"
+              },
+              {
+                "member_id": 11912430678374902000,
+                "member_id_str": "11912430678374901347",
+                "member_card_id": 3401342533656144000,
+                "member_card_id_str": "3401342533656143742"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 5570403473775684000,
+                "member_card_id_str": "5570403473775683580",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 3401342533656144000,
+                "member_card_id_str": "3401342533656143742",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "38",
+            "name": "Jackson Park (Jones, Travis + Luu, Van)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              null,
+              null
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "1 up",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 28,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 28,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": 0,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": 0,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423826770000,
+        "id_str": "11944882423826769909",
+        "aggregates": [
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551161",
+            "member_ids": [
+              11912424527042210000,
+              11912427468524382000
+            ],
+            "member_ids_str": [
+              "11912424527042209365",
+              "11912427468524381786"
+            ],
+            "points_summary_team_id": 11918329083261380000,
+            "member_cards": [
+              {
+                "member_id": 11912424527042210000,
+                "member_id_str": "11912424527042209365",
+                "member_card_id": 10860010827767900000,
+                "member_card_id_str": "10860010827767899673"
+              },
+              {
+                "member_id": 11912427468524382000,
+                "member_id_str": "11912427468524381786",
+                "member_card_id": 5570402346246105000,
+                "member_card_id_str": "5570402346246105083"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 10860010827767900000,
+                "member_card_id_str": "10860010827767899673",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 5570402346246105000,
+                "member_card_id_str": "5570402346246105083",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "28",
+            "name": "Jackson Park (Ohrenschall, Mark + Foreman, David)",
+            "score": "1 up",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ],
+            "gross_scores": [
+              4,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "T",
+              "T",
+              "T",
+              "T",
+              "T",
+              "1 up",
+              "1 up",
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "2 up",
+              "2 up",
+              "1 up",
+              "1 up"
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 27,
+                "in": 26,
+                "total": 53
+              },
+              "gross_scores": {
+                "out": 27,
+                "in": 26,
+                "total": 53
+              },
+              "to_par_net": {
+                "out": -1,
+                "in": -2,
+                "total": -3
+              },
+              "to_par_gross": {
+                "out": -1,
+                "in": -2,
+                "total": -3
+              }
+            }
+          },
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551162",
+            "member_ids": [
+              11912447738790308000,
+              11912452078116563000
+            ],
+            "member_ids_str": [
+              "11912447738790307439",
+              "11912452078116562558"
+            ],
+            "points_summary_team_id": 11918329080140818000,
+            "member_cards": [
+              {
+                "member_id": 11912447738790308000,
+                "member_id_str": "11912447738790307439",
+                "member_card_id": 7701317057685514000,
+                "member_card_id_str": "7701317057685513892"
+              },
+              {
+                "member_id": 11912452078116563000,
+                "member_id_str": "11912452078116562558",
+                "member_card_id": 10868631878961752000,
+                "member_card_id_str": "10868631878961751933"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 7701317057685514000,
+                "member_card_id_str": "7701317057685513892",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 10868631878961752000,
+                "member_card_id_str": "10868631878961751933",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "52",
+            "name": "Bill Wright (Than, Mark + Than, Tyson)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              3,
+              2,
+              3,
+              3,
+              4,
+              3,
+              2,
+              3
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              2,
+              3,
+              3,
+              4,
+              3,
+              2,
+              3
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              -1,
+              0
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              -1,
+              0
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "1 up",
+              "T",
+              "T",
+              "T",
+              "T",
+              "T",
+              "",
+              "",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 28,
+                "in": 26,
+                "total": 54
+              },
+              "gross_scores": {
+                "out": 29,
+                "in": 26,
+                "total": 55
+              },
+              "to_par_net": {
+                "out": 0,
+                "in": -2,
+                "total": -2
+              },
+              "to_par_gross": {
+                "out": 1,
+                "in": -2,
+                "total": -1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423826770000,
+        "id_str": "11944882423826769910",
+        "aggregates": [
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551164",
+            "member_ids": [
+              11912459980554398000,
+              11912459421067799000
+            ],
+            "member_ids_str": [
+              "11912459980554397334",
+              "11912459421067798164"
+            ],
+            "points_summary_team_id": 11918329084905548000,
+            "member_cards": [
+              {
+                "member_id": 11912459980554398000,
+                "member_id_str": "11912459980554397334",
+                "member_card_id": 6147861167344740000,
+                "member_card_id_str": "6147861167344739947"
+              },
+              {
+                "member_id": 11912459421067799000,
+                "member_id_str": "11912459421067798164",
+                "member_card_id": 10860025110379653000,
+                "member_card_id_str": "10860025110379652643"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 6147861167344740000,
+                "member_card_id_str": "6147861167344739947",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 10860025110379653000,
+                "member_card_id_str": "10860025110379652643",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "91",
+            "name": "West Seattle (Morris, Tom + Tang, Benjamin)",
+            "score": "4 & 2",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              3,
+              2,
+              3,
+              null,
+              null
+            ],
+            "gross_scores": [
+              3,
+              3,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              3,
+              2,
+              3,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "",
+              "T",
+              "1 up",
+              "2 up",
+              "1 up",
+              "T",
+              "1 up",
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "2 up",
+              "3 up",
+              "4 up",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -3,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -3,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551163",
+            "member_ids": [
+              11912448932455672000,
+              11912453281546267000
+            ],
+            "member_ids_str": [
+              "11912448932455671411",
+              "11912453281546266242"
+            ],
+            "points_summary_team_id": 11918329080140818000,
+            "member_cards": [
+              {
+                "member_id": 11912448932455672000,
+                "member_id_str": "11912448932455671411",
+                "member_card_id": 7701317056007793000,
+                "member_card_id_str": "7701317056007792286"
+              },
+              {
+                "member_id": 11912453281546267000,
+                "member_id_str": "11912453281546266242",
+                "member_card_id": 7701317057417079000,
+                "member_card_id_str": "7701317057417078435"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 7701317056007793000,
+                "member_card_id_str": "7701317056007792286",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 7701317057417079000,
+                "member_card_id_str": "7701317057417078435",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "56",
+            "name": "Bill Wright (Palmer, Matthew + Dummer, Dan)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              2,
+              4,
+              3,
+              4,
+              2,
+              2,
+              4,
+              2,
+              4,
+              4,
+              4,
+              3,
+              3,
+              4,
+              3,
+              4,
+              null,
+              null
+            ],
+            "gross_scores": [
+              3,
+              4,
+              3,
+              4,
+              2,
+              3,
+              4,
+              2,
+              4,
+              4,
+              4,
+              3,
+              3,
+              4,
+              4,
+              4,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -2,
+              1,
+              0,
+              1,
+              -1,
+              -1,
+              1,
+              -1,
+              1,
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              1,
+              0,
+              1,
+              -1,
+              0,
+              1,
+              -1,
+              1,
+              0,
+              1,
+              0,
+              0,
+              1,
+              1,
+              1,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "T",
+              "",
+              "",
+              "",
+              "T",
+              "",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 27,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 29,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -1,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": 1,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423826770000,
+        "id_str": "11944882423826769911",
+        "aggregates": [
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551165",
+            "member_ids": [
+              11912461117646990000,
+              11912461329610336000
+            ],
+            "member_ids_str": [
+              "11912461117646988954",
+              "11912461329610335899"
+            ],
+            "points_summary_team_id": 11918329084905548000,
+            "member_cards": [
+              {
+                "member_id": 11912461117646990000,
+                "member_id_str": "11912461117646988954",
+                "member_card_id": 9805793975527827000,
+                "member_card_id_str": "9805793975527827445"
+              },
+              {
+                "member_id": 11912461329610336000,
+                "member_id_str": "11912461329610335899",
+                "member_card_id": 8753219223905397000,
+                "member_card_id_str": "8753219223905396704"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 9805793975527827000,
+                "member_card_id_str": "9805793975527827445",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 8753219223905397000,
+                "member_card_id_str": "8753219223905396704",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "95",
+            "name": "West Seattle (Phung, Peter + Marsalis, Ryan)",
+            "score": "Tied",
+            "stableford": null,
+            "points": "0.50",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              1,
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              1,
+              3,
+              4,
+              3
+            ],
+            "gross_scores": [
+              4,
+              3,
+              3,
+              3,
+              3,
+              2,
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              2,
+              3,
+              4,
+              3
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              -2,
+              1,
+              1,
+              0,
+              -1,
+              0,
+              0,
+              1,
+              1,
+              -2,
+              0,
+              1,
+              0
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              1,
+              1,
+              0,
+              -1,
+              0,
+              0,
+              1,
+              1,
+              -1,
+              0,
+              1,
+              0
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "3 up",
+              "2 up",
+              "1 up",
+              "T",
+              "T",
+              "1 up",
+              "T",
+              "",
+              "",
+              "T",
+              "1 up",
+              "T",
+              "T"
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 27,
+                "in": 28,
+                "total": 55
+              },
+              "gross_scores": {
+                "out": 29,
+                "in": 29,
+                "total": 58
+              },
+              "to_par_net": {
+                "out": -1,
+                "in": 0,
+                "total": -1
+              },
+              "to_par_gross": {
+                "out": 1,
+                "in": 1,
+                "total": 2
+              }
+            }
+          },
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551166",
+            "member_ids": [
+              11912414540974811000,
+              11912416519746775000
+            ],
+            "member_ids_str": [
+              "11912414540974810686",
+              "11912416519746774594"
+            ],
+            "points_summary_team_id": 11918329081684322000,
+            "member_cards": [
+              {
+                "member_id": 11912414540974811000,
+                "member_id_str": "11912414540974810686",
+                "member_card_id": 3021599121321519000,
+                "member_card_id_str": "3021599121321518922"
+              },
+              {
+                "member_id": 11912416519746775000,
+                "member_id_str": "11912416519746774594",
+                "member_card_id": 2925267445700651000,
+                "member_card_id_str": "2925267445700650771"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 3021599121321519000,
+                "member_card_id_str": "3021599121321518922",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 2925267445700651000,
+                "member_card_id_str": "2925267445700650771",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "12",
+            "name": "Interbay (Reisinger, Erik + Schumaker, Jason)",
+            "score": "Tied",
+            "stableford": null,
+            "points": "0.50",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              4,
+              2,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3
+            ],
+            "gross_scores": [
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              4,
+              2,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              1,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "to_par_gross": [
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              1,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "T",
+              "T",
+              "",
+              "T",
+              "1 up",
+              "1 up",
+              "T",
+              "",
+              "T",
+              "T"
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 28,
+                "in": 29,
+                "total": 57
+              },
+              "gross_scores": {
+                "out": 28,
+                "in": 29,
+                "total": 57
+              },
+              "to_par_net": {
+                "out": 0,
+                "in": 1,
+                "total": 1
+              },
+              "to_par_gross": {
+                "out": 0,
+                "in": 1,
+                "total": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423860324000,
+        "id_str": "11944882423860324344",
+        "aggregates": [
+          {
+            "id": 11944885868088551000,
+            "id_str": "11944885868088551167",
+            "member_ids": [
+              11918327468018133000,
+              11912416189168510000
+            ],
+            "member_ids_str": [
+              "11918327468018132582",
+              "11912416189168510529"
+            ],
+            "points_summary_team_id": 11918329081684322000,
+            "member_cards": [
+              {
+                "member_id": 11918327468018133000,
+                "member_id_str": "11918327468018132582",
+                "member_card_id": 10968682049690430000,
+                "member_card_id_str": "10968682049690429261"
+              },
+              {
+                "member_id": 11912416189168510000,
+                "member_id_str": "11912416189168510529",
+                "member_card_id": 9758713942208702000,
+                "member_card_id_str": "9758713942208701969"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 10968682049690430000,
+                "member_card_id_str": "10968682049690429261",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 9758713942208702000,
+                "member_card_id_str": "9758713942208701969",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "101",
+            "name": "Interbay (Dowling, Sean + Hill, Patrick)",
+            "score": "4 & 3",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              2,
+              3,
+              3,
+              4,
+              3,
+              null,
+              null,
+              null
+            ],
+            "gross_scores": [
+              4,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              2,
+              3,
+              3,
+              4,
+              3,
+              null,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              null,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              null,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "2 up",
+              "3 up",
+              "4 up",
+              "4 up",
+              "4 up",
+              "3 up",
+              "4 up",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -2,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -2,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105600",
+            "member_ids": [
+              11912450248494050000,
+              11912453630109706000
+            ],
+            "member_ids_str": [
+              "11912450248494048888",
+              "11912453630109705859"
+            ],
+            "points_summary_team_id": 11918329080140818000,
+            "member_cards": [
+              {
+                "member_id": 11912450248494050000,
+                "member_id_str": "11912450248494048888",
+                "member_card_id": 11912450386604091000,
+                "member_card_id_str": "11912450386604090905"
+              },
+              {
+                "member_id": 11912453630109706000,
+                "member_id_str": "11912453630109705859",
+                "member_card_id": 8753212018560887000,
+                "member_card_id_str": "8753212018560886746"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 11912450386604091000,
+                "member_card_id_str": "11912450386604090905",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 8753212018560887000,
+                "member_card_id_str": "8753212018560886746",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "61",
+            "name": "Bill Wright (Rutenberg, Lee'or + Strieck, Todd)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              4,
+              null,
+              null,
+              null
+            ],
+            "gross_scores": [
+              4,
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              4,
+              null,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              null,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              null,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 29,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 30,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": 1,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": 2,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423860324000,
+        "id_str": "11944882423860324345",
+        "aggregates": [
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105601",
+            "member_ids": [
+              11912427798666439000,
+              11912428938745375000
+            ],
+            "member_ids_str": [
+              "11912427798666438235",
+              "11912428938745374302"
+            ],
+            "points_summary_team_id": 11918329083261380000,
+            "member_cards": [
+              {
+                "member_id": 11912427798666439000,
+                "member_id_str": "11912427798666438235",
+                "member_card_id": 8753204792681064000,
+                "member_card_id_str": "8753204792681064400"
+              },
+              {
+                "member_id": 11912428938745375000,
+                "member_id_str": "11912428938745374302",
+                "member_card_id": 7701317051243063000,
+                "member_card_id_str": "7701317051243062927"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 8753204792681064000,
+                "member_card_id_str": "8753204792681064400",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 7701317051243063000,
+                "member_card_id_str": "7701317051243062927",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "34",
+            "name": "Jackson Park (Thorson, Thomas + Asplund, Brian)",
+            "score": "3 & 2",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              4,
+              2,
+              4,
+              4,
+              2,
+              2,
+              3,
+              3,
+              4,
+              null,
+              null
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              4,
+              4,
+              2,
+              2,
+              3,
+              4,
+              4,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              -1,
+              0,
+              1,
+              -1,
+              -1,
+              0,
+              0,
+              1,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              -1,
+              0,
+              1,
+              -1,
+              -1,
+              0,
+              1,
+              1,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "T",
+              "1 up",
+              "T",
+              "",
+              "",
+              "T",
+              "",
+              "T",
+              "1 up",
+              "2 up",
+              "3 up",
+              "3 up",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 27,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -2,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -1,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105602",
+            "member_ids": [
+              11912458866614364000,
+              11912460267847444000
+            ],
+            "member_ids_str": [
+              "11912458866614363794",
+              "11912460267847444119"
+            ],
+            "points_summary_team_id": 11918329084905548000,
+            "member_cards": [
+              {
+                "member_id": 11912458866614364000,
+                "member_id_str": "11912458866614363794",
+                "member_card_id": 6645230698355517000,
+                "member_card_id_str": "6645230698355517086"
+              },
+              {
+                "member_id": 11912460267847444000,
+                "member_id_str": "11912460267847444119",
+                "member_card_id": 7701317060839631000,
+                "member_card_id_str": "7701317060839630511"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 6645230698355517000,
+                "member_card_id_str": "6645230698355517086",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 7701317060839631000,
+                "member_card_id_str": "7701317060839630511",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "87",
+            "name": "West Seattle (Sherick, Brian + Sullivan, Mark)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              4,
+              3,
+              3,
+              2,
+              3,
+              2,
+              3,
+              2,
+              5,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              null,
+              null
+            ],
+            "gross_scores": [
+              3,
+              4,
+              3,
+              3,
+              2,
+              3,
+              2,
+              3,
+              2,
+              5,
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              1,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              -1,
+              1,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              1,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              -1,
+              1,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "T",
+              "",
+              "",
+              "",
+              "T",
+              "",
+              "T",
+              "1 up",
+              "1 up",
+              "T",
+              "1 up",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -3,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -3,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423860324000,
+        "id_str": "11944882423860324346",
+        "aggregates": [
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105604",
+            "member_ids": [
+              11912409244307057000,
+              11912418558312737000
+            ],
+            "member_ids_str": [
+              "11912409244307056180",
+              "11912418558312736330"
+            ],
+            "points_summary_team_id": 11918329081684322000,
+            "member_cards": [
+              {
+                "member_id": 11912409244307057000,
+                "member_id_str": "11912409244307056180",
+                "member_card_id": 2925267429225424400,
+                "member_card_id_str": "2925267429225424553"
+              },
+              {
+                "member_id": 11912418558312737000,
+                "member_id_str": "11912418558312736330",
+                "member_card_id": 2925267436406073000,
+                "member_card_id_str": "2925267436406073046"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 2925267429225424400,
+                "member_card_id_str": "2925267429225424553",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 2925267436406073000,
+                "member_card_id_str": "2925267436406073046",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "2",
+            "name": "Interbay (Mills, Henry + Schlosser, Miles)",
+            "score": "2 & 1",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              2,
+              3,
+              3,
+              2,
+              4,
+              2,
+              2,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              null
+            ],
+            "gross_scores": [
+              3,
+              3,
+              2,
+              3,
+              3,
+              2,
+              4,
+              2,
+              2,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              1,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              -1,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              1,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              -1,
+              null
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "1 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "3 up",
+              "2 up",
+              "3 up",
+              "4 up",
+              "3 up",
+              "3 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "1 up",
+              "2 up",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 24,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 24,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -4,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -4,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105603",
+            "member_ids": [
+              11912447499714980000,
+              11912448009809455000
+            ],
+            "member_ids_str": [
+              "11912447499714979438",
+              "11912448009809454704"
+            ],
+            "points_summary_team_id": 11918329080140818000,
+            "member_cards": [
+              {
+                "member_id": 11912447499714980000,
+                "member_id_str": "11912447499714979438",
+                "member_card_id": 10857731972344605000,
+                "member_card_id_str": "10857731972344604412"
+              },
+              {
+                "member_id": 11912448009809455000,
+                "member_id_str": "11912448009809454704",
+                "member_card_id": 10857731976069147000,
+                "member_card_id_str": "10857731976069146365"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 10857731972344605000,
+                "member_card_id_str": "10857731972344604412",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 10857731976069147000,
+                "member_card_id_str": "10857731976069146365",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "51",
+            "name": "Bill Wright (Quitlong, Jayden + Uman, Jesse)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              null
+            ],
+            "gross_scores": [
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              null
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              null
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 28,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 28,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": 0,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": 0,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423860324000,
+        "id_str": "11944882423860324347",
+        "aggregates": [
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105605",
+            "member_ids": [
+              11912457475044960000,
+              11912459150283532000
+            ],
+            "member_ids_str": [
+              "11912457475044959885",
+              "11912459150283531923"
+            ],
+            "points_summary_team_id": 11918329084905548000,
+            "member_cards": [
+              {
+                "member_id": 11912457475044960000,
+                "member_id_str": "11912457475044959885",
+                "member_card_id": 6645230696476469000,
+                "member_card_id_str": "6645230696476468890"
+              },
+              {
+                "member_id": 11912459150283532000,
+                "member_id_str": "11912459150283531923",
+                "member_card_id": 10860026554696624000,
+                "member_card_id_str": "10860026554696623653"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 6645230696476469000,
+                "member_card_id_str": "6645230696476468890",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 10860026554696624000,
+                "member_card_id_str": "10860026554696623653",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "82",
+            "name": "West Seattle (DeFaccio, Aron + Walsh, Jack)",
+            "score": "2 & 1",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              null
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              2,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              -1,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              -1,
+              null
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "T",
+              "",
+              "",
+              "T",
+              "T",
+              "1 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "1 up",
+              "2 up",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -2,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -2,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105606",
+            "member_ids": [
+              11912424877686024000,
+              11912425640411818000
+            ],
+            "member_ids_str": [
+              "11912424877686023766",
+              "11912425640411817560"
+            ],
+            "points_summary_team_id": 11918329083261380000,
+            "member_cards": [
+              {
+                "member_id": 11912424877686024000,
+                "member_id_str": "11912424877686023766",
+                "member_card_id": 11912447166485916000,
+                "member_card_id_str": "11912447166485915157"
+              },
+              {
+                "member_id": 11912425640411818000,
+                "member_id_str": "11912425640411817560",
+                "member_card_id": 10860012332684175000,
+                "member_card_id_str": "10860012332684174875"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 11912447166485916000,
+                "member_card_id_str": "11912447166485915157",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 10860012332684175000,
+                "member_card_id_str": "10860012332684174875",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "29",
+            "name": "Jackson Park (Fisher, Sam + Fitzgerald, Dylan)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              3,
+              3,
+              2,
+              1,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              null
+            ],
+            "gross_scores": [
+              4,
+              3,
+              3,
+              3,
+              2,
+              2,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -2,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              null
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              0,
+              0,
+              -1,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              null
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "",
+              "",
+              "T",
+              "1 up",
+              "1 up",
+              "T",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -3,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -2,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423860324000,
+        "id_str": "11944882423860324348",
+        "aggregates": [
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105607",
+            "member_ids": [
+              11912412500093594000,
+              11912417702003632000
+            ],
+            "member_ids_str": [
+              "11912412500093593146",
+              "11912417702003631688"
+            ],
+            "points_summary_team_id": 11918329081684322000,
+            "member_cards": [
+              {
+                "member_id": 11912412500093594000,
+                "member_id_str": "11912412500093593146",
+                "member_card_id": 2925267424997566000,
+                "member_card_id_str": "2925267424997566093"
+              },
+              {
+                "member_id": 11912417702003632000,
+                "member_id_str": "11912417702003631688",
+                "member_card_id": 2925267441741227500,
+                "member_card_id_str": "2925267441741227769"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 2925267424997566000,
+                "member_card_id_str": "2925267424997566093",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 2925267441741227500,
+                "member_card_id_str": "2925267441741227769",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "8",
+            "name": "Interbay (Sulpizio, Luke + Togawa, Christopher)",
+            "score": "2 & 1",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              2,
+              3,
+              3,
+              1,
+              3,
+              3,
+              2,
+              3,
+              3,
+              2,
+              3,
+              3,
+              2,
+              4,
+              3,
+              null
+            ],
+            "gross_scores": [
+              4,
+              3,
+              2,
+              3,
+              3,
+              2,
+              3,
+              3,
+              2,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              4,
+              3,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              -1,
+              0,
+              0,
+              -2,
+              0,
+              0,
+              -1,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              1,
+              0,
+              null
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              null
+            ],
+            "hbh_match_status": [
+              "T",
+              "",
+              "T",
+              "T",
+              "T",
+              "1 up",
+              "T",
+              "T",
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 24,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -4,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -3,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868122106000,
+            "id_str": "11944885868122105608",
+            "member_ids": [
+              11912457696034450000,
+              11912458353432881000
+            ],
+            "member_ids_str": [
+              "11912457696034449038",
+              "11912458353432880784"
+            ],
+            "points_summary_team_id": 11918329084905548000,
+            "member_cards": [
+              {
+                "member_id": 11912457696034450000,
+                "member_id_str": "11912457696034449038",
+                "member_card_id": 6645230689966909000,
+                "member_card_id_str": "6645230689966909069"
+              },
+              {
+                "member_id": 11912458353432881000,
+                "member_id_str": "11912458353432880784",
+                "member_card_id": 5570423914129025000,
+                "member_card_id_str": "5570423914129024523"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 6645230689966909000,
+                "member_card_id_str": "6645230689966909069",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 5570423914129025000,
+                "member_card_id_str": "5570423914129024523",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "83",
+            "name": "West Seattle (McCain, Max + Barker, Dan)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              2,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              2,
+              4,
+              3,
+              2,
+              3,
+              3,
+              3,
+              4,
+              3,
+              null
+            ],
+            "gross_scores": [
+              4,
+              2,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              2,
+              4,
+              3,
+              2,
+              3,
+              3,
+              3,
+              4,
+              3,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              null
+            ],
+            "to_par_gross": [
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              -1,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              null
+            ],
+            "hbh_match_status": [
+              "T",
+              "1 up",
+              "T",
+              "T",
+              "T",
+              "",
+              "T",
+              "T",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 25,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -3,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -3,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423994542000,
+        "id_str": "11944882423994542077",
+        "aggregates": [
+          {
+            "id": 11944885868155660000,
+            "id_str": "11944885868155660041",
+            "member_ids": [
+              11912430366922664000,
+              11912431085490825000
+            ],
+            "member_ids_str": [
+              "11912430366922663522",
+              "11912431085490824804"
+            ],
+            "points_summary_team_id": 11918329083261380000,
+            "member_cards": [
+              {
+                "member_id": 11912430366922664000,
+                "member_id_str": "11912430366922663522",
+                "member_card_id": 7701317050974628000,
+                "member_card_id_str": "7701317050974627470"
+              },
+              {
+                "member_id": 11912431085490825000,
+                "member_id_str": "11912431085490824804",
+                "member_card_id": 11912447220240116000,
+                "member_card_id_str": "11912447220240115223"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 7701317050974628000,
+                "member_card_id_str": "7701317050974627470",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 11912447220240116000,
+                "member_card_id_str": "11912447220240115223",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "41",
+            "name": "Jackson Park (Rutz, Oliver + Gabler, Jon)",
+            "score": "1 up",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              4,
+              4,
+              3,
+              4,
+              4,
+              4,
+              4,
+              3,
+              3
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              4,
+              4,
+              3,
+              4,
+              4,
+              4,
+              4,
+              3,
+              3
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ],
+            "hbh_match_status": [
+              "T",
+              "T",
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "2 up",
+              "3 up",
+              "3 up",
+              "3 up",
+              "2 up",
+              "1 up",
+              "1 up",
+              "T",
+              "T",
+              "1 up"
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 29,
+                "in": 33,
+                "total": 62
+              },
+              "gross_scores": {
+                "out": 29,
+                "in": 33,
+                "total": 62
+              },
+              "to_par_net": {
+                "out": 1,
+                "in": 5,
+                "total": 6
+              },
+              "to_par_gross": {
+                "out": 1,
+                "in": 5,
+                "total": 6
+              }
+            }
+          },
+          {
+            "id": 11944885868155660000,
+            "id_str": "11944885868155660042",
+            "member_ids": [
+              11912418910500055000,
+              11912419311978834000
+            ],
+            "member_ids_str": [
+              "11912418910500054603",
+              "11912419311978833484"
+            ],
+            "points_summary_team_id": 11918329081684322000,
+            "member_cards": [
+              {
+                "member_id": 11912418910500055000,
+                "member_id_str": "11912418910500054603",
+                "member_card_id": 2925267416139196000,
+                "member_card_id_str": "2925267416139195990"
+              },
+              {
+                "member_id": 11912419311978834000,
+                "member_id_str": "11912419311978833484",
+                "member_card_id": 5480900611270535000,
+                "member_card_id_str": "5480900611270535048"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 2925267416139196000,
+                "member_card_id_str": "2925267416139195990",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 5480900611270535000,
+                "member_card_id_str": "5480900611270535048",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "22",
+            "name": "Interbay (Beatty, Chad + Thordarson, Ryan)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              4,
+              3,
+              5,
+              5,
+              4,
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              4
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              4,
+              4,
+              4,
+              4,
+              3,
+              5,
+              5,
+              4,
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              4
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              1,
+              0,
+              2,
+              1,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0,
+              2,
+              1,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1
+            ],
+            "hbh_match_status": [
+              "T",
+              "T",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "T",
+              "T",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 32,
+                "in": 32,
+                "total": 64
+              },
+              "gross_scores": {
+                "out": 33,
+                "in": 32,
+                "total": 65
+              },
+              "to_par_net": {
+                "out": 4,
+                "in": 4,
+                "total": 8
+              },
+              "to_par_gross": {
+                "out": 5,
+                "in": 4,
+                "total": 9
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423994542000,
+        "id_str": "11944882423994542078",
+        "aggregates": [
+          {
+            "id": 11944885868155660000,
+            "id_str": "11944885868155660043",
+            "member_ids": [
+              11912453973908417000,
+              11912454222546758000
+            ],
+            "member_ids_str": [
+              "11912453973908416132",
+              "11912454222546757253"
+            ],
+            "points_summary_team_id": 11918329080140818000,
+            "member_cards": [
+              {
+                "member_id": 11912453973908417000,
+                "member_id_str": "11912453973908416132",
+                "member_card_id": 5570420381820414000,
+                "member_card_id_str": "5570420381820413448"
+              },
+              {
+                "member_id": 11912454222546758000,
+                "member_id_str": "11912454222546757253",
+                "member_card_id": 5570584008598776000,
+                "member_card_id_str": "5570584008598775315"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 5570420381820414000,
+                "member_card_id_str": "5570420381820413448",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 5570584008598776000,
+                "member_card_id_str": "5570584008598775315",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "73",
+            "name": "Bill Wright (Arnesen, Don + Grummer, Michael)",
+            "score": "Tied",
+            "stableford": null,
+            "points": "0.50",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              5,
+              3,
+              3,
+              4,
+              3,
+              2,
+              5,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              4
+            ],
+            "gross_scores": [
+              5,
+              3,
+              3,
+              4,
+              3,
+              3,
+              5,
+              4,
+              3,
+              4,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              4
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              -1,
+              2,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1
+            ],
+            "to_par_gross": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              2,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              0,
+              1
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "T",
+              "T",
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "T"
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 32,
+                "in": 30,
+                "total": 62
+              },
+              "gross_scores": {
+                "out": 33,
+                "in": 31,
+                "total": 64
+              },
+              "to_par_net": {
+                "out": 4,
+                "in": 2,
+                "total": 6
+              },
+              "to_par_gross": {
+                "out": 5,
+                "in": 3,
+                "total": 8
+              }
+            }
+          },
+          {
+            "id": 11944885868155660000,
+            "id_str": "11944885868155660044",
+            "member_ids": [
+              11912432852601432000,
+              11912433231229643000
+            ],
+            "member_ids_str": [
+              "11912432852601431656",
+              "11912433231229642346"
+            ],
+            "points_summary_team_id": 11918329083261380000,
+            "member_cards": [
+              {
+                "member_id": 11912432852601432000,
+                "member_id_str": "11912432852601431656",
+                "member_card_id": 7857527549520275000,
+                "member_card_id_str": "7857527549520275369"
+              },
+              {
+                "member_id": 11912433231229643000,
+                "member_id_str": "11912433231229642346",
+                "member_card_id": 7701317052786567000,
+                "member_card_id_str": "7701317052786566804"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 7857527549520275000,
+                "member_card_id_str": "7857527549520275369",
+                "status": "completed"
+              },
+              {
+                "member_card_id": 7701317052786567000,
+                "member_card_id_str": "7701317052786566804",
+                "status": "completed"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "47",
+            "name": "Jackson Park (Becker, Marty + Fabela, Dan)",
+            "score": "Tied",
+            "stableford": null,
+            "points": "0.50",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              3,
+              2,
+              4,
+              5,
+              4,
+              4,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3
+            ],
+            "gross_scores": [
+              4,
+              3,
+              3,
+              2,
+              4,
+              5,
+              4,
+              4,
+              3,
+              4,
+              3,
+              4,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              0,
+              -1,
+              1,
+              2,
+              1,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0
+            ],
+            "to_par_gross": [
+              0,
+              0,
+              0,
+              -1,
+              1,
+              2,
+              1,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "1 up",
+              "1 up",
+              "2 up",
+              "1 up",
+              "T",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "1 up",
+              "T",
+              "T",
+              "T",
+              "",
+              "",
+              "",
+              "T"
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 32,
+                "in": 31,
+                "total": 63
+              },
+              "gross_scores": {
+                "out": 32,
+                "in": 31,
+                "total": 63
+              },
+              "to_par_net": {
+                "out": 4,
+                "in": 3,
+                "total": 7
+              },
+              "to_par_gross": {
+                "out": 4,
+                "in": 3,
+                "total": 7
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 11944882423994542000,
+        "id_str": "11944882423994542079",
+        "aggregates": [
+          {
+            "id": 11944885868155660000,
+            "id_str": "11944885868155660045",
+            "member_ids": [
+              11912456925456919000,
+              11912457190671150000
+            ],
+            "member_ids_str": [
+              "11912456925456918155",
+              "11912457190671148684"
+            ],
+            "points_summary_team_id": 11918329084905548000,
+            "member_cards": [
+              {
+                "member_id": 11912456925456919000,
+                "member_id_str": "11912456925456918155",
+                "member_card_id": 10860024479254342000,
+                "member_card_id_str": "10860024479254341154"
+              },
+              {
+                "member_id": 11912457190671150000,
+                "member_id_str": "11912457190671148684",
+                "member_card_id": 5570422733717662000,
+                "member_card_id_str": "5570422733717661194"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 10860024479254342000,
+                "member_card_id_str": "10860024479254341154",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 5570422733717662000,
+                "member_card_id_str": "5570422733717661194",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "80",
+            "name": "West Seattle (Stover, Milo + Distefano, Patrick)",
+            "score": "6 & 5",
+            "stableford": null,
+            "points": "1.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              3,
+              3,
+              3,
+              2,
+              2,
+              2,
+              3,
+              2,
+              1,
+              3,
+              3,
+              2,
+              3,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "gross_scores": [
+              3,
+              3,
+              3,
+              2,
+              2,
+              2,
+              3,
+              2,
+              1,
+              3,
+              3,
+              2,
+              3,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              -1,
+              0,
+              0,
+              -1,
+              -1,
+              -1,
+              0,
+              -1,
+              -2,
+              -1,
+              0,
+              -1,
+              0,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              -1,
+              0,
+              0,
+              -1,
+              -1,
+              -1,
+              0,
+              -1,
+              -2,
+              -1,
+              0,
+              -1,
+              0,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "1 up",
+              "1 up",
+              "T",
+              "1 up",
+              "2 up",
+              "2 up",
+              "2 up",
+              "3 up",
+              "4 up",
+              "4 up",
+              "5 up",
+              "6 up",
+              "6 up",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 21,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 21,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -7,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": -7,
+                "in": null,
+                "total": null
+              }
+            }
+          },
+          {
+            "id": 11944885868155660000,
+            "id_str": "11944885868155660046",
+            "member_ids": [
+              11912448633888336000,
+              11912450628330220000
+            ],
+            "member_ids_str": [
+              "11912448633888335474",
+              "11912450628330219129"
+            ],
+            "points_summary_team_id": 11918329080140818000,
+            "member_cards": [
+              {
+                "member_id": 11912448633888336000,
+                "member_id_str": "11912448633888335474",
+                "member_card_id": 10857731947749206000,
+                "member_card_id_str": "10857731947749205755"
+              },
+              {
+                "member_id": 11912450628330220000,
+                "member_id_str": "11912450628330219129",
+                "member_card_id": 11912450738623638000,
+                "member_card_id_str": "11912450738623637018"
+              }
+            ],
+            "scorecard_statuses": [
+              {
+                "member_card_id": 10857731947749206000,
+                "member_card_id_str": "10857731947749205755",
+                "status": "partial"
+              },
+              {
+                "member_card_id": 11912450738623638000,
+                "member_card_id_str": "11912450738623637018",
+                "status": "partial"
+              }
+            ],
+            "tour_id": "",
+            "team_id": "55",
+            "name": "Bill Wright (Weaver, Brandon Paul + Weld, William)",
+            "score": "",
+            "stableford": null,
+            "points": "0.00",
+            "disposition": "",
+            "disposition_cause": "",
+            "country_isos": [],
+            "country_code_3_letters": [],
+            "country": [],
+            "custom_logos": [],
+            "net_scores": [
+              4,
+              3,
+              2,
+              3,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              4,
+              3,
+              3,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "gross_scores": [
+              5,
+              3,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              4,
+              3,
+              3,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "net_extra_holes": [],
+            "gross_extra_holes": [],
+            "to_par_net": [
+              0,
+              0,
+              -1,
+              0,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              -1,
+              1,
+              0,
+              0,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "to_par_gross": [
+              1,
+              0,
+              -1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "hbh_match_status": [
+              "",
+              "",
+              "T",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "totals": {
+              "net_scores": {
+                "out": 26,
+                "in": null,
+                "total": null
+              },
+              "gross_scores": {
+                "out": 28,
+                "in": null,
+                "total": null
+              },
+              "to_par_net": {
+                "out": -2,
+                "in": null,
+                "total": null
+              },
+              "to_par_gross": {
+                "out": 0,
+                "in": null,
+                "total": null
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "season_points": [],
+    "id": 11912390334505576000,
+    "id_str": "11912390334505576373",
+    "column_visibility": {
+      "position": false,
+      "name": true,
+      "affiliation": false,
+      "score": true,
+      "thru": false,
+      "total": false,
+      "purse": false,
+      "points": true,
+      "details": false
+    },
+    "column_names": {
+      "name": "Players",
+      "score": "Match",
+      "points": "Points"
+    },
+    "horizontal_leaderboard": false
+  }
+}
