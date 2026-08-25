@@ -1,0 +1,1192 @@
+{
+ "event": {
+  "name": "Team Fourball",
+  "adjusted": false,
+  "scopes": [
+   {
+    "id": 7708729716206758000,
+    "aggregates": [
+     {
+      "id": 7708730599963388000,
+      "member_ids": [
+       7701316834112334000,
+       7701316834145888000
+      ],
+      "points_summary_team_id": 7701422491448666000,
+      "member_cards": [
+       {
+        "member_id": 7701316834112334000,
+        "member_card_id": 7701317060134988000
+       },
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 7701317060436978000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "West Seattle (Gants, Beau + Gants, Garrett)",
+      "affiliation": "West Seattle",
+      "score": "3 & 2",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       4,
+       4,
+       3,
+       5,
+       2,
+       4,
+       4,
+       3,
+       null,
+       null
+      ]
+     },
+     {
+      "id": 7708730599963388000,
+      "member_ids": [
+       7701316834045225000,
+       7701316834045225000
+      ],
+      "points_summary_team_id": 7701422493092833000,
+      "member_cards": [
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 7701317054531398000
+       },
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 7701317054799833000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jefferson Park (Barr, Alan + Murphy, Jonathan)",
+      "affiliation": "Jefferson Park",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       5,
+       2,
+       4,
+       4,
+       3,
+       4,
+       4,
+       4,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       4,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316833944562000,
+       7701316833944562000
+      ],
+      "points_summary_team_id": 7701422494770555000,
+      "member_cards": [
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 7701317049800223000
+       },
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 5570402346246105000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jackson Park (Ohrenschall, Mark + Foreman, David)",
+      "affiliation": "Jackson Park",
+      "score": "2 & 1",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       2,
+       4,
+       4,
+       4,
+       3,
+       3,
+       4,
+       4,
+       3,
+       4,
+       3,
+       3,
+       5,
+       4,
+       3,
+       4
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834112334000,
+       7701316834145888000
+      ],
+      "points_summary_team_id": 7701422491448666000,
+      "member_cards": [
+       {
+        "member_id": 7701316834112334000,
+        "member_card_id": 6645230697348884000
+       },
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 5570423914129025000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "West Seattle (McCabe, Eric + Barker, Dan)",
+      "affiliation": "West Seattle",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       3,
+       3,
+       5,
+       4,
+       4,
+       4,
+       4,
+       4,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       null
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316833944562000,
+       7701316833944562000
+      ],
+      "points_summary_team_id": 7701422494770555000,
+      "member_cards": [
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 4967581588746430000
+       },
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 6645230694362540000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jackson Park (Rockey, Shawn + Schoening, Jeff)",
+      "affiliation": "Jackson Park",
+      "score": "2 & 1",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       5,
+       4,
+       3,
+       3,
+       2,
+       4,
+       4,
+       5,
+       4,
+       3
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834011671000,
+       7701316834011671000
+      ],
+      "points_summary_team_id": 7701422496414722000,
+      "member_cards": [
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 2925267422615201300
+       },
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 3021599121321519000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Interbay (Lewis, Bo + Reisinger, Erik)",
+      "affiliation": "Interbay",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       3,
+       6,
+       6,
+       3,
+       3,
+       4,
+       5,
+       3,
+       3,
+       5,
+       3,
+       4,
+       5,
+       4,
+       4,
+       4
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834011671000,
+       7701316834011671000
+      ],
+      "points_summary_team_id": 7701422496414722000,
+      "member_cards": [
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 2925267440902366700
+       },
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 2925267421776340500
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Interbay (Johnson, Stane + Preskey, Nathan)",
+      "affiliation": "Interbay",
+      "score": "1 Up",
+      "points": "1.00",
+      "disposition": null,
+      "disposition_cause": "",
+      "net_scores": [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       4,
+       null
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834078779000,
+       7701316834078779000
+      ],
+      "points_summary_team_id": 7701422493092833000,
+      "member_cards": [
+       {
+        "member_id": 7701316834078779000,
+        "member_card_id": 7701317056276228000
+       },
+       {
+        "member_id": 7701316834078779000,
+        "member_card_id": 5570417267365145000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jefferson Park (Towle, Craig + Wilson, Ross)",
+      "affiliation": "Jefferson Park",
+      "score": "",
+      "points": "0.00",
+      "disposition": null,
+      "disposition_cause": "",
+      "net_scores": [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       5,
+       null
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316833978116000,
+       7701316833978116000
+      ],
+      "points_summary_team_id": 7701422494770555000,
+      "member_cards": [
+       {
+        "member_id": 7701316833978116000,
+        "member_card_id": 6645230695939598000
+       },
+       {
+        "member_id": 7701316833978116000,
+        "member_card_id": 7701317052216142000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jackson Park (Bergeson, Jordan + Dickhoff, Mark)",
+      "affiliation": "Jackson Park",
+      "score": "Tied",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       3,
+       4,
+       4,
+       4,
+       4,
+       5,
+       4,
+       5,
+       3,
+       5,
+       4,
+       4,
+       4,
+       5,
+       null,
+       5
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834078779000,
+       7701316834078779000
+      ],
+      "points_summary_team_id": 7701422493092833000,
+      "member_cards": [
+       {
+        "member_id": 7701316834078779000,
+        "member_card_id": 7701317056544664000
+       },
+       {
+        "member_id": 7701316834078779000,
+        "member_card_id": 7701317058490821000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jefferson Park (Castro, Raoul + Zapata, AJ)",
+      "affiliation": "Jefferson Park",
+      "score": "Tied",
+      "points": "0.50",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       5,
+       3,
+       5,
+       4,
+       4,
+       4,
+       3,
+       4,
+       4,
+       4,
+       5,
+       5,
+       4,
+       4,
+       5,
+       3,
+       5
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834145888000,
+       7701316834145888000
+      ],
+      "points_summary_team_id": 7701422491448666000,
+      "member_cards": [
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 5570424524450589000
+       },
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 7701317060839631000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "West Seattle (Kummerow, Chris + Sullivan, Mark)",
+      "affiliation": "West Seattle",
+      "score": "4 & 3",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       5,
+       4,
+       3,
+       4,
+       4,
+       4,
+       4,
+       2,
+       3,
+       3,
+       5,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834011671000,
+       7701316834011671000
+      ],
+      "points_summary_team_id": 7701422496414722000,
+      "member_cards": [
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 2925267431473571300
+       },
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 2925267418253125000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Interbay (Van Loen, Noah + Lewis, Kael)",
+      "affiliation": "Interbay",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       3,
+       5,
+       4,
+       3,
+       4,
+       4,
+       6,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316833944562000,
+       7701316833944562000
+      ],
+      "points_summary_team_id": 7701422494770555000,
+      "member_cards": [
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 5570584012356872000
+       },
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 5570404770990025000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jackson Park (Clark, Jay + Rowe, Tim)",
+      "affiliation": "Jackson Park",
+      "score": "2 & 1",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       4,
+       4,
+       3,
+       5,
+       4,
+       3,
+       4,
+       4,
+       5,
+       4,
+       3,
+       6,
+       4,
+       5,
+       4,
+       4,
+       3,
+       4
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834078779000,
+       7701316834078779000
+      ],
+      "points_summary_team_id": 7701422493092833000,
+      "member_cards": [
+       {
+        "member_id": 7701316834078779000,
+        "member_card_id": 7701317056846653000
+       },
+       {
+        "member_id": 7701316834078779000,
+        "member_card_id": 7701317057148643000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jefferson Park (Provins, Ted + Sayre, Matt)",
+      "affiliation": "Jefferson Park",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       5,
+       3,
+       3,
+       4,
+       4,
+       6,
+       5,
+       4,
+       4,
+       3,
+       3,
+       4,
+       5,
+       4,
+       4
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316833978116000,
+       7701316834045225000
+      ],
+      "points_summary_team_id": 7701422496414722000,
+      "member_cards": [
+       {
+        "member_id": 7701316833978116000,
+        "member_card_id": 2925267424997566000
+       },
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 3021665274991503400
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Interbay (Sulpizio, Luke + Ericson, Carl)",
+      "affiliation": "Interbay",
+      "score": "1 up",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       5,
+       5,
+       2,
+       5,
+       3,
+       4,
+       3,
+       4,
+       4,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834145888000,
+       7701316834145888000
+      ],
+      "points_summary_team_id": 7701422491448666000,
+      "member_cards": [
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 6645230689966909000
+       },
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 5570426244685654000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "West Seattle (McCain, Max + Meneely, Ryan)",
+      "affiliation": "West Seattle",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       5,
+       4,
+       3,
+       4,
+       4,
+       5,
+       5,
+       3,
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834045225000,
+       7701316834045225000
+      ],
+      "points_summary_team_id": 7701422493092833000,
+      "member_cards": [
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 7701317055101823000
+       },
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 5570584011115358000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jefferson Park (Engberg, Steven + Norton, Sean)",
+      "affiliation": "Jefferson Park",
+      "score": "2 & 1",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       5,
+       3,
+       4,
+       5,
+       3,
+       4,
+       3,
+       4,
+       3,
+       null
+      ]
+     },
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834011671000,
+       7701316834045225000
+      ],
+      "points_summary_team_id": 7701422496414722000,
+      "member_cards": [
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 3021599104510748700
+       },
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 2925267445700651000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Interbay (Hanson, Eric + Schumaker, Jason)",
+      "affiliation": "Interbay",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       6,
+       4,
+       4,
+       4,
+       3,
+       5,
+       4,
+       3,
+       5,
+       4,
+       4,
+       5,
+       4,
+       3,
+       null
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730599996942000,
+      "member_ids": [
+       7701316834112334000,
+       7701316834145888000
+      ],
+      "points_summary_team_id": 7701422491448666000,
+      "member_cards": [
+       {
+        "member_id": 7701316834112334000,
+        "member_card_id": 5570422733717662000
+       },
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 6645230694597421000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "West Seattle (DiStefano, Patrick + Kunugi, Elliott)",
+      "affiliation": "West Seattle",
+      "score": "4 & 3",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       4,
+       4,
+       3,
+       4,
+       4,
+       4,
+       3,
+       2,
+       4,
+       2,
+       4,
+       4,
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "id": 7708730600030497000,
+      "member_ids": [
+       7701316834045225000,
+       7701316834045225000
+      ],
+      "points_summary_team_id": 7701422493092833000,
+      "member_cards": [
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 7701317054296517000
+       },
+       {
+        "member_id": 7701316834045225000,
+        "member_card_id": 7701317055672248000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jefferson Park (Than, Mark + Hiranphanit, Krit)",
+      "affiliation": "Jefferson Park",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       5,
+       4,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730600030497000,
+      "member_ids": [
+       7701316833944562000,
+       7701316833944562000
+      ],
+      "points_summary_team_id": 7701422494770555000,
+      "member_cards": [
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 7701317050068658000
+       },
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 7701317051511499000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jackson Park (Gutierrez, Ryan + Kim, Justin)",
+      "affiliation": "Jackson Park",
+      "score": "1 up",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       4,
+       4,
+       4,
+       2,
+       3,
+       4,
+       5,
+       4,
+       3,
+       4,
+       2,
+       4,
+       5,
+       4,
+       4,
+       6
+      ]
+     },
+     {
+      "id": 7708730600030497000,
+      "member_ids": [
+       7701316834145888000,
+       7701316834145888000
+      ],
+      "points_summary_team_id": 7701422491448666000,
+      "member_cards": [
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 5570425434279012000
+       },
+       {
+        "member_id": 7701316834145888000,
+        "member_card_id": 6645230693557234000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "West Seattle (Starkey, Scott + Leighton, Brennon)",
+      "affiliation": "West Seattle",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       4,
+       5,
+       3,
+       4,
+       4,
+       4,
+       4,
+       3,
+       5,
+       3,
+       3,
+       5,
+       4,
+       4,
+       6
+      ]
+     }
+    ]
+   },
+   {
+    "id": 7708729716240312000,
+    "aggregates": [
+     {
+      "id": 7708730600030497000,
+      "member_ids": [
+       7701316833944562000,
+       7701316833978116000
+      ],
+      "points_summary_team_id": 7701422494770555000,
+      "member_cards": [
+       {
+        "member_id": 7701316833944562000,
+        "member_card_id": 7701317050672638000
+       },
+       {
+        "member_id": 7701316833978116000,
+        "member_card_id": 5570584009303419000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Jackson Park (Gabler, Jon + Bucher, Jimmy)",
+      "affiliation": "Jackson Park",
+      "score": "2 & 1",
+      "points": "1.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       5,
+       4,
+       3,
+       4,
+       3,
+       3,
+       4,
+       4,
+       6,
+       4,
+       3,
+       4,
+       3,
+       4,
+       4,
+       5,
+       4,
+       5
+      ]
+     },
+     {
+      "id": 7708730600030497000,
+      "member_ids": [
+       7701316834011671000,
+       7701316834011671000
+      ],
+      "points_summary_team_id": 7701422496414722000,
+      "member_cards": [
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 4100233110237505500
+       },
+       {
+        "member_id": 7701316834011671000,
+        "member_card_id": 6433845826530863000
+       }
+      ],
+      "tour_id": "",
+      "team_id": "",
+      "name": "Interbay (Thrash, James + Truckle, James)",
+      "affiliation": "Interbay",
+      "score": "",
+      "points": "0.00",
+      "disposition": "",
+      "disposition_cause": "",
+      "net_scores": [
+       6,
+       4,
+       3,
+       4,
+       3,
+       3,
+       5,
+       3,
+       4,
+       4,
+       4,
+       3,
+       4,
+       5,
+       4,
+       5,
+       4,
+       4
+      ]
+     }
+    ]
+   }
+  ],
+  "season_points": [],
+  "id": 7701439484553882000,
+  "column_visibility": {
+   "position": false,
+   "name": true,
+   "affiliation": true,
+   "score": true,
+   "thru": false,
+   "total": false,
+   "purse": false,
+   "points": true,
+   "details": false
+  },
+  "column_names": {
+   "name": "Players",
+   "affiliation": "Affiliation",
+   "score": "Match",
+   "points": "Points"
+  },
+  "horizontal_leaderboard": false
+ }
+}
