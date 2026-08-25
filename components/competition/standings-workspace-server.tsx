@@ -89,6 +89,12 @@ export async function StandingsWorkspaceServer({
     ? await getLiveResults({ competitionKey, occurrenceId: todayId, scoring, nowIso })
     : null
   const todayLiveHasGolf = !!(todayLive?.leaderboard?.scorecards.some((c) => c.holesCompleted > 0))
+  // Genuinely in-progress: at least one PARTIAL scorecard (card still on the
+  // course). This is the authoritative "golf is happening now" signal that
+  // engages the live path even before the nominal playStartLocal — distinct
+  // from todayLiveHasGolf, which is also true once a round is finalized. See
+  // 2026-08-25 regression (live scores arrived at 15:59, before the 16:00 window).
+  const todayLiveInProgress = !!todayLive?.leaderboard?.scorecards.some((c) => c.isLive)
 
   const selectedId = urlState.occurrenceId ?? defaultOccurrenceId(occurrences, {
     todayId,
@@ -112,6 +118,7 @@ export async function StandingsWorkspaceServer({
     todayActive,
     selectedIsToday: selected?.id === todayId,
     todayLiveHasGolf,
+    todayLiveInProgress,
   })
   const initial = dec.useLivePath
     ? (selected?.id === todayId && todayLive ? todayLive : historical)
