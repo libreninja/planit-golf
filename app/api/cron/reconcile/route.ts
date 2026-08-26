@@ -8,8 +8,11 @@ export const dynamic = 'force-dynamic'
 // the actual Vercel function timeout for this route and the soft deadline in
 // reconcile.ts stays well below it. See design spec §7 (revision 9).
 
-// One shared absolute deadline for the whole run. The hourly cron leaves
-// reserve time below this for serialization + cache cleanup.
+// One shared absolute deadline for the whole run. The frequent pg_cron
+// reconcile (every ~2 min via net.http_get — see migration _reconcile_frequent)
+// leaves reserve time below this for serialization + cache cleanup. The 90s
+// budget is comfortably under the 2-min cadence, so runs never self-overlap.
+// The daily Vercel cron (vercel.json) remains as a backstop.
 const CRON_DEADLINE_MS = 90_000
 
 export async function GET(request: Request) {
