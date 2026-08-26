@@ -16,6 +16,10 @@ export interface ReconcileSummary {
   discovered: number
   imported: number
   skipped: number
+  // Candidates skipped by the staleness gate (last GG discovery < STALENESS_MS
+  // ago). Lets the frequent-reconcile cadence prove it is throttling re-reads
+  // rather than hammering GG every tick.
+  staleSkipped: number
   seasonPointsRebuilds: number
   errors: string[]
   stoppedForBudget: boolean
@@ -53,7 +57,7 @@ export async function reconcileAllCompetitions(input: ReconcileAllInput): Promis
         competitionKey: config.key, deadlineMs: input.deadlineMs, nowIso: input.nowIso, ops: input.ops,
       }))
     } catch (err) {
-      summaries.push({ competition: config.key, discovered: 0, imported: 0, skipped: 0, seasonPointsRebuilds: 0, errors: [String(err)], stoppedForBudget: false })
+      summaries.push({ competition: config.key, discovered: 0, imported: 0, skipped: 0, staleSkipped: 0, seasonPointsRebuilds: 0, errors: [String(err)], stoppedForBudget: false })
     }
   }
   return summaries
@@ -67,7 +71,7 @@ export interface ReconcileCompetitionInput {
 }
 
 export async function reconcileCompetition(input: ReconcileCompetitionInput): Promise<ReconcileSummary> {
-  const summary: ReconcileSummary = { competition: input.competitionKey, discovered: 0, imported: 0, skipped: 0, seasonPointsRebuilds: 0, errors: [], stoppedForBudget: false }
+  const summary: ReconcileSummary = { competition: input.competitionKey, discovered: 0, imported: 0, skipped: 0, staleSkipped: 0, seasonPointsRebuilds: 0, errors: [], stoppedForBudget: false }
   const ops = input.ops ?? (await defaultOps())
 
   // Precreate configured special-occurrence rows (Club Championship 101/102)
@@ -87,7 +91,11 @@ export async function reconcileCompetition(input: ReconcileCompetitionInput): Pr
   for (const c of candidates) {
     if (Date.now() + RESERVE_MS >= input.deadlineMs) { summary.stoppedForBudget = true; break }
     try {
-      if (c.action === 'skip') { summary.skipped++; continue }
+      if (c.action === 'skip') {
+        if (c.kind === 'stale') summary.staleSkipped++
+        else summary.skipped++
+        continue
+      }
       // ALWAYS discover — discovery returns the ResolvedOccurrence (ids +
       // upstream status). Candidate pre-selection only decides skip-vs-process;
       // the import decision uses the DISCOVERED upstream status, so an
@@ -147,13 +155,16 @@ async function defaultOps(): Promise<ReconcileOps> {
     async listEvents(competitionKey) {
       const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
       const { data } = await supabase.from('igc_league_events')
-        .select('week_number, event_date, event_format, discovery_state, source_finalized_at, durable_imported_at')
+        .select('week_number, event_date, event_format, discovery_state, source_finalized_at, durable_imported_at, discovered_at')
         .eq('league_key', leagueKey).order('week_number', { ascending: false }).limit(200)
       return (data ?? []).map((e: any) => ({
         week_number: e.week_number, event_date: e.event_date,
         event_format: e.event_format, discovery_state: e.discovery_state,
         upstream_status: e.source_finalized_at ? 'completed' : null,
         durable_imported_at: e.durable_imported_at,
+        // Feeds the staleness gate in selectReconciliationCandidates so frequent
+        // runs don't re-read GG for an occurrence discovered within STALENESS_MS.
+        discovered_at: e.discovered_at ?? null,
       }))
     },
     async discoverAndPersist(competitionKey, week, nowIso) {
