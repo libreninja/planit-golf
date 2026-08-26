@@ -416,6 +416,29 @@ function buildOverallStandings(teamPoints: GGRoundRaw['teamPoints'], roundStandi
   return Object.values(byTeam).sort((a, b) => b.totalPoints - a.totalPoints)
 }
 
+// GG's team_points.round_points is the AUTHORITATIVE per-round point total —
+// it reconciles to the official GG leaderboard. When GG's round_points and our
+// per-match sum disagree (GG's match-level point view and its round_points
+// aggregate can differ — a known GG-side inconsistency), GG wins for the
+// rendered round standings; the disagreement is still surfaced as a
+// round-points-mismatch validation issue by buildOverallStandings (which
+// cross-checks against the per-match derived value). W/H/L counts stay from the
+// matches: GG team_points carries no W/H/L breakdown. No team_points (round
+// not posted / not started) → keep the per-match derived standings as-is.
+function applyAuthoritativeRoundPoints(derived: TeamStanding[], teamPoints: GGRoundRaw['teamPoints']): TeamStanding[] {
+  if (!teamPoints?.teams?.length) return derived
+  const auth = new Map<TeamKey, number>()
+  for (const tt of teamPoints.teams) {
+    const key = teamKeyFromName(tt.name)
+    if (key && tt.round_points != null) auth.set(key, num(tt.round_points) ?? 0)
+  }
+  if (!auth.size) return derived
+  return derived.map((s) => auth.has(s.teamKey)
+    ? { ...s, roundPoints: auth.get(s.teamKey)! }
+    : s
+  ).sort((a, b) => b.roundPoints - a.roundPoints)
+}
+
 // Derive the round result status from the MATCHES (the reliable signal), not
 // from GG's event-level status. GG's tournament payload often omits
 // completed_at/status even for a fully-scored round (the 2025 Fourball fixture
@@ -461,8 +484,10 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
     })
   }
 
-  const roundStandings = buildRoundStandings(matches)
-  const overallStandings = buildOverallStandings(raw.teamPoints, roundStandings, validationIssues)
+  const roundStandingsDerived = buildRoundStandings(matches)
+  const overallStandings = buildOverallStandings(raw.teamPoints, roundStandingsDerived, validationIssues)
+  // GG round_points is authoritative for the rendered round standings.
+  const roundStandings = applyAuthoritativeRoundPoints(roundStandingsDerived, raw.teamPoints)
   const resultStatus = deriveResultStatus(raw.upstreamStatus, matches)
 
   return {
