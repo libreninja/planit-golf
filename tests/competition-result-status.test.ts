@@ -44,3 +44,25 @@ test('upstream unknown + inactive + no results → unknown/inconclusive (never i
 test('upstream unknown + inactive + hasResults but not durable → unknown (DB path must set durableFinalized)', () => {
   assert.equal(deriveResultStatus(mk({ upstreamStatus: 'unknown', active: false, hasResults: true })), 'unknown')
 })
+
+// REGRESSION 2026-08-25 (Men's League live round). Scores were reported at
+// 15:59 PDT — one minute before the configured 16:00 playStartLocal — so the
+// active window had NOT opened (active=false). GG league rounds never expose
+// event.status and season_points is empty mid-round, so upstreamStatus was
+// 'unknown'. With 40 genuine partial scorecards on the course, the round must
+// classify as 'live': partial card evidence is authoritative over the clock.
+// Before the fix, the `active && …` gate suppressed these as 'unknown' and the
+// UI rendered "Results aren't available" for a round with live scores.
+test('REGRESSION 2026-08-25: partial scorecards → live even when the active window has NOT opened', () => {
+  assert.equal(
+    deriveResultStatus(mk({ upstreamStatus: 'unknown', active: false, hasResults: true, anyPartial: true })),
+    'live',
+  )
+})
+
+test('partial cards never override a finalized round (durableFinalized / completed win first)', () => {
+  // A finalized round that happens to contain a DNF/partial card stays final —
+  // the durable import and the upstream completed signal are authoritative.
+  assert.equal(deriveResultStatus(mk({ durableFinalized: true, anyPartial: true, hasResults: true })), 'final')
+  assert.equal(deriveResultStatus(mk({ upstreamStatus: 'completed', anyPartial: true, hasResults: true })), 'final')
+})

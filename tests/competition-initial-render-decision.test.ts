@@ -60,3 +60,41 @@ test('the decision is independent of scoring — gross/net never erases stored r
     assert.equal(d.useLivePath, false, `scoring must not enable live path when hasStoredResults=${hasStoredResults}`)
   }
 })
+
+// REGRESSION 2026-08-25 (Men's League live round). Scores were reported at
+// 15:59 PDT, before the 16:00 playStartLocal, so todayActive=false. Yet the
+// live path showed 40 partial scorecards (genuinely in-progress golf). The
+// live path must engage so partial standings render instead of "Results
+// aren't available." Before the fix, the todayActive gate on the live branch
+// routed to the empty state despite real live golf.
+test('REGRESSION 2026-08-25: today\'s event with in-progress live golf BEFORE the window → live path, not empty state', () => {
+  const d = decideInitialRender({
+    hasStoredResults: false, todayActive: false, selectedIsToday: true,
+    todayLiveHasGolf: true, todayLiveInProgress: true,
+  })
+  assert.equal(d.useLivePath, true)
+  assert.equal(d.initialIsHistoricalFinal, false)
+  assert.equal(d.effectiveStatus, 'live')
+})
+
+test('a finalized today (no partial cards) with stored results → final, not live (finalized standings must not regress)', () => {
+  // No partial cards → todayLiveInProgress false → the in-progress branch does
+  // NOT fire. Stored final results render as final. todayLiveHasGolf is true
+  // (completed cards have holesCompleted > 0) but that alone must not keep a
+  // finalized round stuck on 'live'.
+  const d = decideInitialRender({
+    hasStoredResults: true, todayActive: false, selectedIsToday: true,
+    todayLiveHasGolf: true, todayLiveInProgress: false,
+  })
+  assert.equal(d.useLivePath, false)
+  assert.equal(d.effectiveStatus, 'final')
+})
+
+test('in-progress live golf on a NON-today occurrence still does NOT trigger live (selectedIsToday gates it)', () => {
+  const d = decideInitialRender({
+    hasStoredResults: false, todayActive: false, selectedIsToday: false,
+    todayLiveHasGolf: true, todayLiveInProgress: true,
+  })
+  assert.equal(d.useLivePath, false)
+  assert.equal(d.effectiveStatus, 'unknown')
+})

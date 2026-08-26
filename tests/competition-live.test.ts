@@ -120,6 +120,61 @@ test('durableCurrent derived from event row source vs import (version equality)'
   assert.equal(r.durableCurrent, true, 'version equality (v9==v9) → current despite older import timestamp')
 })
 
+// REGRESSION 2026-08-25 (Men's League live round). Today's round (Week 20,
+// dated 2026-08-25) had scores reported at 15:59 PDT — one minute BEFORE the
+// configured 16:00 playStartLocal window. GG league rounds never expose
+// event.status and season_points is empty mid-round, so upstreamStatus was
+// 'unknown'. The payload carried the real production shape: 9-hole round with
+// a mix of partial cards (holes completed 6/8), completed cards (9), and
+// no-holes cards. Before the fix the active-window clock gate classified this
+// as 'unknown' and the UI rendered "Results aren't available" for a round
+// with live scores. nowIso is set BEFORE the 16:00 window to reproduce that.
+test('REGRESSION 2026-08-25: live partial scorecards before the playStartLocal window → live + partial standings', async () => {
+  const gg = fakeGg({
+    events: [{ id: 'E', name: 'Mens League', category_id: 'C' }],
+    rounds: [{ id: 'R20', is_points_round: true, position: 20, date: '2026-08-25' }],
+    tournaments: [{ event: { id: 'n1', name: 'Net Regular Season' } }],
+    results: {
+      n1: { event: { scopes: [{ name: 'Overall', aggregates: [
+        // Partial card: 6 of 9 holes recorded (card on the course).
+        { name: 'Eichelberger, Tim', position: '1',
+          gross_scores: [5, 2, 3, 4, 3, 3, null, null, null],
+          net_scores: [4, 1, 3, 3, 2, 2, null, null, null],
+          to_par_net: [0, -2, 0, 1, -1, -1, null, null, null],
+          to_par_gross: [1, -1, 0, 1, 0, 0, null, null, null] },
+        // Completed card: all 9 holes recorded.
+        { name: 'Kubo, Masayuki', position: 'T2',
+          gross_scores: [4, 3, 4, 4, 3, 3, 4, 3, 4],
+          net_scores: [3, 2, 3, 3, 2, 2, 3, 2, 3],
+          to_par_net: [-1, -1, 0, 1, -1, -1, 0, -1, 0],
+          to_par_gross: [0, 0, 0, 1, 0, 0, 1, 0, 1] },
+        // No-holes card: not yet started.
+        { name: 'Perovich, Nick', position: null,
+          gross_scores: [null, null, null, null, null, null, null, null, null],
+          net_scores: [null, null, null, null, null, null, null, null, null],
+          to_par_net: [null, null, null, null, null, null, null, null, null],
+          to_par_gross: [null, null, null, null, null, null, null, null, null] },
+      ] }] } },
+    },
+  })
+  const cache = makeLiveCacheStore(new Map())
+  const r = await getLiveResults({
+    competitionKey: 'mens-league', occurrenceId: '20', scoring: 'net',
+    // 15:59 PDT is BEFORE the configured 16:00 playStartLocal window — the
+    // exact moment today's regression occurred.
+    nowIso: '2026-08-25T15:59:00-07:00',
+    deps: { adapterConfig, ggClient: gg, readEvent: fakeEventReader({ event_date: '2026-08-25', event_format: 'individual', discovery_state: 'discovered' }), cacheStore: cache },
+  })
+  assert.equal(r.resultStatus, 'live', 'partial scorecards are live evidence even before the nominal window opens')
+  assert.ok(r.leaderboard, 'partial standings are returned (not hidden behind an empty state)')
+  assert.equal(r.leaderboard!.entries.length, 3)
+  const partial = r.leaderboard!.scorecards.find((c) => c.name === 'Eichelberger, Tim')!
+  assert.ok(partial, 'partial card present')
+  assert.equal(partial.isLive, true, '6-of-9 card is live')
+  assert.equal(partial.holesCompleted, 6)
+  assert.equal(r.showingLastKnown, false)
+})
+
 // Club Championship: a configured special occurrence (weekNumber 101) resolves
 // from the config spec ALONE — no persisted igc_league_events row. The spec
 // supplies the date (active window) + GG event/round ids (discovery hints), so

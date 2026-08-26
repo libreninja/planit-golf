@@ -21,6 +21,13 @@ export interface InitialRenderInput {
   todayActive: boolean        // the selected occurrence's window covers now
   selectedIsToday: boolean     // the selected occurrence is today's play-day event
   todayLiveHasGolf: boolean    // today's live path shows scorecards with holes completed
+  // Genuinely in-progress live scoring: at least one PARTIAL scorecard (a card
+  // still on the course) returned by today's live path. Distinct from
+  // todayLiveHasGolf, which is also true for a finalized round whose cards are
+  // all complete — todayLiveInProgress is the authoritative "golf is happening
+  // NOW" signal that engages the live path even before the nominal play window
+  // opens. See 2026-08-25 regression.
+  todayLiveInProgress?: boolean
 }
 
 export interface InitialRenderDecision {
@@ -30,6 +37,18 @@ export interface InitialRenderDecision {
 }
 
 export function decideInitialRender(input: InitialRenderInput): InitialRenderDecision {
+  // Today's event with genuinely in-progress live scoring (partial scorecards
+  // on the course) → live path REGARDLESS of the configured active window.
+  // Card evidence is authoritative over the clock: scores can arrive before the
+  // nominal playStartLocal (early shotgun, in-play reporting), and GG league
+  // rounds never expose event.status, so the window gate alone suppresses real
+  // partial cards as an empty state (2026-08-25: scores reported at 15:59 while
+  // the 16:00 window was closed → UI said "Results aren't available" despite 40
+  // partial scorecards). A finalized round has no partial cards, so this never
+  // overrides finalized standings.
+  if (input.selectedIsToday && input.todayLiveInProgress) {
+    return { useLivePath: true, initialIsHistoricalFinal: false, effectiveStatus: 'live' }
+  }
   // Live wins when golf is happening NOW on today's in-window event — even if
   // stored rows exist (they may be stale/partial). The meaningful-live-results
   // gate (todayLiveHasGolf) ensures an empty live fetch never hides stored.
