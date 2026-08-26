@@ -55,6 +55,36 @@ export function defaultOccurrenceId(
   return occurrences[occurrences.length - 1].id
 }
 
+// Ordered list of week numbers for the on-view read-through to try, NEWEST
+// non-future first, bounded. resolveOccurrences returns occurrences sorted
+// ascending by date; this reverses to newest-first and skips null/future dates
+// and non-numeric ids (e.g. men's Club Championship 101/102 special
+// occurrences, which are not weekly reconcile candidates). The caller tries
+// each via reconcileOccurrenceOnDemand and stops at the first that imports or
+// hits a durable/absent week — so the latest PLAYED (completed) round is kept
+// current even when a newer non-future round is still upcoming (the Women's
+// League gap: today's round not yet posted, but a finalized round sits a week
+// behind it). Bounded so a long unplayed stretch never costs more than `bound`
+// GG discoveries per view (each further throttled to once/min by the
+// staleness gate inside reconcileOccurrenceOnDemand).
+export function latestNonFutureWeeks(
+  occurrences: Occurrence[],
+  todayDate: string,
+  bound = 4,
+  exclude: Set<number> = new Set(),
+): number[] {
+  const weeks: number[] = []
+  for (const o of occurrences) {
+    if (!o.date || o.date > todayDate) continue
+    const n = Number(o.id)
+    if (!Number.isFinite(n)) continue
+    if (exclude.has(n)) continue
+    weeks.push(n)
+  }
+  weeks.reverse()
+  return weeks.slice(0, bound)
+}
+
 export interface LeagueEventRow {
   week_number: number
   event_name: string | null

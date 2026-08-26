@@ -65,10 +65,45 @@ test('non-empty event.season_points → completed (GG league rounds expose no ev
   assert.equal(upstreamStatus, 'completed')
 })
 
-test('empty event.season_points (future/unscored round) → unknown, not completed', () => {
-  const fx = fixture()
+test('no scored cards + empty season_points (not-yet-posted round) → unknown, not completed', () => {
+  // A real future/not-yet-posted round has empty scopes (no aggregates). The
+  // completed-fallback below requires at least one 'completed' card, so this
+  // stays unknown — the reconcile import gate stays closed.
+  const { upstreamStatus } = normalizeTournament({ event: { scopes: [], season_points: [] } }, 'net')
+  assert.equal(upstreamStatus, 'unknown')
+})
+
+test('empty season_points + all-completed cards → completed (Women\'s League: no points category in GG)', () => {
+  // Women's league rounds never populate event.season_points (GG has no points
+  // category for them), but GG marks every turned-in card 'completed' at
+  // finalization. That scorecard-status signal is the completed fallback so
+  // women's rounds import + finalize through the same pipeline as men's.
+  const fx = fixture()   // one 'completed' card, season_points unset
   fx.event!.status = undefined
   fx.event!.season_points = []
   const { upstreamStatus } = normalizeTournament(fx, 'net')
-  assert.equal(upstreamStatus, 'unknown')
+  assert.equal(upstreamStatus, 'completed')
+})
+
+test('empty season_points + an in_progress card → not completed (live round mid-play)', () => {
+  // A live round has at least one card still in progress; the fallback must NOT
+  // fire (would import an unfinished round). status 'in_progress' / 'live' /
+  // 'started' all block it.
+  const fx = fixture()
+  fx.event!.status = undefined
+  fx.event!.season_points = []
+  fx.event!.scopes![0].aggregates![0].scorecard_statuses = [{ status: 'in_progress' }]
+  const { upstreamStatus } = normalizeTournament(fx, 'net')
+  assert.notEqual(upstreamStatus, 'completed')
+})
+
+test('season_points takes precedence over the scorecard fallback (men\'s path unchanged)', () => {
+  // Men's league rounds populate season_points; that branch fires first, so the
+  // fallback never changes men's behavior even if cards were somehow mixed.
+  const fx = fixture()
+  fx.event!.status = undefined
+  fx.event!.season_points = [{ member_card_id: 'mc-1', total_points: 50 }]
+  fx.event!.scopes![0].aggregates![0].scorecard_statuses = [{ status: 'in_progress' }]
+  const { upstreamStatus } = normalizeTournament(fx, 'gross')
+  assert.equal(upstreamStatus, 'completed')
 })

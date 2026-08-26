@@ -24,8 +24,8 @@ import {
   resolveSeasonPoints,
   resolveWeeksWithResults,
 } from '@/lib/competition/adapters/golfgenius/server-readers'
-import { defaultOccurrenceId } from '@/lib/competition/adapters/golfgenius/mapping'
-import type { LiveResponse, Occurrence, ResultStatus, ScoringMode } from '@/lib/competition/types'
+import { defaultOccurrenceId, latestNonFutureWeeks } from '@/lib/competition/adapters/golfgenius/mapping'
+import type { LiveResponse, ResultStatus, ScoringMode } from '@/lib/competition/types'
 
 // Today's calendar date (YYYY-MM-DD) in the league timezone — used to identify
 // the play-day occurrence ("Tuesday's event") for the initial-selection rule.
@@ -35,18 +35,10 @@ function todayDateInTz(nowIso: string, tz: string): string {
   }).format(new Date(nowIso))
 }
 
-// The most recent occurrence whose play date has arrived (date <= today). This
-// is the round that SHOULD be the default view once it has results — and the
-// one the on-demand read-through keeps current on view. Occurrences are already
-// date-sorted ascending by resolveOccurrences; null/future dates are skipped.
-function latestNonFutureOccurrence(occurrences: Occurrence[], todayDate: string): Occurrence | null {
-  let latest: Occurrence | null = null
-  for (const o of occurrences) {
-    if (!o.date || o.date > todayDate) continue
-    if (!latest || (o.date! > latest.date!)) latest = o
-  }
-  return latest
-}
+// The most recent occurrence whose play date has arrived (date <= today) is
+// the round that SHOULD be the default view once it has results. The on-demand
+// read-through keeps the latest PLAYED (completed) round current on view — see
+// latestNonFutureWeeks (mapping.ts) for the bounded newest-first target list.
 
 export async function StandingsWorkspaceServer({
   competitionKey,
@@ -65,22 +57,34 @@ export async function StandingsWorkspaceServer({
 
   let occurrences = await resolveOccurrences(competitionKey)
 
-  // ---- Read-through: keep the latest round current on view (no cron) ----
-  // The most recent non-future occurrence that isn't yet persisted (finalized
-  // upstream but not imported — the gap a once-daily cron leaves) is read from
-  // GG and written to the DB now, so every later view reads from disk AND the
-  // default selection picks up the freshly-stored round. Gated by
+  const todayDate = todayDateInTz(nowIso, tz)
+
+  // ---- Read-through: keep the latest PLAYED round current on view (no cron) ----
+  // Try the most recent non-future weeks newest-first (bounded). The first one
+  // GG now marks completed is imported + persisted, so every later view reads
+  // from disk and the default selection picks up the freshly-stored round. This
+  // also covers the "finalized round sits behind today's not-yet-posted round"
+  // gap (Women's League): the newest non-future week may be today's unposted
+  // round, so we walk back to the latest one that's actually completed. Gated by
   // supportsReconcile + a GG key; the staleness gate inside re-reads at most
-  // once/min and skips once durable, so the 5 days/week nothing's pending cost
-  // zero GG calls. Best-effort: a render never breaks because a GG fetch failed.
+  // once/min and skips once durable, so the 5 days/week nothing's pending costs
+  // zero GG calls. Stop on the first import, or on a durable/absent week (older
+  // weeks are then durable-or-unplayed too). Best-effort: a render never breaks
+  // because a GG fetch failed.
   if (process.env.GOLF_GENIUS_API_KEY && config.capabilities.supportsReconcile) {
-    const todayDate = todayDateInTz(nowIso, tz)
-    const target = latestNonFutureOccurrence(occurrences, todayDate)
-    if (target && Number.isFinite(Number(target.id))) {
-      const res = await reconcileOccurrenceOnDemand(competitionKey, Number(target.id), nowIso)
-      if (res.action === 'imported') {
-        occurrences = await resolveOccurrences(competitionKey)
-      }
+    // Exclude special occurrences (men's Club Championship 101/102) — they are
+    // not weekly reconcile candidates and are kept current by their own path.
+    const specialWeeks = new Set((config.adapterConfig.specialOccurrences ?? []).map((s) => s.weekNumber))
+    let didImport = false
+    for (const week of latestNonFutureWeeks(occurrences, todayDate, 4, specialWeeks)) {
+      const res = await reconcileOccurrenceOnDemand(competitionKey, week, nowIso)
+      if (res.action === 'imported') { didImport = true; break }
+      if (res.action === 'skipped-durable' || res.action === 'skipped-absent' || res.action === 'error') break
+      // 'discovered' (not completed yet — today's unposted round) or
+      // 'skipped-stale' (re-read <60s ago): walk back to the next older week.
+    }
+    if (didImport) {
+      occurrences = await resolveOccurrences(competitionKey)
     }
   }
 
@@ -105,7 +109,6 @@ export async function StandingsWorkspaceServer({
   // = today's event has any completed scorecard in the DB.
   const weekNumbers = occurrences.map((o) => Number(o.id)).filter((n) => Number.isFinite(n))
   const hasResults = await resolveWeeksWithResults(competitionKey, weekNumbers)
-  const todayDate = todayDateInTz(nowIso, tz)
   const todayOccurrence = occurrences.find((o) => o.date === todayDate) ?? null
   const todayId = todayOccurrence?.id ?? null
   const todayHasPostedGolf = todayId ? await resolveHasPostedGolf(competitionKey, Number(todayId)) : false
