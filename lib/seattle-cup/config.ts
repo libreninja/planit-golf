@@ -1,9 +1,11 @@
 // Seattle Cup 2026 configuration — the SINGLE source of truth for the
 // competition structure. The workbook schedule + 2025 GG evidence established:
-//   R1 Fourball  matches 1-12  (12)  Jackson Park
-//   R2 Scramble  matches 13-24 (12)  West Seattle
-//   R3 Chapman   matches 25-36 (12)  Bill Wright
-//   R4 Singles    matches 37-60 (24)  Interbay
+//   R1 Fourball  matches 1-12  (12)  Jackson Park   (2026-08-22)
+//   R2 Scramble  matches 13-24 (12)  Bill Wright    (2026-08-23)
+//   R3 Chapman   matches 25-36 (12)  West Seattle   (2026-08-29)
+//   R4 Singles    matches 37-60 (24)  Interbay       (2026-08-30)
+//   Round ids + courses below are the authoritative GG 2026 round list
+//   (queried from /events/<eventId>/rounds), not the 2025-evidence guess.
 //   total 60 matches / 60 points.
 //
 // The matchSlots team-vs-team ordering is taken from the 2025 GG scopes (same
@@ -162,22 +164,22 @@ export const SEATTLE_CUP_ROUNDS: Record<RoundNumber, RoundDef> = {
   1: {
     round: 1, format: 'fourball', course: 'Jackson Park',
     ggEventId: GG_EVENT_ID, ggRoundId: '12971191129037891140',
-    date: '', matchCount: 12, matchSlots: FOURBALL_SLOTS,
+    date: '2026-08-22', matchCount: 12, matchSlots: FOURBALL_SLOTS,
   },
   2: {
-    round: 2, format: 'scramble', course: 'West Seattle',
-    ggEventId: GG_EVENT_ID, ggRoundId: '12971191129045401160',
-    date: '', matchCount: 12, matchSlots: SCRAMBLE_SLOTS,
+    round: 2, format: 'scramble', course: 'Bill Wright',
+    ggEventId: GG_EVENT_ID, ggRoundId: '12971191132628215365',
+    date: '2026-08-23', matchCount: 12, matchSlots: SCRAMBLE_SLOTS,
   },
   3: {
-    round: 3, format: 'chapman', course: 'Bill Wright',
-    ggEventId: GG_EVENT_ID, ggRoundId: '12971191129052929180',
-    date: '', matchCount: 12, matchSlots: CHAPMAN_SLOTS,
+    round: 3, format: 'chapman', course: 'West Seattle',
+    ggEventId: GG_EVENT_ID, ggRoundId: '12971191135178352198',
+    date: '2026-08-29', matchCount: 12, matchSlots: CHAPMAN_SLOTS,
   },
   4: {
     round: 4, format: 'singles', course: 'Interbay',
-    ggEventId: GG_EVENT_ID, ggRoundId: '12971191129060415200',
-    date: '', matchCount: 24, matchSlots: SINGLES_SLOTS,
+    ggEventId: GG_EVENT_ID, ggRoundId: '12971191137325835847',
+    date: '2026-08-30', matchCount: 24, matchSlots: SINGLES_SLOTS,
   },
 }
 
