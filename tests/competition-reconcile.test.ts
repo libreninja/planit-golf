@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { reconcileCompetition } from '../lib/competition/reconcile/reconcile.ts'
+import { reconcileCompetition, reconcileOccurrenceOnDemand } from '../lib/competition/reconcile/reconcile.ts'
 
 // Fake ops: track discover/import calls. discoverAndPersist returns a
 // ResolvedOccurrence (carried on `resolved`) whose upstreamStatus drives the
@@ -116,4 +116,83 @@ test('importOccurrence failure → surfaced in errors[], not counted as imported
   assert.equal(summary.errors.length, 1)
   assert.match(summary.errors[0], /wk17: completed round produced 0 performance rows/)
   assert.ok(!ops.calls.includes('points'), 'season-points rebuild skipped for the failed week')
+})
+
+// ---- reconcileOccurrenceOnDemand: the on-view read-through ----
+// Reuses selectReconciliationCandidates (durable-skip + staleness gate) and the
+// discover→import→rebuild sequence for ONE occurrence. Best-effort: never throws.
+
+const NOW = '2026-07-28T20:00:00Z'
+
+test('on-demand: finalized-not-durable + not stale → discover + import + rebuild', async () => {
+  const ops = makeOps({
+    events: baseEvents([
+      { week_number: 18, event_format: 'individual', discovery_state: 'discovered', upstream_status: null, durable_imported_at: null /* discovered_at absent → not gated */ },
+    ]),
+    completedWeeks: [18],
+  })
+  const res = await reconcileOccurrenceOnDemand('mens-league', 18, NOW, ops as any)
+  assert.equal(res.action, 'imported')
+  assert.ok(ops.calls.includes('discover:18'))
+  assert.ok(ops.calls.includes('import:18'))
+  assert.ok(ops.calls.includes('points'), 'season-points snapshot rebuilt so Season view is current')
+})
+
+test('on-demand: already durable (old-current) → skipped-durable, no GG call', async () => {
+  const ops = makeOps({
+    events: baseEvents([
+      { week_number: 18, event_format: 'individual', discovery_state: 'discovered', upstream_status: 'completed', durable_imported_at: '2026-07-28T17:00:00Z' },
+    ]),
+    completedWeeks: [18],
+  })
+  const res = await reconcileOccurrenceOnDemand('mens-league', 18, NOW, ops as any)
+  assert.equal(res.action, 'skipped-durable')
+  assert.equal(ops.calls.length, 0, 'durable round → zero discover/import calls (5 days/week steady state)')
+})
+
+test('on-demand: discovered <60s ago → skipped-stale (re-read at most once/min)', async () => {
+  // Would classify as 'active' (discover), but discovered 30s ago → staleness gate → skip.
+  const ops = makeOps({
+    events: baseEvents([
+      { week_number: 18, event_format: 'individual', discovery_state: 'discovered', upstream_status: null, durable_imported_at: null, discovered_at: '2026-07-28T19:59:30Z' },
+    ]),
+    completedWeeks: [18],
+  })
+  const res = await reconcileOccurrenceOnDemand('mens-league', 18, NOW, ops as any)
+  assert.equal(res.action, 'skipped-stale')
+  assert.equal(ops.calls.length, 0, 'fresh discovery → no re-read this view')
+})
+
+test('on-demand: in-progress + not stale → discover only, no import', async () => {
+  const ops = makeOps({
+    events: baseEvents([
+      { week_number: 18, event_format: 'individual', discovery_state: 'discovered', upstream_status: 'in_progress', durable_imported_at: null },
+    ]),
+    completedWeeks: [],   // discovery returns in_progress
+  })
+  const res = await reconcileOccurrenceOnDemand('mens-league', 18, NOW, ops as any)
+  assert.equal(res.action, 'discovered')
+  assert.ok(ops.calls.includes('discover:18'))
+  assert.ok(!ops.calls.includes('import:18'), 'not completed → no import')
+  assert.ok(!ops.calls.includes('points'))
+})
+
+test('on-demand: requested week absent from events → skipped-absent', async () => {
+  const ops = makeOps({ events: baseEvents([{ week_number: 18 }]), completedWeeks: [] })
+  const res = await reconcileOccurrenceOnDemand('mens-league', 99, NOW, ops as any)
+  assert.equal(res.action, 'skipped-absent')
+  assert.equal(ops.calls.length, 0)
+})
+
+test('on-demand: GG failure is swallowed → action error, render does not break', async () => {
+  const ops = makeOps({
+    events: baseEvents([
+      { week_number: 18, event_format: 'individual', discovery_state: 'discovered', upstream_status: null, durable_imported_at: null },
+    ]),
+    completedWeeks: [18],
+  })
+  ;(ops as any).discoverAndPersist = async () => { throw new Error('GG 503') }
+  const res = await reconcileOccurrenceOnDemand('mens-league', 18, NOW, ops as any)
+  assert.equal(res.action, 'error')
+  assert.match(res.error ?? '', /GG 503/)
 })

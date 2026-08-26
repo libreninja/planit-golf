@@ -56,6 +56,7 @@ export const mensLeagueConfig: CompetitionConfig = {
     scoring: { modes: ['gross', 'net'] },
     supportsLiveResults: true,
     supportsEventNavigation: true,
+    supportsReconcile: true,
   },
   liveGroupingPolicy: 'hide-until-final',
   // Public: golfers share this leaderboard link instead of the Golf Genius link;

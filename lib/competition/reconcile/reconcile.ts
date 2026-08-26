@@ -116,6 +116,61 @@ export async function reconcileCompetition(input: ReconcileCompetitionInput): Pr
   return summary
 }
 
+// On-demand, per-occurrence read-through invoked from a page view
+// (StandingsWorkspaceServer). This is the PRIMARY freshness mechanism — no cron,
+// no managed secret: when a viewer loads a round whose data is missing or stale,
+// the render reads GG and writes the results to the DB so every later view reads
+// from disk. Reuses the SAME classification + discover→import→rebuild sequence as
+// the daily cron, gated for ONE occurrence:
+//   - durable_imported_at set (already imported) → skip (steady state: a
+//     finalized round is never re-read; covers the 5 days/week nothing's pending).
+//   - discovered within STALENESS_MS → skip (staleness gate: a round is re-read
+//     from GG at most once per minute; overlap-safe across simultaneous viewers).
+//   - otherwise → discover; if GG now marks it completed → import + rebuild the
+//     season-points snapshot so the Season view is current too.
+// Best-effort: a page render MUST NOT break because a GG fetch failed, so every
+// error is caught and returned as { action: 'error' }. The caller ignores the
+// result for rendering (it re-resolves occurrences only when `imported`).
+export interface OnDemandReconcileResult {
+  action: 'skipped-durable' | 'skipped-stale' | 'skipped-absent' | 'discovered' | 'imported' | 'error'
+  discovered?: boolean
+  imported?: boolean
+  upstreamStatus?: string | null
+  error?: string
+}
+
+export async function reconcileOccurrenceOnDemand(
+  competitionKey: string,
+  weekNumber: number,
+  nowIso: string,
+  ops?: ReconcileOps,
+): Promise<OnDemandReconcileResult> {
+  try {
+    const o = ops ?? (await defaultOps())
+    // Ensure configured special-occurrence rows (Club Championship 101/102)
+    // exist as candidates, mirroring reconcileCompetition. Best-effort.
+    if (o.precreateSpecialOccurrences) {
+      try { await o.precreateSpecialOccurrences(competitionKey) } catch { /* next run retries */ }
+    }
+    const events = await o.listEvents(competitionKey)
+    const candidates = selectReconciliationCandidates(events, nowIso)
+    const c = candidates.find((x) => x.week_number === weekNumber)
+    if (!c) return { action: 'skipped-absent' }
+    if (c.action === 'skip') {
+      return { action: c.kind === 'stale' ? 'skipped-stale' : 'skipped-durable' }
+    }
+    const r = await o.discoverAndPersist(competitionKey, weekNumber, nowIso)
+    if (r.resolved.upstreamStatus === 'completed') {
+      await o.importOccurrence(competitionKey, weekNumber, nowIso, r.resolved)
+      await o.rebuildSeasonPoints(competitionKey)
+      return { action: 'imported', discovered: true, imported: true, upstreamStatus: 'completed' }
+    }
+    return { action: 'discovered', discovered: true, upstreamStatus: r.resolved.upstreamStatus }
+  } catch (err) {
+    return { action: 'error', error: String(err) }
+  }
+}
+
 // Production ops: wire gg-helpers-backed import + season-points + discover
 // modules to the service client. Built lazily so the module imports cleanly
 // in tests that inject ops. The discovery→import handoff passes the real
