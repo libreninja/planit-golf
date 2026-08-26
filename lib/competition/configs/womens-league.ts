@@ -18,6 +18,7 @@ export const womensLeagueConfig: CompetitionConfig = {
     scoring: { modes: ['gross', 'net'] },
     supportsLiveResults: true,
     supportsEventNavigation: true,
+    supportsReconcile: true,
   },
   liveGroupingPolicy: 'hide-until-final',
   visibility: 'public',

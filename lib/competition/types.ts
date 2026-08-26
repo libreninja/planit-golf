@@ -56,6 +56,13 @@ export interface CompetitionCapabilities {
   scoring: ScoringModeAvailability
   supportsLiveResults: boolean
   supportsEventNavigation: boolean
+  // This competition's occurrences are backed by the league reconcile pipeline
+  // (igc_league_* tables, GG discover→import→season-points-rebuild) and may be
+  // refreshed ON DEMAND from a page view: StandingsWorkspaceServer reads through
+  // to GG and persists the results so later views read from disk. False (or
+  // omitted) for competitions with a different data model (e.g. Seattle Cup),
+  // so the on-view read-through never fires for them. See reconcileOccurrenceOnDemand.
+  supportsReconcile?: boolean
 }
 
 // Who may read a competition's live/durable leaderboard data WITHOUT logging

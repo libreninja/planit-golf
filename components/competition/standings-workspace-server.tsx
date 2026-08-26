@@ -11,6 +11,7 @@
 import { getCompetitionConfig } from '@/lib/competition/registry'
 import { getLiveResults } from '@/lib/competition/live'
 import { isOccurrenceActive } from '@/lib/competition/active-window'
+import { reconcileOccurrenceOnDemand } from '@/lib/competition/reconcile/reconcile'
 import { buildStandingsViewModel } from './standings-view-model'
 import { normalizeUrlState } from './url-state'
 import { StandingsShell } from './standings-shell'
@@ -24,7 +25,7 @@ import {
   resolveWeeksWithResults,
 } from '@/lib/competition/adapters/golfgenius/server-readers'
 import { defaultOccurrenceId } from '@/lib/competition/adapters/golfgenius/mapping'
-import type { LiveResponse, ResultStatus, ScoringMode } from '@/lib/competition/types'
+import type { LiveResponse, Occurrence, ResultStatus, ScoringMode } from '@/lib/competition/types'
 
 // Today's calendar date (YYYY-MM-DD) in the league timezone — used to identify
 // the play-day occurrence ("Tuesday's event") for the initial-selection rule.
@@ -32,6 +33,19 @@ function todayDateInTz(nowIso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date(nowIso))
+}
+
+// The most recent occurrence whose play date has arrived (date <= today). This
+// is the round that SHOULD be the default view once it has results — and the
+// one the on-demand read-through keeps current on view. Occurrences are already
+// date-sorted ascending by resolveOccurrences; null/future dates are skipped.
+function latestNonFutureOccurrence(occurrences: Occurrence[], todayDate: string): Occurrence | null {
+  let latest: Occurrence | null = null
+  for (const o of occurrences) {
+    if (!o.date || o.date > todayDate) continue
+    if (!latest || (o.date! > latest.date!)) latest = o
+  }
+  return latest
 }
 
 export async function StandingsWorkspaceServer({
@@ -46,7 +60,29 @@ export async function StandingsWorkspaceServer({
     return <p className="text-sm text-muted-foreground">Unknown competition.</p>
   }
 
-  const occurrences = await resolveOccurrences(competitionKey)
+  const nowIso = new Date().toISOString()
+  const tz = config.schedule?.timezone ?? 'America/Los_Angeles'
+
+  let occurrences = await resolveOccurrences(competitionKey)
+
+  // ---- Read-through: keep the latest round current on view (no cron) ----
+  // The most recent non-future occurrence that isn't yet persisted (finalized
+  // upstream but not imported — the gap a once-daily cron leaves) is read from
+  // GG and written to the DB now, so every later view reads from disk AND the
+  // default selection picks up the freshly-stored round. Gated by
+  // supportsReconcile + a GG key; the staleness gate inside re-reads at most
+  // once/min and skips once durable, so the 5 days/week nothing's pending cost
+  // zero GG calls. Best-effort: a render never breaks because a GG fetch failed.
+  if (process.env.GOLF_GENIUS_API_KEY && config.capabilities.supportsReconcile) {
+    const todayDate = todayDateInTz(nowIso, tz)
+    const target = latestNonFutureOccurrence(occurrences, todayDate)
+    if (target && Number.isFinite(Number(target.id))) {
+      const res = await reconcileOccurrenceOnDemand(competitionKey, Number(target.id), nowIso)
+      if (res.action === 'imported') {
+        occurrences = await resolveOccurrences(competitionKey)
+      }
+    }
+  }
 
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(searchParams)) {
@@ -58,8 +94,6 @@ export async function StandingsWorkspaceServer({
     allowedScoring: config.capabilities.scoring.modes as ScoringMode[],
   })
 
-  const nowIso = new Date().toISOString()
-  const tz = config.schedule?.timezone ?? 'America/Los_Angeles'
   const defaultScoring = (config.capabilities.scoring.modes[0] ?? 'net') as ScoringMode
   const scoring: ScoringMode = (urlState.scoring as ScoringMode | null) ?? defaultScoring
   const scoringModes = config.capabilities.scoring.modes as ScoringMode[]
