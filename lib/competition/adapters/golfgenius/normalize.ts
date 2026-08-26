@@ -103,6 +103,14 @@ export function normalizeTournament(
   const scopes = results?.event?.scopes ?? []
   const entriesByFlight = new Map<string, ResultEntry[]>()
   const scorecards = new Map<string, Scorecard>()
+  // GG's per-card lifecycle status (scorecard_statuses[].status), collected
+  // across every scored aggregate. Used as the completed-signal fallback for
+  // leagues that never populate event.season_points (e.g. Women's League, which
+  // has no points category in GG): a finalized round marks every turned-in card
+  // 'completed', so "has scored cards, ≥1 completed, none live" is the same
+  // "round is scored" conclusion season_points draws for points-tracking
+  // leagues. See the upstreamStatus fallback below.
+  const cardStatuses: string[] = []
 
   for (const scope of scopes) {
     const flightName = scope.name?.trim() || 'Overall'
@@ -113,6 +121,8 @@ export function normalizeTournament(
       const holes = buildHoles(a.gross_scores ?? null, a.net_scores ?? null, a.to_par_net ?? null, a.to_par_gross ?? null)
       const holesCompleted = holes.filter((h) => h.gross !== null || h.net !== null).length
       const totalHoles = holes.length || 18
+      const cardStatus = a.scorecard_statuses?.[0]?.status ?? null
+      if (cardStatus) cardStatuses.push(cardStatus.toLowerCase())
 
       if (!scorecards.has(key)) {
         scorecards.set(key, {
@@ -150,13 +160,29 @@ export function normalizeTournament(
   else if (rawStatus === 'in_progress' || rawStatus === 'live') upstreamStatus = 'in_progress'
   else if (rawStatus === 'not_started' || rawStatus === 'upcoming') upstreamStatus = 'not_started'
   // GG league rounds never expose event.status (it is null on the .json
-  // endpoint). The authoritative completion signal is a NON-EMPTY
-  // event.season_points array — GG computes the cumulative standings at scoring
-  // time, so its presence means the round is scored/finalized. A future or
-  // in-progress round returns season_points: [] (or no scopes). This is what
-  // unblocks reconcile's `upstreamStatus === 'completed'` import gate and the
-  // per-round season-points capture in import.ts.
+  // endpoint). The authoritative completion signal for points-tracking leagues
+  // is a NON-EMPTY event.season_points array — GG computes the cumulative
+  // standings at scoring time, so its presence means the round is
+  // scored/finalized. A future or in-progress round returns season_points: []
+  // (or no scopes). This unblocks reconcile's `upstreamStatus === 'completed'`
+  // import gate and the per-round season-points capture in import.ts.
   else if (Array.isArray(results?.event?.season_points) && (results!.event!.season_points!.length > 0)) {
+    upstreamStatus = 'completed'
+  }
+  // Fallback for leagues that never populate event.season_points because GG has
+  // no points category configured for them (Women's League: views is weekly-only,
+  // no Season tab, no points). GG still marks every turned-in scorecard
+  // `scorecard_statuses[].status = 'completed'` at finalization. A round is
+  // finalized when it has scored cards, at least one is 'completed', and NONE is
+  // still in progress/live — a not-yet-posted round has no cards, a live round
+  // has partial cards, so neither misclassifies. This is the SAME conclusion
+  // season_points draws; men's rounds keep the season_points branch above (it
+  // fires first), so this fallback only changes leagues without season_points.
+  else if (
+    cardStatuses.length > 0 &&
+    cardStatuses.includes('completed') &&
+    !cardStatuses.some((s) => s === 'in_progress' || s === 'live' || s === 'started')
+  ) {
     upstreamStatus = 'completed'
   }
 
