@@ -103,6 +103,7 @@ function buildNav(user: AppShellUser): NavItem[] {
   if (user.scouting) {
     items.push({ type: 'label', label: 'Seattle Cup', level: 1 })
     items.push({ type: 'link', label: 'Scouting', href: '/igc/seattle-cup/scouting', level: 2 })
+    items.push({ type: 'link', label: 'Opposition Intel', href: '/igc/seattle-cup/intel', level: 2 })
   }
   return items
 }
@@ -231,6 +232,8 @@ function buildBreadcrumb(pathname: string): Crumb[] {
     return [{ label: 'Interbay', href: '/igc' }, { label: "Women's League" }, { label: 'Standings' }]
   if (pathname === '/igc/seattle-cup/scouting')
     return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Scouting' }]
+  if (pathname === '/igc/seattle-cup/intel')
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Opposition Intel' }]
   if (pathname.startsWith('/igc/seattle-cup/scouting/players'))
     return [
       { label: 'Interbay', href: '/igc' },
