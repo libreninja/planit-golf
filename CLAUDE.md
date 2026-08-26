@@ -53,6 +53,29 @@ pnpm sync:events           # Apply changes
 pnpm generate:public-pace-qr
 ```
 
+## Releasing / Deploying
+
+**Canonical release flow — GitHub auto-deploy. NEVER `vercel deploy --prod` from the CLI.**
+
+This project is connected to Vercel via the GitHub integration. The flow that builds and serves correctly is:
+
+1. Commit on a feature branch (off `main`).
+2. `git push` the branch → open a Pull Request against `main`.
+3. Merge the PR. Vercel auto-builds `main` and deploys to production (`www.planit.golf`, `planit.golf`, `bigdeal.planit.golf`). Squash-merge is the repo convention (see `git log` — `… (#N)`).
+
+**Do not use `vercel deploy --prod` / `vercel deploy --target=production` to ship or "restore" a page.** This has caused a hard outage: a CLI deploy of current `main` (code byte-identical to a known-good GitHub deploy) built `READY`/`PROMOTED` but served a bare edge-level **500 on every route** (including `/`, `/scouting`, `/womens-league`) with no function logs, while the identical code deployed via the GitHub integration served 200 everywhere. The GitHub integration is the build/source-of-truth; CLI deploys diverge from it (build env / rootDirectory / config handling) and can 500 even when the build reports success. Surface or restore a page by merging it into `main`, not by CLI-deploying a branch.
+
+**Rolling back a bad production deploy.** Do not rebuild. Re-assign the production aliases to the last known-good `main` deploy in one action:
+```bash
+vercel promote <last-good-deploy-url> --yes   # e.g. nextjs-boilerplate-<hash>-libreninjas-projects.vercel.app
+```
+Find the last good `main` deploy in the Vercel dashboard (Deployments, target=production, from `main`) or via the API:
+`https://api.vercel.com/v6/deployments?projectId=prj_jYKeHFnoeXhi30uhvtjAD1H1jQL2&teamId=team_2OwWZEiWXYEgSrbbyaqfrRNg&target=production&limit=N` (pick the most recent READY one whose `meta.gitCommitRef` is `main`). After promoting, verify routes with `curl -s -o /dev/null -w "%{http_code}\n" https://www.planit.golf/...`.
+
+**Environment & protection.** Env vars (Supabase, Golf Genius, SMTP, `CRON_SECRET`, etc.) are configured on the Vercel project (Production environment), not in the repo — the GitHub build picks them up automatically; a CLI deploy may not. Deployment Protection: `ssoProtection = "all_except_custom_domains"` — preview URLs (`*.vercel.app`) are SSO-gated (curl returns `302 → vercel.com/sso-api`); the production custom domains are **public**. Public pages use an **app-level** gate (`requireScoutingAccess` / `requireAuth` in the route) — an anonymous request returns `200` with an inline "Sign in" body, not a redirect.
+
+**Local build signal ≠ deploy readiness.** `pnpm build` (Turbopack) typechecks only the app build graph; standalone `tests/` and unimported WIP may have `tsc --noEmit` errors that do NOT break `next build`. Conversely, do not deploy a working tree with stray untracked WIP (matchups, probe scripts, half-built routes) — it can ship half-built code. Ship from clean, committed `main` via the GitHub flow.
+
 ## Architecture
 
 ### Supabase Client Patterns
