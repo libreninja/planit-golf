@@ -22,9 +22,10 @@ import type {
   Match, MatchPlayer, MatchHole, TeamStanding, SeattleCupRoundSnapshot,
   ValidationIssue, RoundNumber, Through, MatchStatus, MatchState, LeadSide,
   ValidationStatus, IdentityStatus, Format, HoleSideStatus, TeamKey,
+  PublishedPairingGroup,
 } from './types.ts'
 import type {
-  GGRoundRaw, GGScope, GGAggregate, GGIndividualResult, GGHoleData, GGMemberCard,
+  GGRoundRaw, GGScope, GGAggregate, GGIndividualResult, GGHoleData, GGMemberCard, GGPlayer,
 } from './gg-shapes.ts'
 
 const HOLES = 18
@@ -162,6 +163,41 @@ function buildPlayers(
   return out
 }
 
+function teePlayerName(player: GGPlayer): string {
+  return player.name
+    ?? ([player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown')
+}
+
+function teePlayerTeam(player: GGPlayer): TeamKey | null {
+  return resolveTeamKey(player.team_name ?? '', player.team_name ?? null)
+}
+
+function buildPublishedPairingGroups(teeSheet: GGRoundRaw['teeSheet']): PublishedPairingGroup[] {
+  return teeSheet.groups
+    .map((group, index) => ({
+      groupNo: index + 1,
+      teeTime: group.tee_time ?? null,
+      startingHole: group.hole != null ? String(group.hole) : null,
+      players: (group.players ?? []).map((player) => ({
+        ggMemberCardId: player.member_card_id != null ? String(player.member_card_id) : null,
+        name: teePlayerName(player),
+        teamKey: teePlayerTeam(player),
+      })),
+    }))
+    .filter((group) => group.players.length > 0)
+}
+
+function buildPlayerFromTee(player: GGPlayer, teamKey: TeamKey): MatchPlayer {
+  return {
+    ggMemberCardId: player.member_card_id != null ? String(player.member_card_id) : null,
+    name: teePlayerName(player),
+    teamKey,
+    courseHandicap: player.course_handicap != null ? Number(player.course_handicap) : null,
+    handicapDots: player.handicap_dots_by_hole ?? [],
+    identityStatus: teePlayerName(player) === 'Unknown' ? 'unresolved' : 'gg-only',
+  }
+}
+
 // Derive the result string from the running state (for cross-check vs GG score).
 function deriveResult(leadBy: number, holesPlayed: number): string | null {
   if (holesPlayed === 0) return null
@@ -264,14 +300,15 @@ function buildMatch(
   const through: Through = isFinal ? 'final' : (holesPlayed === 0 ? 'not-started' : holesPlayed)
 
   // status + matchState.
-  const hasPlayers = playersA.length > 0 || playersB.length > 0
+  const hasPlayEvidence = holesPlayed > 0 || holes.some((hole) =>
+    hole.netA != null || hole.netB != null || hole.grossA != null || hole.grossB != null)
   let status: MatchStatus
   if (isFinal) status = 'final'
-  else if (!hasPlayers) status = 'scheduled'
-  else status = 'live'
+  else if (hasPlayEvidence) status = 'live'
+  else status = 'scheduled'
 
   let matchState: MatchState
-  if (!hasPlayers && !isFinal) matchState = 'tbd'
+  if (status === 'scheduled') matchState = 'tbd'
   else if (isFinal) matchState = 'final'
   else if (leadBy === 0) matchState = 'all-square'
   else {
@@ -283,7 +320,7 @@ function buildMatch(
   // Derived result + validation cross-check (GG authoritative; never overwrite).
   const derivedResult = isFinal ? deriveResult(leadBy, holesPlayed) : null
   let validationStatus: ValidationStatus
-  if (!hasPlayers && !isFinal) validationStatus = 'tbd'
+  if (status === 'scheduled') validationStatus = 'tbd'
   else if (!isFinal) validationStatus = 'unverifiable'
   else if (sourceResultRaw == null) validationStatus = 'unverifiable'
   else if (normalizeResult(sourceResultRaw) === normalizeResult(derivedResult)) validationStatus = 'match'
@@ -318,7 +355,7 @@ function buildMatch(
   // Tee time / starting hole from the tee sheet (logistical — joined by any side
   // player's card id; NOT a match signal).
   let teeTime: string | null = null
-  let startingHole: number | null = null
+  let startingHole: number | string | null = null
   for (const p of [...playersA, ...playersB]) {
     const t = p.ggMemberCardId ? teeSheet.playersByCardId.get(p.ggMemberCardId) : null
     if (t) { teeTime = t.teeTime ?? teeTime; startingHole = t.hole ?? startingHole; break }
@@ -334,6 +371,47 @@ function buildMatch(
     sourceResult: sourceResultRaw ?? null,
     derivedResult,
     validationStatus,
+  }
+}
+
+// For paired formats only, a tee-sheet group containing exactly two known
+// teams with two players per team is itself the published 2v2 pairing. It may
+// populate scheduled sides, but never score/result/points. Singles deliberately
+// never calls this function: its four-player groups are logistical only.
+function buildPairedTeeSheetMatch(
+  group: GGRoundRaw['teeSheet']['groups'][number],
+  slotIndex: number,
+  round: RoundNumber,
+  format: Format,
+  course: string,
+  holeData: GGHoleData | null,
+): Match | null {
+  const players = group.players ?? []
+  const teamOrder: TeamKey[] = []
+  const byTeam = new Map<TeamKey, GGPlayer[]>()
+  for (const player of players) {
+    const teamKey = teePlayerTeam(player)
+    if (!teamKey) return null
+    if (!byTeam.has(teamKey)) {
+      byTeam.set(teamKey, [])
+      teamOrder.push(teamKey)
+    }
+    byTeam.get(teamKey)!.push(player)
+  }
+  if (players.length !== 4 || teamOrder.length !== 2) return null
+  const teamA = teamOrder[0]!
+  const teamB = teamOrder[1]!
+  const sideA = byTeam.get(teamA) ?? []
+  const sideB = byTeam.get(teamB) ?? []
+  if (sideA.length !== 2 || sideB.length !== 2) return null
+
+  const match = buildTbdMatch(slotIndex, round, format, course, { teamA, teamB }, holeData)
+  return {
+    ...match,
+    playersA: sideA.map((player) => buildPlayerFromTee(player, teamA)),
+    playersB: sideB.map((player) => buildPlayerFromTee(player, teamB)),
+    teeTime: group.tee_time ?? null,
+    startingHole: group.hole ?? null,
   }
 }
 
@@ -453,6 +531,19 @@ function deriveResultStatus(_upstream: GGRoundRaw['upstreamStatus'], matches: Ma
   return 'not-started'
 }
 
+function deriveRoundStatus(
+  matches: Match[],
+  pairingsPublished: boolean,
+): SeattleCupRoundSnapshot['roundStatus'] {
+  if (matches.length === 0) return 'unknown'
+  const finals = matches.filter((match) => match.status === 'final').length
+  const live = matches.some((match) => match.status === 'live')
+  if (finals === matches.length) return 'final'
+  if (finals > 0 || live) return 'live'
+  if (pairingsPublished) return 'pairings-available'
+  return 'scheduled'
+}
+
 export interface NormalizeResult {
   snapshot: Omit<SeattleCupRoundSnapshot, 'fetchedAt' | 'showingLastKnown'>
 }
@@ -462,8 +553,13 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
   if (!def) throw new Error(`unknown seattle-cup round ${round}`)
   const validationIssues: ValidationIssue[] = []
   const scopes = raw.scopes ?? []
+  const pairingGroups = buildPublishedPairingGroups(raw.teeSheet)
+  const scopesPublishPlayers = scopes.some((scope) => (scope.aggregates ?? [])
+    .some((aggregate) => (aggregate.member_cards ?? []).length > 0))
+  const pairingsPublished = pairingGroups.length > 0 || scopesPublishPlayers
 
   const matches: Match[] = []
+  let teeSheetCompetitiveMatches = 0
   if (scopes.length > 0) {
     // Real (or in-progress) scopes — build matches from them. GG creates all
     // matchCount scopes when a round's tournament is set up, so the common case
@@ -476,12 +572,27 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
     for (let i = scopes.length; i < def.matchCount; i++) {
       matches.push(buildTbdMatch(i, round, def.format, def.course, { teamA: null, teamB: null }, raw.teeSheet.holeData))
     }
+  } else if (def.format === 'singles') {
+    // Singles opponents exist only in tournament scopes. Keep 24 schedule-stable
+    // slots, but leave both sides unresolved until GG publishes those scopes.
+    for (let i = 0; i < def.matchCount; i++) {
+      matches.push(buildTbdMatch(i, round, def.format, def.course, { teamA: null, teamB: null }, raw.teeSheet.holeData))
+    }
   } else {
-    // Pre-play: emit the scheduled TBD slots from config. No GG players — these
-    // are placeholders, never promoted to real pairings.
-    def.matchSlots.forEach((slot, i) => {
-      matches.push(buildTbdMatch(i, round, def.format, def.course, slot, raw.teeSheet.holeData))
-    })
+    // Paired formats may use strict 2-team/2-player tee groups as a pre-play
+    // pairing fallback. Invalid/partial groups remain configured TBD slots.
+    for (let i = 0; i < def.matchCount; i++) {
+      const fromTee = raw.teeSheet.groups[i]
+        ? buildPairedTeeSheetMatch(raw.teeSheet.groups[i], i, round, def.format, def.course, raw.teeSheet.holeData)
+        : null
+      if (fromTee) {
+        matches.push(fromTee)
+        teeSheetCompetitiveMatches++
+      } else {
+        const slot = def.matchSlots[i] ?? { teamA: null, teamB: null }
+        matches.push(buildTbdMatch(i, round, def.format, def.course, slot, raw.teeSheet.holeData))
+      }
+    }
   }
 
   const roundStandingsDerived = buildRoundStandings(matches)
@@ -489,11 +600,15 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
   // GG round_points is authoritative for the rendered round standings.
   const roundStandings = applyAuthoritativeRoundPoints(roundStandingsDerived, raw.teamPoints)
   const resultStatus = deriveResultStatus(raw.upstreamStatus, matches)
+  const competitionMatchesAvailable = scopes.some((scope) => (scope.aggregates ?? []).length >= 2)
+    || teeSheetCompetitiveMatches > 0
+  const roundStatus = deriveRoundStatus(matches, pairingsPublished)
 
   return {
     snapshot: {
       round, format: def.format, course: def.course,
       eventName: raw.eventName ?? `Seattle Cup 2026 — ${def.format}`,
+      pairingsPublished, competitionMatchesAvailable, pairingGroups, roundStatus,
       matches, roundStandings, overallStandings,
       resultStatus, validationIssues,
     },
