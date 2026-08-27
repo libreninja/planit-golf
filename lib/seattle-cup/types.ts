@@ -129,7 +129,7 @@ export interface TeamStanding {
 
 export interface ValidationIssue {
   matchNo: number
-  kind: 'points-mismatch' | 'result-mismatch' | 'identity-ambiguous' | 'identity-unresolved' | 'round-points-mismatch'
+  kind: 'points-mismatch' | 'result-mismatch' | 'identity-ambiguous' | 'identity-unresolved' | 'round-points-mismatch' | 'published-schedule-mismatch'
   detail: string
 }
 
@@ -141,7 +141,13 @@ export interface SeattleCupRoundSnapshot {
   course: string
   eventName: string
   pairingsPublished: boolean
+  // Broad consumer flag: true when actual competitive opponents are known from
+  // GG scopes or an authoritative published pre-play source.
   competitionMatchesAvailable: boolean
+  // Provenance flags. Scheduled opponents can be available before scoring
+  // scopes; consumers must not interpret competitionMatchesAvailable as live.
+  scheduledMatchesAvailable: boolean
+  competitionScopesAvailable: boolean
   pairingGroups: PublishedPairingGroup[]
   // Consumer-facing lifecycle. Unlike resultStatus, this explicitly separates
   // unpublished pairings from published pre-play pairings.

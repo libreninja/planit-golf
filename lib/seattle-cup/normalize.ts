@@ -10,14 +10,14 @@
 // output (result/points come from GG) but the disagreement is surfaced as
 // validationStatus + a ValidationIssue — never silently normalized away.
 //
-// SINGLES INVARIANT (locked): tournament scopes define matches; tee-sheet
-// groups do NOT. The tee sheet is a logistical lookup (tee time, starting hole,
-// per-player dots, course hole_data) joined onto scope aggregates by
-// member_card_id. A Singles foursome of 4 (one per team) is 2 separate 1v1
-// matches that live in the scopes — this normalizer builds matches from scopes
-// only, so the 2025 foursome→4-way bug is structurally impossible here.
+// SINGLES PRECEDENCE (locked): populated GG scopes are live/final competitive
+// authority; the official 2026 published match schedule is pre-play competitive
+// authority; tee-sheet foursomes are logistical metadata only. Tee data may
+// enrich a known scheduled player with member-card identity, handicap dots, tee
+// time, and starting hole, but it NEVER defines opponents.
 
 import { matchNoFor, resolveTeamKey, getRoundDef, SEATTLE_CUP_TEAMS } from './config.ts'
+import type { PublishedMatchDef, PublishedMatchPlayerDef } from './config.ts'
 import type {
   Match, MatchPlayer, MatchHole, TeamStanding, SeattleCupRoundSnapshot,
   ValidationIssue, RoundNumber, Through, MatchStatus, MatchState, LeadSide,
@@ -185,6 +185,12 @@ function buildPublishedPairingGroups(teeSheet: GGRoundRaw['teeSheet']): Publishe
       })),
     }))
     .filter((group) => group.players.length > 0)
+}
+
+function scopePublishesCompetitiveSides(scope: GGScope | undefined): scope is GGScope {
+  const sides = scope?.aggregates ?? []
+  return sides.length >= 2
+    && sides.slice(0, 2).every((side) => (side.member_cards ?? []).length > 0)
 }
 
 function buildPlayerFromTee(player: GGPlayer, teamKey: TeamKey): MatchPlayer {
@@ -436,6 +442,134 @@ function buildTbdMatch(slotIndex: number, round: RoundNumber, format: Format, co
   }
 }
 
+function normalizedPersonName(name: string): string {
+  const commaParts = name.trim().split(',').map((part) => part.trim()).filter(Boolean)
+  const displayOrder = commaParts.length === 2 ? `${commaParts[1]} ${commaParts[0]}` : name
+  return displayOrder.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+interface PublishedTeeIdentity {
+  player: GGPlayer
+  teeTime: string | null
+  startingHole: number | string | null
+}
+
+// Identity-only join for an already-known official opponent. The name + stable
+// team constraint prevents a namesake on another team from being attached. It
+// is deliberately not usable to construct sides or infer an opponent.
+function findPublishedPlayerInTeeSheet(
+  published: PublishedMatchPlayerDef,
+  teeSheet: GGRoundRaw['teeSheet'],
+): PublishedTeeIdentity | null {
+  if (published.ggMemberCardId) {
+    const byId = teeSheet.playersByCardId.get(published.ggMemberCardId)
+    if (byId) return { player: byId.player, teeTime: byId.teeTime, startingHole: byId.hole }
+  }
+
+  const expectedName = normalizedPersonName(published.name)
+  const candidates: PublishedTeeIdentity[] = []
+  for (const group of teeSheet.groups) {
+    for (const player of group.players ?? []) {
+      if (teePlayerTeam(player) !== published.teamKey) continue
+      if (normalizedPersonName(teePlayerName(player)) !== expectedName) continue
+      candidates.push({ player, teeTime: group.tee_time ?? null, startingHole: group.hole ?? null })
+    }
+  }
+  return candidates.length === 1 ? candidates[0]! : null
+}
+
+function buildPublishedPlayer(
+  published: PublishedMatchPlayerDef,
+  teeIdentity: PublishedTeeIdentity | null,
+): MatchPlayer {
+  const teePlayer = teeIdentity?.player
+  const cardId = teePlayer?.member_card_id != null
+    ? String(teePlayer.member_card_id)
+    : published.ggMemberCardId ?? null
+  return {
+    ggMemberCardId: cardId,
+    name: published.name,
+    teamKey: published.teamKey,
+    courseHandicap: num(teePlayer?.course_handicap),
+    handicapDots: teePlayer?.handicap_dots_by_hole ?? [],
+    // The official sheet is authoritative identity even without a GG card-id
+    // join. If joined, identity.ts can later upgrade this through Planit's
+    // existing roster infrastructure.
+    identityStatus: 'gg-only',
+  }
+}
+
+function buildOfficialPublishedMatch(
+  published: PublishedMatchDef,
+  slotIndex: number,
+  round: RoundNumber,
+  format: Format,
+  course: string,
+  teeSheet: GGRoundRaw['teeSheet'],
+): Match {
+  const base = buildTbdMatch(slotIndex, round, format, course, {
+    teamA: published.playerA.teamKey,
+    teamB: published.playerB.teamKey,
+  }, teeSheet.holeData)
+  const teeA = findPublishedPlayerInTeeSheet(published.playerA, teeSheet)
+  const teeB = findPublishedPlayerInTeeSheet(published.playerB, teeSheet)
+  return {
+    ...base,
+    matchNo: published.matchNo,
+    playersA: [buildPublishedPlayer(published.playerA, teeA)],
+    playersB: [buildPublishedPlayer(published.playerB, teeB)],
+    teeTime: teeA?.teeTime ?? teeB?.teeTime ?? null,
+    startingHole: teeA?.startingHole ?? teeB?.startingHole ?? null,
+  }
+}
+
+function validateScopeAgainstPublishedMatch(
+  match: Match,
+  published: PublishedMatchDef,
+  validationIssues: ValidationIssue[],
+): void {
+  const expected = new Map<TeamKey, PublishedMatchPlayerDef>([
+    [published.playerA.teamKey, published.playerA],
+    [published.playerB.teamKey, published.playerB],
+  ])
+  const actual = new Map<TeamKey, MatchPlayer[]>()
+  if (match.teamA) actual.set(match.teamA, match.playersA)
+  if (match.teamB) actual.set(match.teamB, match.playersB)
+
+  const mismatches: string[] = []
+  for (const [teamKey, expectedPlayer] of expected) {
+    const players = actual.get(teamKey)
+    if (!players) {
+      mismatches.push(`expected team ${teamKey} is absent from GG scope`)
+      continue
+    }
+    if (players.length !== 1) {
+      mismatches.push(`${teamKey}: published one player, GG has ${players.length}`)
+      continue
+    }
+    const ggPlayer = players[0]!
+    if (expectedPlayer.ggMemberCardId && ggPlayer.ggMemberCardId) {
+      if (expectedPlayer.ggMemberCardId !== ggPlayer.ggMemberCardId) {
+        mismatches.push(`${teamKey}: published=${expectedPlayer.name}/${expectedPlayer.ggMemberCardId} GG=${ggPlayer.name}/${ggPlayer.ggMemberCardId}`)
+      }
+    } else if (ggPlayer.name !== 'Unknown'
+      && normalizedPersonName(ggPlayer.name) !== normalizedPersonName(expectedPlayer.name)) {
+      mismatches.push(`${teamKey}: published=${expectedPlayer.name} GG=${ggPlayer.name}`)
+    }
+  }
+  for (const teamKey of actual.keys()) {
+    if (!expected.has(teamKey)) mismatches.push(`unexpected GG team ${teamKey}`)
+  }
+  if (mismatches.length > 0) {
+    validationIssues.push({
+      matchNo: match.matchNo,
+      kind: 'published-schedule-mismatch',
+      detail: mismatches.join('; '),
+    })
+  }
+}
+
 function emptyStanding(teamKey: TeamKey): TeamStanding {
   return { teamKey, roundPoints: 0, totalPoints: 0, matchesPlayed: 0, matchesWon: 0, matchesHalved: 0, matchesLost: 0 }
 }
@@ -553,30 +687,41 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
   if (!def) throw new Error(`unknown seattle-cup round ${round}`)
   const validationIssues: ValidationIssue[] = []
   const scopes = raw.scopes ?? []
+  const officialPublishedMatches = def.officialPublishedMatches ?? []
+  const officialSchedulePublished = officialPublishedMatches.length > 0
   const pairingGroups = buildPublishedPairingGroups(raw.teeSheet)
   const scopesPublishPlayers = scopes.some((scope) => (scope.aggregates ?? [])
     .some((aggregate) => (aggregate.member_cards ?? []).length > 0))
-  const pairingsPublished = pairingGroups.length > 0 || scopesPublishPlayers
+  const pairingsPublished = officialSchedulePublished || pairingGroups.length > 0 || scopesPublishPlayers
+  const competitionScopesAvailable = scopes.some(scopePublishesCompetitiveSides)
 
   const matches: Match[] = []
   let teeSheetCompetitiveMatches = 0
-  if (scopes.length > 0) {
-    // Real (or in-progress) scopes — build matches from them. GG creates all
-    // matchCount scopes when a round's tournament is set up, so the common case
-    // is 0 scopes (pre-play) or matchCount scopes (live/final). For robustness
-    // against a shortfall, the remaining slots are filled with generic TBD
-    // (unknown pairing) so the round always renders matchCount matches.
-    scopes.forEach((scope, i) => {
-      matches.push(buildMatch(scope, i, round, def.format, def.course, raw.teeSheet, validationIssues))
-    })
-    for (let i = scopes.length; i < def.matchCount; i++) {
-      matches.push(buildTbdMatch(i, round, def.format, def.course, { teamA: null, teamB: null }, raw.teeSheet.holeData))
+  if (competitionScopesAvailable) {
+    // A populated scope owns its match completely, including opponents, live
+    // state, result, and points. Published R4 data is validation/fill for an
+    // unpopulated slot only; it can never overwrite a populated GG scope.
+    for (let i = 0; i < def.matchCount; i++) {
+      const scope = scopes[i]
+      const published = officialPublishedMatches[i]
+      if (scopePublishesCompetitiveSides(scope)) {
+        const match = buildMatch(scope, i, round, def.format, def.course, raw.teeSheet, validationIssues)
+        matches.push(match)
+        if (published) validateScopeAgainstPublishedMatch(match, published, validationIssues)
+      } else if (published) {
+        matches.push(buildOfficialPublishedMatch(published, i, round, def.format, def.course, raw.teeSheet))
+      } else {
+        matches.push(buildTbdMatch(i, round, def.format, def.course, { teamA: null, teamB: null }, raw.teeSheet.holeData))
+      }
     }
   } else if (def.format === 'singles') {
-    // Singles opponents exist only in tournament scopes. Keep 24 schedule-stable
-    // slots, but leave both sides unresolved until GG publishes those scopes.
+    // The official match sheet, not the tee foursomes, publishes pre-play 1v1
+    // opponents. A tee-sheet join may enrich identity/logistics only.
     for (let i = 0; i < def.matchCount; i++) {
-      matches.push(buildTbdMatch(i, round, def.format, def.course, { teamA: null, teamB: null }, raw.teeSheet.holeData))
+      const published = officialPublishedMatches[i]
+      matches.push(published
+        ? buildOfficialPublishedMatch(published, i, round, def.format, def.course, raw.teeSheet)
+        : buildTbdMatch(i, round, def.format, def.course, { teamA: null, teamB: null }, raw.teeSheet.holeData))
     }
   } else {
     // Paired formats may use strict 2-team/2-player tee groups as a pre-play
@@ -600,15 +745,16 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
   // GG round_points is authoritative for the rendered round standings.
   const roundStandings = applyAuthoritativeRoundPoints(roundStandingsDerived, raw.teamPoints)
   const resultStatus = deriveResultStatus(raw.upstreamStatus, matches)
-  const competitionMatchesAvailable = scopes.some((scope) => (scope.aggregates ?? []).length >= 2)
-    || teeSheetCompetitiveMatches > 0
+  const scheduledMatchesAvailable = officialSchedulePublished || teeSheetCompetitiveMatches > 0
+  const competitionMatchesAvailable = competitionScopesAvailable || scheduledMatchesAvailable
   const roundStatus = deriveRoundStatus(matches, pairingsPublished)
 
   return {
     snapshot: {
       round, format: def.format, course: def.course,
       eventName: raw.eventName ?? `Seattle Cup 2026 — ${def.format}`,
-      pairingsPublished, competitionMatchesAvailable, pairingGroups, roundStatus,
+      pairingsPublished, competitionMatchesAvailable, scheduledMatchesAvailable,
+      competitionScopesAvailable, pairingGroups, roundStatus,
       matches, roundStandings, overallStandings,
       resultStatus, validationIssues,
     },
