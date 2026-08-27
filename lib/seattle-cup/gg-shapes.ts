@@ -99,7 +99,7 @@ export interface GGPairingGroup {
 export interface GGTeeSheet {
   groups: GGPairingGroup[]
   holeData: GGHoleData | null   // from the first player's tee (par/strokeIndex)
-  playersByCardId: Map<string, { player: GGPlayer; teeTime: string | null; hole: number | null }>
+  playersByCardId: Map<string, { player: GGPlayer; teeTime: string | null; hole: number | string | null }>
 }
 
 export interface GGRoundRaw {
@@ -107,7 +107,7 @@ export interface GGRoundRaw {
   ggRoundId: string
   eventName: string | null
   roundDate: string | null
-  upstreamStatus: 'completed' | 'in_progress' | 'not_started' | 'unknown'
+  upstreamStatus: 'completed' | 'in_progress' | 'pairings_available' | 'not_started' | 'unknown'
   tournamentPayload: GGTournamentPayload | null
   scopes: GGScope[]
   teeSheet: GGTeeSheet

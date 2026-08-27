@@ -27,7 +27,7 @@ export interface FetchRoundInput {
 // tournament whose name matches the round format (case-insensitive) AND is not
 // the field aggregate (result_scope rs_field). Falls back to the first
 // format-name match. Returns null when the round has no format tournament yet.
-function pickFormatTournamentId(list: any[], format: Format): string | null {
+export function pickFormatTournamentId(list: any[], format: Format): string | null {
   const fmtLower = format.toLowerCase()
   const candidates: { id: string; name: string; isField: boolean }[] = []
   for (const x of list) {
@@ -61,13 +61,13 @@ function normalizeTeeSheet(raw: any): GGTeeSheet {
   const top = Array.isArray(raw) ? raw : (raw?.pairing_groups ?? raw?.tee_sheet ?? [])
   const groups: GGPairingGroup[] = []
   let holeData: GGHoleData | null = null
-  const playersByCardId = new Map<string, { player: any; teeTime: string | null; hole: number | null }>()
+  const playersByCardId = new Map<string, { player: any; teeTime: string | null; hole: number | string | null }>()
 
   for (const g of top) {
     const pg = g?.pairing_group ?? g
     const players = pg?.players ?? []
     const teeTime = pg?.tee_time ?? null
-    const hole = pg?.hole != null ? Number(pg.hole) : null
+    const hole = pg?.hole ?? null
     groups.push({ tee_time: teeTime, hole, date: pg?.date ?? null, players })
     for (const p of players) {
       const cardId = p?.member_card_id != null ? String(p.member_card_id) : null
@@ -84,13 +84,27 @@ function normalizeTeeSheet(raw: any): GGTeeSheet {
   return { groups, holeData, playersByCardId }
 }
 
-// Derive upstream status from the tournament payload. GG marks a round
-// completed via event.completed_at / event.status; absence = in_progress or
-// not_started (decided by whether scopes exist).
-function deriveUpstream(payload: GGTournamentPayload | null, scopes: any[]): 'completed' | 'in_progress' | 'not_started' | 'unknown' {
+// Derive upstream status from actual lifecycle evidence. Published players in
+// scopes or the tee sheet mean pairings_available; only score/result data means
+// in_progress. Named pre-play scopes must not make the round live.
+function hasPlayedScope(scopes: any[]): boolean {
+  return scopes.some((scope) => (scope?.aggregates ?? []).some((aggregate: any) => {
+    if (aggregate?.score != null && String(aggregate.score).trim() !== '') return true
+    if ((aggregate?.hbh_match_status ?? []).some((status: unknown) => status != null && String(status).trim() !== '')) return true
+    return [...(aggregate?.net_scores ?? []), ...(aggregate?.gross_scores ?? [])]
+      .some((score) => score != null && score !== '')
+  }))
+}
+
+function deriveUpstream(
+  payload: GGTournamentPayload | null,
+  scopes: any[],
+  teeSheet: GGTeeSheet,
+): 'completed' | 'in_progress' | 'pairings_available' | 'not_started' | 'unknown' {
   if (payload?.event?.completed_at) return 'completed'
   if (payload?.event?.status === 'completed') return 'completed'
-  if (scopes.length > 0) return 'in_progress'
+  if (hasPlayedScope(scopes)) return 'in_progress'
+  if (scopes.length > 0 || teeSheet.groups.some((group) => (group.players ?? []).length > 0)) return 'pairings_available'
   return 'not_started'
 }
 
@@ -121,7 +135,7 @@ export async function fetchRoundRaw(input: FetchRoundInput): Promise<GGRoundRaw>
   const teeSheet = normalizeTeeSheet(teeSheetRaw)
   const roundDate = (roundDetail?.round?.date ?? roundDetail?.date ?? null) as string | null
   const eventName = (tournamentPayload?.event?.name ?? roundDetail?.round?.name ?? null) as string | null
-  const upstreamStatus = deriveUpstream(tournamentPayload, scopes)
+  const upstreamStatus = deriveUpstream(tournamentPayload, scopes, teeSheet)
 
   return {
     ggEventId, ggRoundId, eventName, roundDate, upstreamStatus,

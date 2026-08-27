@@ -32,6 +32,23 @@ export interface MatchPlayer {
   ghin?: string | null
 }
 
+// A tee-sheet group is logistical publication metadata. It intentionally has
+// no opponent, match number, sides, score, result, or points. This separation
+// is what lets Singles expose its published foursomes without turning them into
+// competitive matches.
+export interface PublishedPairingPlayer {
+  ggMemberCardId: string | null
+  name: string
+  teamKey: TeamKey | null
+}
+
+export interface PublishedPairingGroup {
+  groupNo: number
+  teeTime: string | null
+  startingHole: string | null
+  players: PublishedPairingPlayer[]
+}
+
 export type IdentityStatus =
   | 'resolved'        // joined to a Planit member / roster row
   | 'gg-only'         // known to GG, no Planit enrichment (still a real, named player)
@@ -84,7 +101,7 @@ export interface Match {
   playersA: MatchPlayer[]
   playersB: MatchPlayer[]
   teeTime: string | null     // logistical, from tee sheet (NOT a match signal)
-  startingHole: number | null
+  startingHole: number | string | null
   holes: MatchHole[]         // 18 (par/strokeIndex from tee sheet; scores from scopes)
   through: Through
   status: MatchStatus
@@ -123,6 +140,12 @@ export interface SeattleCupRoundSnapshot {
   format: Format
   course: string
   eventName: string
+  pairingsPublished: boolean
+  competitionMatchesAvailable: boolean
+  pairingGroups: PublishedPairingGroup[]
+  // Consumer-facing lifecycle. Unlike resultStatus, this explicitly separates
+  // unpublished pairings from published pre-play pairings.
+  roundStatus: 'scheduled' | 'pairings-available' | 'live' | 'final' | 'unknown'
   matches: Match[]
   roundStandings: TeamStanding[]
   overallStandings: TeamStanding[]

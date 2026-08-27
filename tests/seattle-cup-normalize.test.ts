@@ -9,13 +9,13 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { fetchRoundRaw, type GGClient } from '../lib/seattle-cup/gg-fetch.ts'
+import { fetchRoundRaw, pickFormatTournamentId, type GGClient } from '../lib/seattle-cup/gg-fetch.ts'
 import { normalizeRound } from '../lib/seattle-cup/normalize.ts'
 import { getSeattleCupLive } from '../lib/seattle-cup/live.ts'
 import { makeMemorySeattleCupStore } from '../lib/seattle-cup/cache.ts'
 import { SEATTLE_CUP_ROUNDS } from '../lib/seattle-cup/config.ts'
 import { identitySummary } from '../lib/seattle-cup/identity.ts'
-import type { SeattleCupRoundSnapshot, Match } from '../lib/seattle-cup/types.ts'
+import type { SeattleCupRoundSnapshot, Match, RoundNumber } from '../lib/seattle-cup/types.ts'
 
 const FIX = path.join(process.cwd(), 'fixtures', 'seattle-cup', 'raw')
 const readFix = (f: string) => JSON.parse(fs.readFileSync(path.join(FIX, f), 'utf8'))
@@ -56,10 +56,33 @@ function buildTeamPointsFromScopes(scopes: any[], mismatch = false): any[] {
 
 function makeSnapshot(round: number, client: GGClient): Promise<SeattleCupRoundSnapshot> {
   return (async () => {
-    const raw = await fetchRoundRaw({ round: round as 1, ggClient: client })
-    const { snapshot } = normalizeRound(round as 1, raw)
+    const raw = await fetchRoundRaw({ round: round as RoundNumber, ggClient: client })
+    const { snapshot } = normalizeRound(round as RoundNumber, raw)
     return { ...snapshot, fetchedAt: 0, showingLastKnown: false }
   })()
+}
+
+function teePlayer(name: string, teamName: string, id: string) {
+  return { name, team_name: teamName, member_card_id: id, score_array: [] }
+}
+
+function makePairingGroup(index: number, players: ReturnType<typeof teePlayer>[], hole: number | string = 1) {
+  return { pairing_group: { tee_time: ` ${8 + Math.floor(index / 6)}:${String((index % 6) * 10).padStart(2, '0')} AM`, hole, date: '2026-08-29', players } }
+}
+
+function makePreplayClient(format: 'Chapman' | 'Singles', teeSheet: any[], scopes: any[] = []): GGClient {
+  return async (endpoint) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return { event: { name: format, scopes } }
+    if (endpoint.endsWith('/tournaments')) {
+      return [
+        { event: { id: `${format.toLowerCase()}-tid`, name: format, result_scope: format === 'Singles' ? 'rs_pos_partners' : 'rs_pos_group' } },
+        { event: { id: 'field-tid', name: 'Seattle Cup 2026', result_scope: 'rs_field' } },
+      ]
+    }
+    if (endpoint.endsWith('/tee_sheet')) return teeSheet
+    if (endpoint.endsWith('/team_points')) return { teams: [] }
+    return { round: { date: format === 'Chapman' ? '2026-08-29' : '2026-08-30', name: format } }
+  }
 }
 
 // ---------------- 2026 pre-play (TBD) ----------------
@@ -104,6 +127,101 @@ test('pre-play slots use the correct team-vs-team schedule ordering', async () =
   // matchNo schedule-stable: R1 = 1..12
   assert.equal(snap.matches[0].matchNo, 1)
   assert.equal(snap.matches[11].matchNo, 12)
+})
+
+test('2026 GG mapping and format tournament selection use round ids/tournaments, never workbook ids', () => {
+  assert.equal(SEATTLE_CUP_ROUNDS[1].ggEventId, '12971191003644979032')
+  assert.deepEqual(Object.values(SEATTLE_CUP_ROUNDS).map((round) => round.ggRoundId), [
+    '12971191129037891140',
+    '12971191132628215365',
+    '12971191135178352198',
+    '12971191137325835847',
+  ])
+  assert.equal(pickFormatTournamentId([
+    { event: { id: '12971191256947385914', name: 'Seattle Cup 2026 Chapman', result_scope: 'rs_field' } },
+    { event: { id: '12971191228224792120', name: 'Chapman', result_scope: 'rs_pos_group' } },
+  ], 'chapman'), '12971191228224792120')
+  assert.equal(pickFormatTournamentId([
+    { event: { id: '12971191249129203257', name: 'Singles', result_scope: 'rs_pos_partners' } },
+    { event: { id: '12971191256947385914', name: 'Seattle Cup 2026', result_scope: 'rs_field' } },
+  ], 'singles'), '12971191249129203257')
+})
+
+test('Chapman pre-play: published 2v2 tee groups expose scheduled players without scores or live/final state', async () => {
+  const groups = Array.from({ length: 12 }, (_, index) => makePairingGroup(index, [
+    teePlayer(`Interbay ${index}A`, 'Interbay', `ib-${index}-a`),
+    teePlayer(`Interbay ${index}B`, 'Interbay', `ib-${index}-b`),
+    teePlayer(`Jackson ${index}A`, 'Jackson Park', `jp-${index}-a`),
+    teePlayer(`Jackson ${index}B`, 'Jackson Park', `jp-${index}-b`),
+  ]))
+  const snap = await makeSnapshot(3, makePreplayClient('Chapman', groups))
+
+  assert.equal(snap.pairingsPublished, true)
+  assert.equal(snap.competitionMatchesAvailable, true)
+  assert.equal(snap.roundStatus, 'pairings-available')
+  assert.equal(snap.resultStatus, 'not-started')
+  assert.equal(snap.pairingGroups.length, 12)
+  assert.equal(snap.pairingGroups.flatMap((group) => group.players).length, 48)
+  assert.equal(snap.matches.length, 12)
+  for (const match of snap.matches) {
+    assert.equal(match.playersA.length, 2)
+    assert.equal(match.playersB.length, 2)
+    assert.equal(match.status, 'scheduled')
+    assert.equal(match.through, 'not-started')
+    assert.equal(match.result, null)
+    assert.equal(match.pointsA, null)
+    assert.equal(match.pointsB, null)
+    assert.ok(match.holes.every((hole) => hole.netA == null && hole.netB == null && hole.grossA == null && hole.grossB == null))
+  }
+})
+
+test('populated pre-play scopes establish Chapman sides without implying live scoring', async () => {
+  const group = makePairingGroup(0, [
+    teePlayer('Interbay A', 'Interbay', 'ib-a'), teePlayer('Interbay B', 'Interbay', 'ib-b'),
+    teePlayer('Jackson A', 'Jackson Park', 'jp-a'), teePlayer('Jackson B', 'Jackson Park', 'jp-b'),
+  ])
+  const scopes = [{ aggregates: [
+    { name: 'Interbay (A + B)', member_cards: [{ member_card_id: 'ib-a' }, { member_card_id: 'ib-b' }], net_scores: [], gross_scores: [], hbh_match_status: [] },
+    { name: 'Jackson Park (A + B)', member_cards: [{ member_card_id: 'jp-a' }, { member_card_id: 'jp-b' }], net_scores: [], gross_scores: [], hbh_match_status: [] },
+  ] }]
+  const snap = await makeSnapshot(3, makePreplayClient('Chapman', [group], scopes))
+
+  assert.equal(snap.pairingsPublished, true)
+  assert.equal(snap.competitionMatchesAvailable, true)
+  assert.equal(snap.roundStatus, 'pairings-available')
+  assert.equal(snap.matches[0].status, 'scheduled')
+  assert.equal(snap.matches[0].playersA.length, 2)
+  assert.equal(snap.matches[0].playersB.length, 2)
+})
+
+test('Singles pre-play: published foursomes remain logistical and 24 competitive slots stay unresolved', async () => {
+  const groups = Array.from({ length: 12 }, (_, index) => makePairingGroup(index, [
+    teePlayer(`Interbay ${index}`, 'Interbay', `ib-${index}`),
+    teePlayer(`Jackson ${index}`, 'Jackson Park', `jp-${index}`),
+    teePlayer(`Bill ${index}`, 'Bill Wright', `bw-${index}`),
+    teePlayer(`West ${index}`, 'West Seattle', `ws-${index}`),
+  ], index === 0 ? '1A' : index + 1))
+  const snap = await makeSnapshot(4, makePreplayClient('Singles', groups))
+
+  assert.equal(snap.pairingsPublished, true)
+  assert.equal(snap.competitionMatchesAvailable, false)
+  assert.equal(snap.roundStatus, 'pairings-available')
+  assert.equal(snap.resultStatus, 'not-started')
+  assert.equal(snap.pairingGroups.length, 12)
+  assert.equal(snap.pairingGroups[0].startingHole, '1A')
+  assert.equal(snap.pairingGroups.flatMap((group) => group.players).length, 48)
+  assert.equal(snap.matches.length, 24)
+  assert.deepEqual(snap.matches.map((match) => match.matchNo), Array.from({ length: 24 }, (_, index) => 37 + index))
+  for (const match of snap.matches) {
+    assert.equal(match.teamA, null)
+    assert.equal(match.teamB, null)
+    assert.equal(match.playersA.length, 0)
+    assert.equal(match.playersB.length, 0)
+    assert.equal(match.status, 'scheduled')
+    assert.equal(match.result, null)
+    assert.equal(match.pointsA, null)
+    assert.equal(match.pointsB, null)
+  }
 })
 
 // ---------------- 2025 Fourball populated/final ----------------
@@ -231,6 +349,25 @@ test('Singles: a 4-player tee foursome normalizes to independent 1v1 matches fro
   assert.ok(pairs.includes('jackson-park|west-seattle'), 'Jackson Park vs West Seattle present')
   // NO match has 4 players (the foursome was never interpreted as a match).
   assert.ok(real.every((m) => m.playersA.length + m.playersB.length === 2), 'no 4-way match')
+})
+
+test('Singles populated: all 24 GG scopes win over tee grouping as 1v1 matches 37-60', async () => {
+  const singlesPayload = readFix('tournament_2025_Singles.json')
+  const singlesTee = readFix('tee_sheet_2025_Singles.json')
+  const snap = await makeSnapshot(4, makePreplayClient('Singles', singlesTee, singlesPayload.event.scopes))
+
+  assert.equal(snap.pairingsPublished, true)
+  assert.equal(snap.competitionMatchesAvailable, true)
+  assert.equal(snap.matches.length, 24)
+  assert.deepEqual(snap.matches.map((match) => match.matchNo), Array.from({ length: 24 }, (_, index) => 37 + index))
+  for (const match of snap.matches) {
+    assert.equal(match.playersA.length, 1)
+    assert.equal(match.playersB.length, 1)
+    assert.equal(match.playersA.length + match.playersB.length, 2, 'tee foursome never becomes a competitive match')
+    assert.ok(match.teamA)
+    assert.ok(match.teamB)
+    assert.notEqual(match.teamA, match.teamB)
+  }
 })
 
 // ---------------- cache + stale-while-error ----------------
