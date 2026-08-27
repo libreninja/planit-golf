@@ -13,7 +13,7 @@ import { fetchRoundRaw, pickFormatTournamentId, type GGClient } from '../lib/sea
 import { normalizeRound } from '../lib/seattle-cup/normalize.ts'
 import { getSeattleCupLive } from '../lib/seattle-cup/live.ts'
 import { makeMemorySeattleCupStore } from '../lib/seattle-cup/cache.ts'
-import { SEATTLE_CUP_ROUNDS } from '../lib/seattle-cup/config.ts'
+import { OFFICIAL_2026_SINGLES_MATCH_SCHEDULE, SEATTLE_CUP_ROUNDS, SEATTLE_CUP_TEAMS } from '../lib/seattle-cup/config.ts'
 import { identitySummary } from '../lib/seattle-cup/identity.ts'
 import type { SeattleCupRoundSnapshot, Match, RoundNumber } from '../lib/seattle-cup/types.ts'
 
@@ -83,6 +83,25 @@ function makePreplayClient(format: 'Chapman' | 'Singles', teeSheet: any[], scope
     if (endpoint.endsWith('/team_points')) return { teams: [] }
     return { round: { date: format === 'Chapman' ? '2026-08-29' : '2026-08-30', name: format } }
   }
+}
+
+function makeOfficialSinglesTeeGroups(): any[] {
+  // Deliberately put four players from four different official matches into
+  // each logistical group. If normalization ever treats a foursome as a match,
+  // the representative opponent assertions below will fail.
+  const players = [
+    ...OFFICIAL_2026_SINGLES_MATCH_SCHEDULE.map((match) => ({ match, side: 'a' as const, player: match.playerA })),
+    ...OFFICIAL_2026_SINGLES_MATCH_SCHEDULE.map((match) => ({ match, side: 'b' as const, player: match.playerB })),
+  ].map(({ match, side, player }) => teePlayer(
+    player.name,
+    SEATTLE_CUP_TEAMS[player.teamKey].label,
+    player.ggMemberCardId ?? `official-${match.matchNo}-${side}`,
+  ))
+  return Array.from({ length: 12 }, (_, index) => makePairingGroup(
+    index,
+    players.slice(index * 4, index * 4 + 4),
+    index === 0 ? '1A' : index + 1,
+  ))
 }
 
 // ---------------- 2026 pre-play (TBD) ----------------
@@ -194,17 +213,15 @@ test('populated pre-play scopes establish Chapman sides without implying live sc
   assert.equal(snap.matches[0].playersB.length, 2)
 })
 
-test('Singles pre-play: published foursomes remain logistical and 24 competitive slots stay unresolved', async () => {
-  const groups = Array.from({ length: 12 }, (_, index) => makePairingGroup(index, [
-    teePlayer(`Interbay ${index}`, 'Interbay', `ib-${index}`),
-    teePlayer(`Jackson ${index}`, 'Jackson Park', `jp-${index}`),
-    teePlayer(`Bill ${index}`, 'Bill Wright', `bw-${index}`),
-    teePlayer(`West ${index}`, 'West Seattle', `ws-${index}`),
-  ], index === 0 ? '1A' : index + 1))
-  const snap = await makeSnapshot(4, makePreplayClient('Singles', groups))
+test('Singles pre-play: official schedule supplies 24 true 1v1 matches while foursomes remain logistical', async () => {
+  const groups = makeOfficialSinglesTeeGroups()
+  const emptyScopeShells = Array.from({ length: 24 }, () => ({ aggregates: [] }))
+  const snap = await makeSnapshot(4, makePreplayClient('Singles', groups, emptyScopeShells))
 
   assert.equal(snap.pairingsPublished, true)
-  assert.equal(snap.competitionMatchesAvailable, false)
+  assert.equal(snap.competitionMatchesAvailable, true)
+  assert.equal(snap.scheduledMatchesAvailable, true)
+  assert.equal(snap.competitionScopesAvailable, false)
   assert.equal(snap.roundStatus, 'pairings-available')
   assert.equal(snap.resultStatus, 'not-started')
   assert.equal(snap.pairingGroups.length, 12)
@@ -213,15 +230,58 @@ test('Singles pre-play: published foursomes remain logistical and 24 competitive
   assert.equal(snap.matches.length, 24)
   assert.deepEqual(snap.matches.map((match) => match.matchNo), Array.from({ length: 24 }, (_, index) => 37 + index))
   for (const match of snap.matches) {
-    assert.equal(match.teamA, null)
-    assert.equal(match.teamB, null)
-    assert.equal(match.playersA.length, 0)
-    assert.equal(match.playersB.length, 0)
+    assert.ok(match.teamA)
+    assert.ok(match.teamB)
+    assert.equal(match.playersA.length, 1)
+    assert.equal(match.playersB.length, 1)
+    assert.equal(match.playersA[0]!.teamKey, match.teamA)
+    assert.equal(match.playersB[0]!.teamKey, match.teamB)
+    assert.ok(match.playersA[0]!.ggMemberCardId, 'official player identity joins to tee-sheet member card')
+    assert.ok(match.playersB[0]!.ggMemberCardId, 'official player identity joins to tee-sheet member card')
     assert.equal(match.status, 'scheduled')
+    assert.equal(match.through, 'not-started')
     assert.equal(match.result, null)
     assert.equal(match.pointsA, null)
     assert.equal(match.pointsB, null)
+    assert.ok(match.holes.every((hole) => hole.netA == null && hole.netB == null && hole.grossA == null && hole.grossB == null))
   }
+
+  const assertMatch = (matchNo: number, teamA: string, playerA: string, teamB: string, playerB: string) => {
+    const match = snap.matches.find((candidate) => candidate.matchNo === matchNo)!
+    assert.equal(match.teamA, teamA)
+    assert.equal(match.playersA[0]!.name, playerA)
+    assert.equal(match.teamB, teamB)
+    assert.equal(match.playersB[0]!.name, playerB)
+  }
+  assertMatch(37, 'bill-wright', 'Kyuss Lis', 'jackson-park', 'Matt Lipe')
+  assertMatch(44, 'interbay', 'Luke Sulpizio', 'jackson-park', 'Jeb Garcia')
+  assertMatch(53, 'bill-wright', 'Cameron Duncan', 'interbay', 'Josh Benner')
+  assertMatch(60, 'interbay', 'Nathan DePinto', 'bill-wright', 'Tyson Than')
+
+  const firstTeeGroupNames = new Set(snap.pairingGroups[0]!.players.map((player) => player.name))
+  assert.ok(snap.matches.every((match) => {
+    const competitorNames = [...match.playersA, ...match.playersB].map((player) => player.name)
+    return competitorNames.some((name) => !firstTeeGroupNames.has(name))
+  }), 'no four-player tee group is interpreted as a competitive match')
+})
+
+test('Singles published identities use stable GG card ids and existing roster enrichment', async () => {
+  const { store } = makeMemorySeattleCupStore()
+  const kyussCardId = OFFICIAL_2026_SINGLES_MATCH_SCHEDULE[0]!.playerA.ggMemberCardId!
+  const snap = await getSeattleCupLive({
+    round: 4,
+    deps: {
+      ggClient: makePreplayClient('Singles', makeOfficialSinglesTeeGroups()),
+      cacheStore: store,
+      rosterLookup: async (memberCardId) => memberCardId === kyussCardId
+        ? { name: 'Kyuss Lis', handicapIndex: null, ghin: 'test-ghin' }
+        : null,
+    },
+  })
+  const kyuss = snap.matches[0]!.playersA[0]!
+  assert.equal(kyuss.ggMemberCardId, kyussCardId)
+  assert.equal(kyuss.identityStatus, 'resolved')
+  assert.equal(kyuss.ghin, 'test-ghin')
 })
 
 // ---------------- 2025 Fourball populated/final ----------------
@@ -358,6 +418,8 @@ test('Singles populated: all 24 GG scopes win over tee grouping as 1v1 matches 3
 
   assert.equal(snap.pairingsPublished, true)
   assert.equal(snap.competitionMatchesAvailable, true)
+  assert.equal(snap.scheduledMatchesAvailable, true)
+  assert.equal(snap.competitionScopesAvailable, true)
   assert.equal(snap.matches.length, 24)
   assert.deepEqual(snap.matches.map((match) => match.matchNo), Array.from({ length: 24 }, (_, index) => 37 + index))
   for (const match of snap.matches) {
@@ -368,6 +430,11 @@ test('Singles populated: all 24 GG scopes win over tee grouping as 1v1 matches 3
     assert.ok(match.teamB)
     assert.notEqual(match.teamA, match.teamB)
   }
+  assert.notEqual(snap.matches[0]!.playersA[0]!.name, 'Kyuss Lis', 'GG scope opponent overrides the 2026 published fallback')
+  assert.ok(snap.matches.some((match) => match.status === 'final' && match.pointsA != null && match.result != null),
+    'score/result/points come through from populated GG scopes')
+  assert.ok(snap.validationIssues.some((issue) => issue.kind === 'published-schedule-mismatch'),
+    'material differences between replayed GG scopes and the 2026 sheet are surfaced')
 })
 
 // ---------------- cache + stale-while-error ----------------
