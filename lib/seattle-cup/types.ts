@@ -151,6 +151,10 @@ export interface SeattleCupRaceStatus {
   state: RaceState
   availablePoints: number
   leaderTeamKeys: TeamKey[]
+  // Unconfirmed additive team points implied by supported current live states.
+  // All zeroes in outright mode. CupCentral renders these lighter bar portions
+  // without inspecting match results or rebuilding projection logic.
+  projectedPoints: Record<TeamKey, number>
 }
 
 // Complete round snapshot — /api/seattle-cup/live?round=N returns THIS.

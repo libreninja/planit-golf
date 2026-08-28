@@ -116,6 +116,7 @@ test('tournament start is OUTRIGHT with a graph-derived 26 line and 60 available
     state: 'active',
     availablePoints: 60,
     leaderTeamKeys: ['interbay', 'jackson-park', 'bill-wright', 'west-seattle'],
+    projectedPoints: ZERO,
   })
 })
 
@@ -127,6 +128,7 @@ test('current post-R1/R2 tied-leader state is OUTRIGHT 23 with 36 available', ()
     state: 'active',
     availablePoints: 36,
     leaderTeamKeys: ['interbay', 'jackson-park'],
+    projectedPoints: ZERO,
   })
 })
 
@@ -145,6 +147,10 @@ test('supported live leader produces a current-state PROJECTED threshold', () =>
   assert.equal(race.state, 'active')
   assert.equal(race.toWin, 23)
   assert.equal(race.availablePoints, 36, 'unfinalized live point remains available')
+  assert.deepEqual(race.projectedPoints, {
+    ...ZERO,
+    interbay: 1,
+  })
 })
 
 test('live all-square projects the current match as 0.5-0.5', () => {
@@ -155,6 +161,11 @@ test('live all-square projects the current match as 0.5-0.5', () => {
   assert.equal(race.mode, 'projected')
   assert.equal(race.toWin, 23)
   assert.equal(race.availablePoints, 36)
+  assert.deepEqual(race.projectedPoints, {
+    ...ZERO,
+    interbay: 0.5,
+    'jackson-park': 0.5,
+  })
 })
 
 test('mixture of finalized, live, and scheduled matches retains each state correctly', () => {
@@ -174,6 +185,7 @@ test('malformed live state falls back to OUTRIGHT instead of inventing a project
   }))
   assert.equal(race.mode, 'outright')
   assert.equal(race.toWin, 23)
+  assert.deepEqual(race.projectedPoints, ZERO)
 })
 
 test('a trailing team with no legal strict-points path is mathematically eliminated', () => {
