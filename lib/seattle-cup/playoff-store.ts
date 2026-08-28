@@ -50,6 +50,13 @@ type PlayoffRow = {
   updated_at: string
 }
 
+export function isMissingPlayoffTable(error: { code?: string; message?: string }): boolean {
+  return error.code === '42P01'
+    || error.code === 'PGRST205'
+    || Boolean(error.message?.includes('seattle_cup_playoff_resolutions'))
+      && Boolean(error.message?.match(/does not exist|schema cache|Could not find/i))
+}
+
 function rowToRecord(row: PlayoffRow): SeattleCupPlayoffRecord {
   return {
     eventKey: row.event_key,
@@ -75,6 +82,11 @@ function createSupabasePlayoffStore(): PlayoffStore {
         .select('*')
         .eq('event_key', SEATTLE_CUP_EVENT.key)
         .maybeSingle()
+      // Additive migration rollout safety: a code deploy briefly preceding the
+      // table must not turn the existing public live-results API into a 502.
+      // No row still means no fabricated winner; writes continue to fail until
+      // the migration exists.
+      if (error && isMissingPlayoffTable(error)) return null
       if (error) throw new Error(`Unable to read Seattle Cup playoff result: ${error.message}`)
       return data ? rowToRecord(data as PlayoffRow) : null
     },

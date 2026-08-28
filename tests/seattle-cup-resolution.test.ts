@@ -8,6 +8,7 @@ import {
   type SeattleCupResolutionInput,
 } from '../lib/seattle-cup/resolution.ts'
 import {
+  isMissingPlayoffTable,
   saveSeattleCupPlayoffResult,
   type PlayoffStore,
   type SeattleCupPlayoffRecord,
@@ -321,4 +322,21 @@ test('two-team tie stays unresolved when the normalized final match graph lacks 
   snapshots[0]!.matches[0]!.pointsA = null
   snapshots[0]!.matches[0]!.pointsB = null
   assert.equal(calculateSeattleCupTournamentResolution(snapshots).status, 'active')
+})
+
+test('rollout fallback recognizes only the missing-table/schema-cache conditions', () => {
+  assert.equal(isMissingPlayoffTable({ code: '42P01' }), true)
+  assert.equal(isMissingPlayoffTable({ code: 'PGRST205' }), true)
+  assert.equal(isMissingPlayoffTable({
+    message: 'Could not find the table \'public.seattle_cup_playoff_resolutions\' in the schema cache',
+  }), true)
+
+  // Unrelated database errors must never be swallowed.
+  assert.equal(isMissingPlayoffTable({ code: '42501' }), false)
+  assert.equal(isMissingPlayoffTable({ code: 'PGRST301' }), false)
+  assert.equal(isMissingPlayoffTable({ message: 'JWT expired' }), false)
+  assert.equal(isMissingPlayoffTable({ message: 'connection terminated unexpectedly' }), false)
+  assert.equal(isMissingPlayoffTable({ message: 'duplicate key value violates unique constraint "seattle_cup_playoff_resolutions_pkey"' }), false)
+  assert.equal(isMissingPlayoffTable({ message: 'relation "seattle_cup_other_table" does not exist' }), false)
+  assert.equal(isMissingPlayoffTable({ message: 'does not exist' }), false)
 })
