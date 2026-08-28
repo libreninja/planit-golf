@@ -62,17 +62,24 @@ export default async function ScoutingBoardPage({
   return (
     <div>
       <div className="space-y-6 py-2">
-        {/* Header: headline + candidate count. Manage access stays low-prominence
-            and admin-only. No provenance/observation explanation on the board. */}
+        {/* Header: headline + candidate count. Admin actions stay low-prominence
+            and admin-only, but Cup resolution gets its own labeled entry (with a
+            deep link to the section) so admins don't have to discover it under
+            "Manage access". No provenance/observation explanation on the board. */}
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl leading-none">Seattle Cup · Scouting</h1>
             <p className="mt-1 text-xs text-muted-foreground">2026 candidates · {board.length} players</p>
           </div>
           {canManageAccess ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/admin/scouting">Manage access</Link>
-            </Button>
+            <div className="flex flex-none items-center gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/admin/scouting#cup-resolution">Cup resolution</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/admin/scouting">Manage access</Link>
+              </Button>
+            </div>
           ) : null}
         </div>
 

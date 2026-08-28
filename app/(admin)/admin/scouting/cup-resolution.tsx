@@ -34,7 +34,10 @@ export async function CupResolutionSection() {
   } catch (err) {
     console.warn('[cup-resolution] live data unavailable:', (err as Error).message)
     return (
-      <section className="rounded-md border border-border bg-white/80 p-4">
+      // Keep the anchor id on the fallback section too, so a deep link still
+      // lands here (with scroll offset clearing the sticky app-shell header)
+      // while live data is unavailable.
+      <section id="cup-resolution" className="scroll-mt-24 rounded-md border border-border bg-white/80 p-4">
         <h2 className="mb-1 text-lg font-semibold">Cup resolution</h2>
         <p className="text-sm text-muted-foreground">
           Live tournament data is unavailable right now — resolution state will appear once it loads.
@@ -44,7 +47,10 @@ export async function CupResolutionSection() {
   }
 
   return (
-    <section className="rounded-md border border-border bg-white/80 p-4">
+    // Stable anchor target: the "Cup resolution" entry on the Seattle Cup
+    // scouting header deep-links here. scroll-mt clears the sticky app-shell
+    // header so the section heading isn't hidden under it on anchor jump.
+    <section id="cup-resolution" className="scroll-mt-24 rounded-md border border-border bg-white/80 p-4">
       <h2 className="mb-1 text-lg font-semibold">Cup resolution</h2>
 
       {resolution.status === 'active' && (
