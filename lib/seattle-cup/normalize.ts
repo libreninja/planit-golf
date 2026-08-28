@@ -16,13 +16,13 @@
 // enrich a known scheduled player with member-card identity, handicap dots, tee
 // time, and starting hole, but it NEVER defines opponents.
 
-import { matchNoFor, resolveTeamKey, getRoundDef, SEATTLE_CUP_TEAMS } from './config.ts'
+import { matchNoFor, resolveTeamKey, resolveTeamKeys, getRoundDef, SEATTLE_CUP_TEAMS } from './config.ts'
 import type { PublishedMatchDef, PublishedMatchPlayerDef } from './config.ts'
 import type {
   Match, MatchPlayer, MatchHole, TeamStanding, SeattleCupRoundSnapshot,
   ValidationIssue, RoundNumber, Through, MatchStatus, MatchState, LeadSide,
   ValidationStatus, IdentityStatus, Format, HoleSideStatus, TeamKey,
-  PublishedPairingGroup,
+  PublishedPairingGroup, TeamIdentityProvenance, TeamIdentitySource,
 } from './types.ts'
 import type {
   GGRoundRaw, GGScope, GGAggregate, GGIndividualResult, GGHoleData, GGMemberCard, GGPlayer,
@@ -151,6 +151,105 @@ function cardIdOf(card: GGMemberCard | null | undefined): string | null {
   return card.member_card_id_str ?? (card.member_card_id != null ? String(card.member_card_id) : null)
 }
 
+function sourceId(value: string | number | null | undefined): string | null {
+  return value == null ? null : String(value)
+}
+
+interface ResolvedTeamIdentity {
+  teamKey: TeamKey | null
+  provenance: TeamIdentityProvenance
+}
+
+function pointsSummaryTeamKey(agg: GGAggregate, teamPoints: GGRoundRaw['teamPoints']): TeamKey | null {
+  const aggregateId = sourceId(agg.points_summary_team_id)
+  if (!aggregateId) return null
+  const team = teamPoints?.teams?.find((candidate) =>
+    sourceId(candidate.id_str) === aggregateId || sourceId(candidate.id) === aggregateId)
+  return team ? resolveTeamKey(team.name ?? null, null) : null
+}
+
+function memberCardTeamKeys(agg: GGAggregate, teeSheet: GGRoundRaw['teeSheet']): TeamKey[] {
+  const keys = new Set<TeamKey>()
+  for (const card of agg.member_cards ?? []) {
+    const cardId = cardIdOf(card)
+    const teePlayer = cardId ? teeSheet.playersByCardId.get(cardId)?.player : null
+    const key = teePlayer ? teePlayerTeam(teePlayer) : null
+    if (key) keys.add(key)
+  }
+  return [...keys].sort()
+}
+
+// Competitive side identity precedence:
+//   1. points_summary_team_id joined to team_points (stable GG team identity)
+//   2. explicit aggregate name prefix
+//   3. unanimous stable member-card → tee player.team_name joins
+//   4. single-team affiliation as a last resort
+// The first three are independently cross-checked. A genuine disagreement
+// remains unresolved and produces a diagnostic instead of being guessed.
+function resolveAggregateTeamIdentity(
+  agg: GGAggregate,
+  teeSheet: GGRoundRaw['teeSheet'],
+  teamPoints: GGRoundRaw['teamPoints'],
+): ResolvedTeamIdentity {
+  const aggregateName = agg.name ?? null
+  const aggregateNameTeamKey = resolveTeamKey(namePrefix(agg), null)
+  const pointsSummaryTeamId = sourceId(agg.points_summary_team_id)
+  const pointsKey = pointsSummaryTeamKey(agg, teamPoints)
+  const memberKeys = memberCardTeamKeys(agg, teeSheet)
+  const affiliationKeys = resolveTeamKeys(agg.affiliation)
+  const strongCandidates = new Set<TeamKey>()
+  if (pointsKey) strongCandidates.add(pointsKey)
+  if (aggregateNameTeamKey) strongCandidates.add(aggregateNameTeamKey)
+  if (memberKeys.length === 1) strongCandidates.add(memberKeys[0]!)
+
+  let teamKey: TeamKey | null = null
+  let source: TeamIdentitySource
+  if (memberKeys.length > 1 || strongCandidates.size > 1) {
+    source = 'conflict'
+  } else if (pointsKey) {
+    source = 'points-summary-team-id'
+    teamKey = pointsKey
+  } else if (aggregateNameTeamKey) {
+    source = 'aggregate-name'
+    teamKey = aggregateNameTeamKey
+  } else if (memberKeys.length === 1) {
+    source = 'member-card-team'
+    teamKey = memberKeys[0]!
+  } else if (affiliationKeys.length === 1) {
+    source = 'affiliation'
+    teamKey = affiliationKeys[0]!
+  } else {
+    source = 'unresolved'
+  }
+
+  return {
+    teamKey,
+    provenance: {
+      source,
+      pointsSummaryTeamId,
+      pointsSummaryTeamKey: pointsKey,
+      aggregateName,
+      aggregateNameTeamKey,
+      affiliation: agg.affiliation ?? null,
+      affiliationTeamKeys: affiliationKeys,
+      memberTeamKeys: memberKeys,
+    },
+  }
+}
+
+function scheduledTeamIdentity(source: TeamIdentitySource, teamKey: TeamKey | null): TeamIdentityProvenance {
+  return {
+    source: teamKey ? source : 'unresolved',
+    pointsSummaryTeamId: null,
+    pointsSummaryTeamKey: null,
+    aggregateName: null,
+    aggregateNameTeamKey: null,
+    affiliation: null,
+    affiliationTeamKeys: [],
+    memberTeamKeys: [],
+  }
+}
+
 // Find an individual_results entry for a member. individual_results[].member_id_str
 // matches member_cards[].member_id_str (the roster member id), NOT member_card_id.
 function findIndividual(agg: GGAggregate, memberIdStr: string | null): GGIndividualResult | null {
@@ -165,7 +264,7 @@ function findIndividual(agg: GGAggregate, memberIdStr: string | null): GGIndivid
 // later upgrade gg-only → resolved by joining Planit members.
 function buildPlayers(
   agg: GGAggregate,
-  teamKey: TeamKey,
+  teamKey: TeamKey | null,
   teeSheet: GGRoundRaw['teeSheet'],
 ): MatchPlayer[] {
   const cards: GGMemberCard[] = agg.member_cards ?? []
@@ -179,11 +278,12 @@ function buildPlayers(
 
     const name = ind?.name ?? teePlayer?.name ?? null
     const identityStatus: IdentityStatus = name ? 'gg-only' : 'unresolved'
+    const memberTeamKey = teePlayer ? teePlayerTeam(teePlayer) : null
 
     out.push({
       ggMemberCardId,
       name: name ?? 'Unknown',
-      teamKey,
+      teamKey: memberTeamKey ?? teamKey,
       courseHandicap: teePlayer?.course_handicap != null ? Number(teePlayer.course_handicap) : null,
       handicapDots: teePlayer?.handicap_dots_by_hole ?? [],
       grossScores: ind?.gross_scores ?? [],
@@ -310,6 +410,7 @@ function buildMatch(
   format: Format,
   course: string,
   teeSheet: GGRoundRaw['teeSheet'],
+  teamPoints: GGRoundRaw['teamPoints'],
   validationIssues: ValidationIssue[],
 ): Match {
   const aggs = scope.aggregates ?? []
@@ -317,11 +418,13 @@ function buildMatch(
   const b = aggs[1] ?? {}
   const matchNo = matchNoFor(round, slotIndex)
 
-  const teamA = resolveTeamKey(namePrefix(a), a.affiliation ?? null)
-  const teamB = resolveTeamKey(namePrefix(b), b.affiliation ?? null)
+  const identityA = resolveAggregateTeamIdentity(a, teeSheet, teamPoints)
+  const identityB = resolveAggregateTeamIdentity(b, teeSheet, teamPoints)
+  const teamA = identityA.teamKey
+  const teamB = identityB.teamKey
 
-  const playersA = buildPlayers(a, teamA ?? 'interbay', teeSheet)
-  const playersB = buildPlayers(b, teamB ?? 'interbay', teeSheet)
+  const playersA = buildPlayers(a, teamA, teeSheet)
+  const playersB = buildPlayers(b, teamB, teeSheet)
 
   // Finality: a match is final only when a side carries a REAL GG match result
   // (winner shows "5 & 3", loser ""; a halved match shows "Tied" on both).
@@ -395,6 +498,42 @@ function buildMatch(
     }
   }
 
+  for (const [side, identity] of [['A', identityA], ['B', identityB]] as const) {
+    if (identity.provenance.source === 'conflict') {
+      validationIssues.push({
+        matchNo,
+        kind: 'team-identity-conflict',
+        detail: `side ${side}: points=${identity.provenance.pointsSummaryTeamKey ?? 'none'} aggregate=${identity.provenance.aggregateNameTeamKey ?? 'none'} members=${identity.provenance.memberTeamKeys.join(',') || 'none'}`,
+      })
+    } else if (identity.provenance.source === 'unresolved') {
+      validationIssues.push({
+        matchNo,
+        kind: 'team-identity-unresolved',
+        detail: `side ${side}: aggregate=${identity.provenance.aggregateName ?? 'none'} points_summary_team_id=${identity.provenance.pointsSummaryTeamId ?? 'none'}`,
+      })
+    }
+  }
+  if (teamA && teamB && teamA === teamB) {
+    validationIssues.push({
+      matchNo,
+      kind: 'same-team-match',
+      detail: `competitive match resolved both sides as ${teamA}`,
+    })
+  }
+  for (const [side, sideTeam, players] of [
+    ['A', teamA, playersA], ['B', teamB, playersB],
+  ] as const) {
+    for (const player of players) {
+      if (sideTeam && player.teamKey && player.teamKey !== sideTeam) {
+        validationIssues.push({
+          matchNo,
+          kind: 'player-team-mismatch',
+          detail: `side ${side}: card=${player.ggMemberCardId ?? 'none'} player=${player.teamKey} side=${sideTeam}`,
+        })
+      }
+    }
+  }
+
   // Tee time / starting hole from the tee sheet (logistical — joined by any side
   // player's card id; NOT a match signal).
   let teeTime: string | null = null
@@ -407,6 +546,8 @@ function buildMatch(
   return {
     matchNo, round, format, course,
     teamA: teamA ?? null, teamB: teamB ?? null,
+    teamAIdentity: identityA.provenance,
+    teamBIdentity: identityB.provenance,
     playersA, playersB, teeTime, startingHole, holes,
     through, status, matchState, leadSide, leadBy,
     result: sourceResultRaw ?? null,
@@ -451,6 +592,8 @@ function buildPairedTeeSheetMatch(
   const match = buildTbdMatch(slotIndex, round, format, course, { teamA, teamB }, holeData)
   return {
     ...match,
+    teamAIdentity: scheduledTeamIdentity('tee-sheet-team', teamA),
+    teamBIdentity: scheduledTeamIdentity('tee-sheet-team', teamB),
     playersA: sideA.map((player) => buildPlayerFromTee(player, teamA)),
     playersB: sideB.map((player) => buildPlayerFromTee(player, teamB)),
     teeTime: group.tee_time ?? null,
@@ -473,6 +616,8 @@ function buildTbdMatch(slotIndex: number, round: RoundNumber, format: Format, co
   return {
     matchNo: matchNoFor(round, slotIndex), round, format, course,
     teamA: slot.teamA, teamB: slot.teamB, playersA: [], playersB: [],
+    teamAIdentity: scheduledTeamIdentity('configured-schedule', slot.teamA),
+    teamBIdentity: scheduledTeamIdentity('configured-schedule', slot.teamB),
     teeTime: null, startingHole: null, holes,
     through: 'not-started', status: 'scheduled', matchState: 'tbd',
     leadSide: null, leadBy: 0, result: null, pointsA: null, pointsB: null,
@@ -557,6 +702,8 @@ function buildOfficialPublishedMatch(
   return {
     ...base,
     matchNo: published.matchNo,
+    teamAIdentity: scheduledTeamIdentity('published-schedule', published.playerA.teamKey),
+    teamBIdentity: scheduledTeamIdentity('published-schedule', published.playerB.teamKey),
     playersA: [buildPublishedPlayer(published.playerA, teeA)],
     playersB: [buildPublishedPlayer(published.playerB, teeB)],
     teeTime: teeA?.teeTime ?? teeB?.teeTime ?? null,
@@ -745,7 +892,7 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
       const scope = scopes[i]
       const published = officialPublishedMatches[i]
       if (scopePublishesCompetitiveSides(scope)) {
-        const match = buildMatch(scope, i, round, def.format, def.course, raw.teeSheet, validationIssues)
+        const match = buildMatch(scope, i, round, def.format, def.course, raw.teeSheet, raw.teamPoints, validationIssues)
         matches.push(match)
         if (published) validateScopeAgainstPublishedMatch(match, published, validationIssues)
       } else if (published) {

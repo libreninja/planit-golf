@@ -21,7 +21,7 @@ export interface GGAggregate {
   name?: string | null               // "Jackson Park (Rowe, Tim + Fabela, Dan)"
   affiliation?: string | null         // "Jackson Park Men's Golf Club"
   team_id?: number | string | null    // per-match-scoped; NOT a stable team id
-  points_summary_team_id?: string | null
+  points_summary_team_id?: string | number | null
   member_cards?: GGMemberCard[]
   net_scores?: (number | null)[]      // side (best-ball) net per hole
   gross_scores?: (number | null)[]    // side (best-ball) gross per hole
@@ -51,6 +51,8 @@ export interface GGTournamentPayload {
 }
 
 export interface GGTeamPointsTeam {
+  id?: string | number | null
+  id_str?: string | null
   name?: string
   round_points?: string | number | null
   total_points?: string | number | null

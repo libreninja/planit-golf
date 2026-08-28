@@ -22,7 +22,7 @@ export type HoleSideStatus = 'A' | 'B' | 'AS' | null   // which side won the hol
 export interface MatchPlayer {
   ggMemberCardId: string | null   // GG member_card_id_str — stable identity
   name: string                     // display name (GG roster / tee sheet)
-  teamKey: TeamKey
+  teamKey: TeamKey | null
   courseHandicap: number | null    // GG course_handicap (match-adjusted)
   handicapDots: number[]           // per-hole stroke dots (GG handicap_dots_by_hole)
   grossScores: Array<number | null> // authoritative GG individual_results.gross_scores; [] when unavailable
@@ -95,13 +95,41 @@ export type ValidationStatus =
   | 'mismatch'       // GG result and derived result DISAGREE — GG wins output, logged
   | 'unverifiable'   // no GG result yet (live) — derived state used; nothing to cross-check
 
+export type TeamIdentitySource =
+  | 'points-summary-team-id' // aggregate id joined to GG team_points.teams[].id
+  | 'aggregate-name'         // explicit team prefix before the player list
+  | 'member-card-team'       // unanimous card-id join to tee-sheet player.team_name
+  | 'affiliation'            // last resort, only when exactly one club is present
+  | 'published-schedule'     // explicit official schedule, currently R4 Singles
+  | 'tee-sheet-team'         // paired-format pre-play publication only
+  | 'configured-schedule'    // generic unpopulated schedule slot
+  | 'conflict'               // authoritative candidates disagree; team remains null
+  | 'unresolved'
+
+// Public provenance for each normalized side. `affiliation` is retained for
+// diagnosis but is not authoritative when it contains multiple club names: GG
+// uses that field for player club memberships, not necessarily the competitive
+// side. No player-name or tee-order inference participates in this resolution.
+export interface TeamIdentityProvenance {
+  source: TeamIdentitySource
+  pointsSummaryTeamId: string | null
+  pointsSummaryTeamKey: TeamKey | null
+  aggregateName: string | null
+  aggregateNameTeamKey: TeamKey | null
+  affiliation: string | null
+  affiliationTeamKeys: TeamKey[]
+  memberTeamKeys: TeamKey[]
+}
+
 export interface Match {
   matchNo: number            // 1..60, schedule-stable (R1 1-12, R2 13-24, R3 25-36, R4 37-60)
   round: RoundNumber
   format: Format
   course: string
-  teamA: TeamKey | null       // null only for generic shortfall TBD (un-scored slot with unknown pairing)
+  teamA: TeamKey | null       // null for unknown schedule slots or diagnosed source conflicts
   teamB: TeamKey | null
+  teamAIdentity: TeamIdentityProvenance
+  teamBIdentity: TeamIdentityProvenance
   playersA: MatchPlayer[]
   playersB: MatchPlayer[]
   teeTime: string | null     // logistical, from tee sheet (NOT a match signal)
@@ -133,7 +161,17 @@ export interface TeamStanding {
 
 export interface ValidationIssue {
   matchNo: number
-  kind: 'points-mismatch' | 'result-mismatch' | 'identity-ambiguous' | 'identity-unresolved' | 'round-points-mismatch' | 'published-schedule-mismatch'
+  kind:
+    | 'points-mismatch'
+    | 'result-mismatch'
+    | 'identity-ambiguous'
+    | 'identity-unresolved'
+    | 'team-identity-conflict'
+    | 'team-identity-unresolved'
+    | 'same-team-match'
+    | 'player-team-mismatch'
+    | 'round-points-mismatch'
+    | 'published-schedule-mismatch'
   detail: string
 }
 

@@ -49,17 +49,50 @@ function makeFakeFourballClient(opts: { throwOnJson?: boolean; reverseIndividual
   }
 }
 
+function makeFake2026CompetitiveClient(format: 'Fourball' | 'Scramble'): GGClient {
+  const tournamentPayload = readFix(`tournament_2026_${format}.json`)
+  const teeSheet = readFix(`tee_sheet_2026_${format}.json`)
+  // Saved from the corresponding production team_points response. Keeping the
+  // id→name mapping independent of aggregate.name makes this a real regression
+  // for points_summary_team_id resolution rather than a circular fixture join.
+  const teamPoints = format === 'Fourball' ? [
+    { id: 12980046313629444000, name: 'Bill Wright', round_points: 3, total_points: 3 },
+    { id: 12980046317588867000, name: 'West Seattle', round_points: 1.5, total_points: 1.5 },
+    { id: 12980046316313799000, name: 'Jackson Park', round_points: 4.5, total_points: 4.5 },
+    { id: 12980046315005176000, name: 'Interbay', round_points: 3, total_points: 3 },
+  ] : [
+    { id: 12980046329198700000, name: 'Bill Wright', round_points: 2.5, total_points: 5.5 },
+    { id: 12980046333393005000, name: 'West Seattle', round_points: 2, total_points: 3.5 },
+    { id: 12980046332050827000, name: 'Jackson Park', round_points: 3, total_points: 7.5 },
+    { id: 12980046330742204000, name: 'Interbay', round_points: 4.5, total_points: 7.5 },
+  ]
+  return async (endpoint: string) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return tournamentPayload
+    if (endpoint.endsWith('/tournaments')) {
+      return [{ event: { id: `${format.toLowerCase()}-2026`, name: format, result_scope: 'rs_pos_group' } }]
+    }
+    if (endpoint.endsWith('/tee_sheet')) return teeSheet
+    if (endpoint.endsWith('/team_points')) return { teams: teamPoints }
+    return { round: { date: format === 'Fourball' ? '2026-08-22' : '2026-08-23', name: format } }
+  }
+}
+
 // Sum per-team awarded points from scope aggregates → a team_points payload.
 function buildTeamPointsFromScopes(scopes: any[], mismatch = false): any[] {
-  const byTeam: Record<string, number> = {}
+  const byTeam: Record<string, { id: unknown; points: number }> = {}
   for (const s of scopes) {
     for (const a of s.aggregates ?? []) {
       const team = (a.name ?? '').split('(')[0].trim()
-      byTeam[team] = (byTeam[team] ?? 0) + Number(a.points ?? 0)
+      const current = byTeam[team] ?? { id: a.points_summary_team_id ?? null, points: 0 }
+      current.points += Number(a.points ?? 0)
+      byTeam[team] = current
     }
   }
-  return Object.entries(byTeam).map(([name, round_points]) => ({
-    name, round_points: round_points + (mismatch ? 1 : 0), total_points: round_points + (mismatch ? 1 : 0),
+  return Object.entries(byTeam).map(([name, team]) => ({
+    id: team.id,
+    name,
+    round_points: team.points + (mismatch ? 1 : 0),
+    total_points: team.points + (mismatch ? 1 : 0),
   }))
 }
 
@@ -173,6 +206,132 @@ test('2026 GG mapping and format tournament selection use round ids/tournaments,
     { event: { id: '12971191249129203257', name: 'Singles', result_scope: 'rs_pos_partners' } },
     { event: { id: '12971191256947385914', name: 'Seattle Cup 2026', result_scope: 'rs_field' } },
   ], 'singles'), '12971191249129203257')
+})
+
+test('2026 R2 Match 14 uses stable GG team identity for both Scramble sides', async () => {
+  const snap = await makeSnapshot(2, makeFake2026CompetitiveClient('Scramble'))
+  const match = snap.matches.find((candidate) => candidate.matchNo === 14)!
+
+  assert.equal(match.teamA, 'jackson-park')
+  assert.equal(match.teamB, 'west-seattle')
+  assert.deepEqual(match.playersA.map((player) => player.name), ['Fitzgerald, Dylan', 'Waterman, Grant'])
+  assert.deepEqual(match.playersB.map((player) => player.name), ['Morris, Tom', 'Tang, Benjamin'])
+  assert.deepEqual(match.playersA.map((player) => player.ggMemberCardId), [
+    '10860012332684174875', '7367709487051859929',
+  ])
+  assert.deepEqual(match.playersB.map((player) => player.ggMemberCardId), [
+    '6147861167344739947', '10860025110379652643',
+  ])
+  assert.ok(match.playersA.every((player) => player.teamKey === 'jackson-park'))
+  assert.ok(match.playersB.every((player) => player.teamKey === 'west-seattle'))
+  assert.equal(match.teamAIdentity.source, 'points-summary-team-id')
+  assert.equal(match.teamBIdentity.source, 'points-summary-team-id')
+  assert.equal(match.teamAIdentity.aggregateNameTeamKey, 'jackson-park')
+  assert.equal(match.teamBIdentity.aggregateNameTeamKey, 'west-seattle')
+  assert.deepEqual(match.teamAIdentity.memberTeamKeys, ['jackson-park'])
+  assert.deepEqual(match.teamBIdentity.memberTeamKeys, ['west-seattle'])
+
+  // Team identity must not alter authoritative Scramble side scoring semantics.
+  assert.equal(match.result, '4 & 3')
+  assert.equal(match.pointsA, 1)
+  assert.equal(match.pointsB, 0)
+  assert.equal(match.holes[1]!.netA, 4)
+  assert.equal(match.holes[1]!.netB, 3)
+  assert.equal(match.holes[1]!.winner, 'B')
+})
+
+test('2026 production-shaped R1/R2 competitive matches satisfy team identity invariants', async () => {
+  const rounds = await Promise.all([
+    makeSnapshot(1, makeFake2026CompetitiveClient('Fourball')),
+    makeSnapshot(2, makeFake2026CompetitiveClient('Scramble')),
+  ])
+
+  for (const snap of rounds) {
+    for (const match of snap.matches) {
+      assert.ok(match.teamA, `R${snap.round} M${match.matchNo} teamA resolves`)
+      assert.ok(match.teamB, `R${snap.round} M${match.matchNo} teamB resolves`)
+      assert.notEqual(match.teamA, match.teamB, `R${snap.round} M${match.matchNo} has distinct opponents`)
+      assert.ok(match.playersA.every((player) => player.teamKey === match.teamA),
+        `R${snap.round} M${match.matchNo} playersA agree with teamA`)
+      assert.ok(match.playersB.every((player) => player.teamKey === match.teamB),
+        `R${snap.round} M${match.matchNo} playersB agree with teamB`)
+    }
+    assert.equal(snap.validationIssues.filter((issue) =>
+      ['same-team-match', 'player-team-mismatch', 'team-identity-conflict', 'team-identity-unresolved'].includes(issue.kind)).length, 0)
+  }
+})
+
+test('stable member-card team identity wins over ambiguous affiliation without tee-order inference', async () => {
+  const group = makePairingGroup(0, [
+    // An unrelated adjacent player must not influence either competitive side.
+    teePlayer('Adjacent Interbay', 'Interbay', 'adjacent'),
+    teePlayer('West B', 'West Seattle', 'west-b'),
+    teePlayer('Bill A', 'Bill Wright', 'bill-a'),
+    teePlayer('West A', 'West Seattle', 'west-a'),
+  ])
+  const scopes = [{ aggregates: [
+    {
+      name: 'Mixed affiliation (West A + West B)',
+      affiliation: 'Interbay Golf Club, West Seattle Golf Club',
+      member_cards: [{ member_card_id: 'west-a' }, { member_card_id: 'west-b' }],
+    },
+    {
+      name: 'Bill Wright (Bill A)', affiliation: 'Bill Wright Golf Club',
+      member_cards: [{ member_card_id: 'bill-a' }],
+    },
+  ] }]
+  const snap = await makeSnapshot(3, makePreplayClient('Chapman', [group], scopes))
+  const match = snap.matches[0]!
+
+  assert.equal(match.teamA, 'west-seattle')
+  assert.equal(match.teamAIdentity.source, 'member-card-team')
+  assert.deepEqual(match.playersA.map((player) => player.teamKey), ['west-seattle', 'west-seattle'])
+  assert.equal(match.playersA.some((player) => player.ggMemberCardId === 'adjacent'), false)
+})
+
+test('conflicting authoritative team identities stay unresolved and produce diagnostics', async () => {
+  const group = makePairingGroup(0, [
+    teePlayer('Stable West A', 'West Seattle', 'west-a'),
+    teePlayer('Stable West B', 'West Seattle', 'west-b'),
+    teePlayer('Bill A', 'Bill Wright', 'bill-a'),
+    teePlayer('Bill B', 'Bill Wright', 'bill-b'),
+  ])
+  const scopes = [{ aggregates: [
+    {
+      name: 'Interbay (Stable West A + Stable West B)', affiliation: 'Interbay Golf Club',
+      member_cards: [{ member_card_id: 'west-a' }, { member_card_id: 'west-b' }],
+    },
+    {
+      name: 'Bill Wright (Bill A + Bill B)', affiliation: 'Bill Wright Golf Club',
+      member_cards: [{ member_card_id: 'bill-a' }, { member_card_id: 'bill-b' }],
+    },
+  ] }]
+  const snap = await makeSnapshot(3, makePreplayClient('Chapman', [group], scopes))
+  const match = snap.matches[0]!
+
+  assert.equal(match.teamA, null, 'Planit does not guess when aggregate and stable member identity conflict')
+  assert.equal(match.teamAIdentity.source, 'conflict')
+  assert.deepEqual(match.playersA.map((player) => player.teamKey), ['west-seattle', 'west-seattle'],
+    'stable member-card identity is preserved for diagnosis')
+  assert.ok(snap.validationIssues.some((issue) =>
+    issue.matchNo === 25 && issue.kind === 'team-identity-conflict'))
+})
+
+test('an impossible same-team competitive scope is retained but explicitly diagnosed', async () => {
+  const group = makePairingGroup(0, [
+    teePlayer('Interbay A', 'Interbay', 'ib-a'),
+    teePlayer('Interbay B', 'Interbay', 'ib-b'),
+  ])
+  const scopes = [{ aggregates: [
+    { name: 'Interbay (Interbay A)', member_cards: [{ member_card_id: 'ib-a' }] },
+    { name: 'Interbay (Interbay B)', member_cards: [{ member_card_id: 'ib-b' }] },
+  ] }]
+  const snap = await makeSnapshot(3, makePreplayClient('Chapman', [group], scopes))
+
+  assert.equal(snap.matches[0]!.teamA, 'interbay')
+  assert.equal(snap.matches[0]!.teamB, 'interbay')
+  assert.ok(snap.validationIssues.some((issue) =>
+    issue.matchNo === 25 && issue.kind === 'same-team-match'))
 })
 
 test('Chapman pre-play: published 2v2 tee groups expose scheduled players without scores or live/final state', async () => {
