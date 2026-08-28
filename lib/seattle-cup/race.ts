@@ -202,6 +202,20 @@ export function calculateSeattleCupRaceStatus(snapshots: SeattleCupRaceInput[]):
   const canProject = live.length > 0 && live.every(isSupportedLiveState)
   const mode = canProject ? 'projected' : 'outright'
   const allMatchesFinal = prepared.matches.every((match) => match.status === 'final')
+  const projectedPoints = emptyScores()
+  if (canProject) {
+    for (const match of live) {
+      if (!validOpponents(match)) continue
+      if (match.matchState === 'all-square') {
+        projectedPoints[match.teamA] += 0.5
+        projectedPoints[match.teamB] += 0.5
+      } else if (match.leadSide === 'A') {
+        projectedPoints[match.teamA] += 1
+      } else if (match.leadSide === 'B') {
+        projectedPoints[match.teamB] += 1
+      }
+    }
+  }
 
   if (allMatchesFinal || prepared.availablePoints < EPSILON) {
     return {
@@ -210,6 +224,7 @@ export function calculateSeattleCupRaceStatus(snapshots: SeattleCupRaceInput[]):
       state: 'final',
       availablePoints: prepared.availablePoints,
       leaderTeamKeys: prepared.leaderTeamKeys,
+      projectedPoints,
     }
   }
 
@@ -220,23 +235,14 @@ export function calculateSeattleCupRaceStatus(snapshots: SeattleCupRaceInput[]):
       state: 'secured',
       availablePoints: prepared.availablePoints,
       leaderTeamKeys: prepared.leaderTeamKeys,
+      projectedPoints,
     }
   }
 
   const base = { ...prepared.confirmed }
   let unresolved = nonFinal
   if (canProject) {
-    for (const match of live) {
-      if (!validOpponents(match)) continue
-      if (match.matchState === 'all-square') {
-        base[match.teamA] += 0.5
-        base[match.teamB] += 0.5
-      } else if (match.leadSide === 'A') {
-        base[match.teamA] += 1
-      } else if (match.leadSide === 'B') {
-        base[match.teamB] += 1
-      }
-    }
+    for (const teamKey of TEAM_KEYS) base[teamKey] += projectedPoints[teamKey]
     unresolved = nonFinal.filter((match) => match.status === 'scheduled')
   }
 
@@ -246,6 +252,7 @@ export function calculateSeattleCupRaceStatus(snapshots: SeattleCupRaceInput[]):
     state: 'active',
     availablePoints: prepared.availablePoints,
     leaderTeamKeys: prepared.leaderTeamKeys,
+    projectedPoints,
   }
 }
 
