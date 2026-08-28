@@ -25,6 +25,8 @@ export interface MatchPlayer {
   teamKey: TeamKey
   courseHandicap: number | null    // GG course_handicap (match-adjusted)
   handicapDots: number[]           // per-hole stroke dots (GG handicap_dots_by_hole)
+  grossScores: Array<number | null> // authoritative GG individual_results.gross_scores; [] when unavailable
+  netScores: Array<number | null>   // authoritative GG individual_results.net_scores; [] when unavailable
   identityStatus: IdentityStatus
   // Optional enrichment from Planit members/roster (GHIN etc.). Absent when the
   // player resolved from GG alone.
@@ -66,6 +68,8 @@ export interface MatchHole {
   grossB: number | null
   dotsA: number | null       // handicap strokes applied on this hole (side A) — display
   dotsB: number | null
+  sourceMatchStatusA: string | null // GG side A hbh_match_status for this hole
+  sourceMatchStatusB: string | null // GG side B hbh_match_status for this hole
   winner: HoleSideStatus     // 'A' | 'B' | 'AS' (halved) | null (not yet decided)
 }
 

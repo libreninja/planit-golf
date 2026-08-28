@@ -23,8 +23,15 @@ const readFix = (f: string) => JSON.parse(fs.readFileSync(path.join(FIX, f), 'ut
 // Build a fake GG client that replays saved fixtures for the Fourball round.
 // Endpoint pattern-matched (the real 2026 ggEventId/ggRoundId in the URLs are
 // irrelevant to the replay — only the suffix matters).
-function makeFakeFourballClient(opts: { throwOnJson?: boolean } = {}): GGClient {
+function makeFakeFourballClient(opts: { throwOnJson?: boolean; reverseIndividualResults?: boolean } = {}): GGClient {
   const tournamentPayload = readFix('tournament_2025_Fourball.json')
+  if (opts.reverseIndividualResults) {
+    for (const scope of tournamentPayload.event.scopes) {
+      for (const aggregate of scope.aggregates ?? []) {
+        if (aggregate.individual_results) aggregate.individual_results.reverse()
+      }
+    }
+  }
   const teeSheet = readFix('tee_sheet_2025_Fourball.json')
   return async (endpoint: string) => {
     if (opts.throwOnJson && endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) throw new Error('upstream down')
@@ -190,6 +197,10 @@ test('Chapman pre-play: published 2v2 tee groups expose scheduled players withou
     assert.equal(match.result, null)
     assert.equal(match.pointsA, null)
     assert.equal(match.pointsB, null)
+    assert.ok([...match.playersA, ...match.playersB].every((player) =>
+      player.grossScores.length === 0 && player.netScores.length === 0))
+    assert.ok(match.holes.every((hole) =>
+      hole.sourceMatchStatusA === null && hole.sourceMatchStatusB === null))
     assert.ok(match.holes.every((hole) => hole.netA == null && hole.netB == null && hole.grossA == null && hole.grossB == null))
   }
 })
@@ -243,6 +254,12 @@ test('Singles pre-play: official schedule supplies 24 true 1v1 matches while fou
     assert.equal(match.result, null)
     assert.equal(match.pointsA, null)
     assert.equal(match.pointsB, null)
+    assert.deepEqual(match.playersA[0]!.grossScores, [])
+    assert.deepEqual(match.playersA[0]!.netScores, [])
+    assert.deepEqual(match.playersB[0]!.grossScores, [])
+    assert.deepEqual(match.playersB[0]!.netScores, [])
+    assert.ok(match.holes.every((hole) =>
+      hole.sourceMatchStatusA === null && hole.sourceMatchStatusB === null))
     assert.ok(match.holes.every((hole) => hole.netA == null && hole.netB == null && hole.grossA == null && hole.grossB == null))
   }
 
@@ -314,6 +331,103 @@ test('GG net scores + handicap dots are passed through / preserved', async () =>
   // Per-player handicap dots preserved (from tee sheet join).
   const anyDots = snap.matches.some((m) => m.playersA.some((p) => p.handicapDots.length > 0) || m.playersB.some((p) => p.handicapDots.length > 0))
   assert.ok(anyDots, 'at least one player has handicap dots preserved')
+})
+
+test('R1 final Fourball preserves individual scores by stable member id and exposes GG cumulative status', async () => {
+  // Reverse every individual_results array so a positional join would attach
+  // the wrong golfer's card. The normalizer must join member_cards.member_id_str
+  // to individual_results.member_id_str while preserving member-card identity.
+  const snap = await makeSnapshot(1, makeFakeFourballClient({ reverseIndividualResults: true }))
+  const match = snap.matches[0]!
+  const fixtureMatch = readFix('tournament_2025_Fourball.json').event.scopes[0]
+  const normalizedSides = [match.playersA, match.playersB]
+
+  assert.equal(match.status, 'final')
+  assert.equal(match.result, '5 & 3')
+  assert.equal(match.pointsA, 1)
+  assert.equal(match.pointsB, 0)
+  assert.equal(normalizedSides.flat().length, 4)
+
+  for (let sideIndex = 0; sideIndex < normalizedSides.length; sideIndex++) {
+    const aggregate = fixtureMatch.aggregates[sideIndex]
+    const expectedByMemberId = new Map(aggregate.individual_results.map((result: any) =>
+      [result.member_id_str, result]))
+    for (let playerIndex = 0; playerIndex < normalizedSides[sideIndex]!.length; playerIndex++) {
+      const card = aggregate.member_cards[playerIndex]
+      const expected = expectedByMemberId.get(card.member_id_str) as any
+      const player = normalizedSides[sideIndex]![playerIndex]!
+      assert.equal(player.ggMemberCardId, card.member_card_id_str)
+      assert.equal(player.name, expected.name)
+      assert.deepEqual(player.grossScores, expected.gross_scores)
+      assert.deepEqual(player.netScores, expected.net_scores)
+      assert.equal(player.grossScores.length, 18, `${player.name} gross scores align to 18 holes`)
+      assert.equal(player.netScores.length, 18, `${player.name} net scores align to 18 holes`)
+    }
+  }
+  assert.equal(match.playersB[0]!.grossScores[13], null, 'GG null remains aligned at hole 14')
+
+  for (let i = 0; i < 18; i++) {
+    assert.equal(match.holes[i]!.sourceMatchStatusA, fixtureMatch.aggregates[0].hbh_match_status[i] || null)
+    assert.equal(match.holes[i]!.sourceMatchStatusB, fixtureMatch.aggregates[1].hbh_match_status[i] || null)
+  }
+})
+
+test('partial/live Fourball exposes only source statuses received so far and does not invent result or points', async () => {
+  const scopes = [{ aggregates: [
+    {
+      name: 'Interbay (Alpha + Beta)',
+      member_cards: [
+        { member_id_str: 'member-a1', member_card_id_str: 'card-a1' },
+        { member_id_str: 'member-a2', member_card_id_str: 'card-a2' },
+      ],
+      individual_results: [
+        { member_id_str: 'member-a2', name: 'Beta', gross_scores: [5, 4], net_scores: [4, 4] },
+        { member_id_str: 'member-a1', name: 'Alpha', gross_scores: [4, 3], net_scores: [4, 3] },
+      ],
+      gross_scores: [4, 3], net_scores: [4, 3], hbh_match_status: ['T', '1 up'],
+      score: '', points: null,
+    },
+    {
+      name: 'Jackson Park (Gamma + Delta)',
+      member_cards: [
+        { member_id_str: 'member-b1', member_card_id_str: 'card-b1' },
+        { member_id_str: 'member-b2', member_card_id_str: 'card-b2' },
+      ],
+      individual_results: null,
+      gross_scores: [4, 4], net_scores: [4, 4], hbh_match_status: ['T', ''],
+      score: '', points: null,
+    },
+  ] }]
+  const client: GGClient = async (endpoint) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return { event: { name: 'Fourball', scopes } }
+    if (endpoint.endsWith('/tournaments')) return [{ event: { id: 'fb-live', name: 'Fourball', result_scope: 'rs_pos_group' } }]
+    if (endpoint.endsWith('/tee_sheet')) return []
+    if (endpoint.endsWith('/team_points')) return { teams: [] }
+    return { round: { date: '2026-08-27', name: 'Fourball' } }
+  }
+
+  const snap = await makeSnapshot(1, client)
+  const match = snap.matches[0]!
+  assert.equal(snap.resultStatus, 'live')
+  assert.equal(match.status, 'live')
+  assert.equal(match.through, 2)
+  assert.equal(match.sourceResult, null)
+  assert.equal(match.result, null)
+  assert.equal(match.derivedResult, null)
+  assert.equal(match.pointsA, null)
+  assert.equal(match.pointsB, null)
+  assert.deepEqual(match.playersA[0]!.grossScores, [4, 3], 'member-id join is not positional')
+  assert.deepEqual(match.playersA[1]!.grossScores, [5, 4])
+  assert.deepEqual(match.playersB[0]!.grossScores, [], 'missing individual_results does not copy side scores')
+  assert.equal(match.holes[0]!.sourceMatchStatusA, 'T')
+  assert.equal(match.holes[0]!.sourceMatchStatusB, 'T')
+  assert.equal(match.holes[1]!.sourceMatchStatusA, '1 up')
+  assert.equal(match.holes[1]!.sourceMatchStatusB, null)
+  assert.ok(match.holes.slice(2).every((hole) =>
+    hole.sourceMatchStatusA === null && hole.sourceMatchStatusB === null))
+  assert.ok(snap.matches.slice(1).every((scheduled) =>
+    scheduled.status === 'scheduled' && scheduled.result === null
+      && scheduled.pointsA === null && scheduled.pointsB === null))
 })
 
 test('match state normalizations: all-square, A-up/B-up, dormie, N&M, 1-up, halve', async () => {
@@ -429,6 +543,9 @@ test('Singles populated: all 24 GG scopes win over tee grouping as 1v1 matches 3
     assert.ok(match.teamA)
     assert.ok(match.teamB)
     assert.notEqual(match.teamA, match.teamB)
+    assert.ok([...match.playersA, ...match.playersB].every((player) =>
+      player.grossScores.length === 0 && player.netScores.length === 0),
+    'Singles player arrays are not duplicated from side-level scores')
   }
   assert.notEqual(snap.matches[0]!.playersA[0]!.name, 'Kyuss Lis', 'GG scope opponent overrides the 2026 published fallback')
   assert.ok(snap.matches.some((match) => match.status === 'final' && match.pointsA != null && match.result != null),

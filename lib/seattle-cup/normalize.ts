@@ -47,6 +47,13 @@ function nonEmpty(s: string | null | undefined): boolean {
   return s != null && String(s).trim() !== ''
 }
 
+// Public source-status fields preserve GG's non-empty value verbatim. GG pads
+// unplayed/trailing-side entries with empty strings; expose those as null so a
+// consumer can distinguish an available cumulative status from no status.
+function sourceMatchStatus(s: string | null | undefined): string | null {
+  return s == null || s === '' ? null : s
+}
+
 function num(v: unknown): number | null {
   if (v == null || v === '') return null
   const n = Number(v)
@@ -157,6 +164,8 @@ function buildPlayers(
       teamKey,
       courseHandicap: teePlayer?.course_handicap != null ? Number(teePlayer.course_handicap) : null,
       handicapDots: teePlayer?.handicap_dots_by_hole ?? [],
+      grossScores: ind?.gross_scores ?? [],
+      netScores: ind?.net_scores ?? [],
       identityStatus,
     })
   }
@@ -200,6 +209,8 @@ function buildPlayerFromTee(player: GGPlayer, teamKey: TeamKey): MatchPlayer {
     teamKey,
     courseHandicap: player.course_handicap != null ? Number(player.course_handicap) : null,
     handicapDots: player.handicap_dots_by_hole ?? [],
+    grossScores: [],
+    netScores: [],
     identityStatus: teePlayerName(player) === 'Unknown' ? 'unresolved' : 'gg-only',
   }
 }
@@ -263,6 +274,8 @@ function buildHoles(a: GGAggregate, b: GGAggregate, holeData: GGHoleData | null)
       strokeIndex: si?.[i] ?? null,
       netA: nA, netB: nB, grossA: gA, grossB: gB,
       dotsA, dotsB, winner,
+      sourceMatchStatusA: sourceMatchStatus(ha[i]),
+      sourceMatchStatusB: sourceMatchStatus(hb[i]),
     })
   }
   return holes
@@ -430,7 +443,8 @@ function buildTbdMatch(slotIndex: number, round: RoundNumber, format: Format, co
   const si = holeData?.handicap ?? null
   for (let i = 0; i < HOLES; i++) {
     holes.push({ n: i + 1, par: pars?.[i] ?? null, strokeIndex: si?.[i] ?? null,
-      netA: null, netB: null, grossA: null, grossB: null, dotsA: null, dotsB: null, winner: null })
+      netA: null, netB: null, grossA: null, grossB: null, dotsA: null, dotsB: null,
+      sourceMatchStatusA: null, sourceMatchStatusB: null, winner: null })
   }
   return {
     matchNo: matchNoFor(round, slotIndex), round, format, course,
@@ -493,6 +507,8 @@ function buildPublishedPlayer(
     teamKey: published.teamKey,
     courseHandicap: num(teePlayer?.course_handicap),
     handicapDots: teePlayer?.handicap_dots_by_hole ?? [],
+    grossScores: [],
+    netScores: [],
     // The official sheet is authoritative identity even without a GG card-id
     // join. If joined, identity.ts can later upgrade this through Planit's
     // existing roster infrastructure.
