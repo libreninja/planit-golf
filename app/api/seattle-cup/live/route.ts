@@ -6,9 +6,17 @@ import { calculateSeattleCupRaceStatus } from '@/lib/seattle-cup/race'
 import { calculateSeattleCupTournamentResolution } from '@/lib/seattle-cup/resolution'
 import { readSeattleCupPlayoffRecord } from '@/lib/seattle-cup/playoff-store'
 import { createSeattleCupTimingCollector, serverTimingHeaders } from '@/lib/seattle-cup/timing'
+import {
+  parseSeattleCupRound,
+  seattleCupNoStoreHeaders,
+  seattleCupPublicCacheHeaders,
+} from '@/lib/seattle-cup/http-cache'
 import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
 import type { SeattleCupRoundResponse } from '@/lib/seattle-cup/types'
 
+// The route must execute on an edge miss so its response TTL can follow the
+// authoritative runtime state. Vercel still caches successful Function
+// responses according to the Vercel-CDN-Cache-Control header below.
 export const dynamic = 'force-dynamic'
 
 // CORS: the seattle-cup live API is consumed by the separate seattlecup.golf
@@ -49,13 +57,14 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: Request) {
   const requestStartedAt = performance.now()
   const timing = createSeattleCupTimingCollector()
-  const url = new URL(request.url)
-  const roundParam = url.searchParams.get('round')
-  const round = roundParam ? Number(roundParam) : NaN
+  const round = parseSeattleCupRound(request.url)
 
   // Validate round: 1-4 only.
-  if (!Number.isInteger(round) || round < 1 || round > 4) {
-    return NextResponse.json({ error: 'round query param must be 1-4' }, { status: 400 })
+  if (round === null) {
+    return NextResponse.json({ error: 'round query param must be 1-4' }, {
+      status: 400,
+      headers: seattleCupNoStoreHeaders(),
+    })
   }
 
   // Authorize by competition visibility. seattle-cup is public, so anonymous
@@ -63,7 +72,10 @@ export async function GET(request: Request) {
   // competition key can never fall through to "allow by default".
   const decision = authorizeLiveRead(resolveCompetitionVisibility('seattle-cup'), false)
   if (!decision.allowed) {
-    return NextResponse.json({ error: decision.reason }, { status: decision.status })
+    return NextResponse.json({ error: decision.reason }, {
+      status: decision.status,
+      headers: seattleCupNoStoreHeaders(),
+    })
   }
 
   const origin = allowedOrigin(request.headers.get('origin'))
@@ -88,21 +100,30 @@ export async function GET(request: Request) {
     // missing rollout condition — any other persistence failure propagates
     // and 502s below rather than masquerading as "no playoff recorded".
     const playoffRecord = await readSeattleCupPlayoffRecord()
+    const tournamentResolution = calculateSeattleCupTournamentResolution(snapshots, playoffRecord)
     const response: SeattleCupRoundResponse = {
       ...snapshot,
       raceStatus: calculateSeattleCupRaceStatus(snapshots),
-      tournamentResolution: calculateSeattleCupTournamentResolution(snapshots, playoffRecord),
+      tournamentResolution,
     }
     timing.add('total', performance.now() - requestStartedAt)
     return NextResponse.json(response, {
-      headers: { ...corsHeaders(origin), ...serverTimingHeaders(timing) },
+      headers: {
+        ...corsHeaders(origin),
+        ...seattleCupPublicCacheHeaders(snapshots, tournamentResolution),
+        ...serverTimingHeaders(timing),
+      },
     })
   } catch (err) {
     console.error(`[api/seattle-cup/live] round ${round}:`, err)
     timing.add('total', performance.now() - requestStartedAt)
     return NextResponse.json({ error: 'Failed to fetch Seattle Cup live results' }, {
       status: 502,
-      headers: { ...corsHeaders(origin), ...serverTimingHeaders(timing) },
+      headers: {
+        ...corsHeaders(origin),
+        ...seattleCupNoStoreHeaders(),
+        ...serverTimingHeaders(timing),
+      },
     })
   }
 }
