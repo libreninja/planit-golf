@@ -77,8 +77,10 @@ export async function GET(request: Request) {
     if (!snapshot) throw new Error(`normalized round ${round} missing`)
     // raceStatus = points-race state. tournamentResolution = OFFICIAL winner
     // state (published tiebreak rules applied by lib/seattle-cup/resolution).
-    // The only persisted input is the out-of-band playoff record; its read is
-    // best-effort and degrades to "no playoff recorded".
+    // The only persisted input is the out-of-band playoff record; its read
+    // returns null for a genuine no-row result or the narrow active-table-
+    // missing rollout condition — any other persistence failure propagates
+    // and 502s below rather than masquerading as "no playoff recorded".
     const playoffRecord = await readSeattleCupPlayoffRecord()
     const response: SeattleCupRoundResponse = {
       ...snapshot,
