@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 
 import { getSeattleCupLive } from '@/lib/seattle-cup/live'
+import { ROUND_LIST } from '@/lib/seattle-cup/config'
+import { calculateSeattleCupRaceStatus } from '@/lib/seattle-cup/race'
 import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
-import type { RoundNumber } from '@/lib/seattle-cup/types'
+import type { SeattleCupRoundResponse } from '@/lib/seattle-cup/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +12,9 @@ export const dynamic = 'force-dynamic'
 // site. Restrict the Allow-Origin to the configured Seattle Cup origins (never
 // the league cache's blanket `*`) so only seattlecup.golf / localhost may read
 // it cross-origin. Same-origin planit.golf requests need no CORS header. The
-// response body is the normalized SeattleCupRoundSnapshot only — no raw GG
-// payload is exposed. See ground-truth report §6 + locked CORS constraint.
+// response body is the normalized SeattleCupRoundSnapshot plus the shared
+// tournament raceStatus — no raw GG payload is exposed. See ground-truth
+// report §6 + locked CORS constraint.
 const DEFAULT_ORIGINS = 'https://seattlecup.golf,https://www.seattlecup.golf'
 function allowedOrigin(requestOrigin: string | null): string | null {
   if (!requestOrigin) return null
@@ -61,8 +64,20 @@ export async function GET(request: Request) {
   const origin = allowedOrigin(request.headers.get('origin'))
 
   try {
-    const snapshot = await getSeattleCupLive({ round: round as RoundNumber })
-    return NextResponse.json(snapshot, { headers: corsHeaders(origin) })
+    // Race state is tournament-level, so read the four independently cached
+    // normalized rounds and attach the same small contract to every existing
+    // round response. Concurrent CupCentral requests collapse through the
+    // existing per-round single-flight/cache layer.
+    const snapshots = await Promise.all(
+      ROUND_LIST.map((definition) => getSeattleCupLive({ round: definition.round })),
+    )
+    const snapshot = snapshots.find((candidate) => candidate.round === round)
+    if (!snapshot) throw new Error(`normalized round ${round} missing`)
+    const response: SeattleCupRoundResponse = {
+      ...snapshot,
+      raceStatus: calculateSeattleCupRaceStatus(snapshots),
+    }
+    return NextResponse.json(response, { headers: corsHeaders(origin) })
   } catch (err) {
     console.error(`[api/seattle-cup/live] round ${round}:`, err)
     return NextResponse.json({ error: 'Failed to fetch Seattle Cup live results' }, { status: 502, headers: corsHeaders(origin) })

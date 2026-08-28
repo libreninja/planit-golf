@@ -211,6 +211,24 @@ export const SEATTLE_CUP_ROUNDS: Record<RoundNumber, RoundDef> = {
 
 export const ROUND_LIST: RoundDef[] = Object.values(SEATTLE_CUP_ROUNDS)
 
+// Every Seattle Cup match awards exactly one tournament point. These values
+// are derived from the authoritative 2026 match graph so the tournament-wide
+// pool (60) and single-team ceiling (30) cannot drift apart.
+export const TOTAL_TOURNAMENT_POINTS = ROUND_LIST.reduce(
+  (total, round) => total + round.matchSlots.length,
+  0,
+)
+
+export const MAX_TEAM_POINTS = TEAM_LIST.reduce((maximum, team) => {
+  const matches = ROUND_LIST.reduce(
+    (total, round) => total + round.matchSlots.filter(
+      (slot) => slot.teamA === team.key || slot.teamB === team.key,
+    ).length,
+    0,
+  )
+  return Math.max(maximum, matches)
+}, 0)
+
 // matchNo is schedule-stable: R1 1-12, R2 13-24, R3 25-36, R4 37-60.
 export function matchNoFor(round: RoundNumber, slotIndex: number): number {
   const base = round === 1 ? 0 : round === 2 ? 12 : round === 3 ? 24 : 36

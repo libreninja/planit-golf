@@ -137,6 +137,22 @@ export interface ValidationIssue {
   detail: string
 }
 
+export type RaceMode = 'outright' | 'projected'
+export type RaceState = 'active' | 'secured' | 'final'
+
+// Tournament-level race contract. `toWin` is the smallest team score that is
+// guaranteed to finish strictly ahead on points: one half-point above the
+// greatest runner-up score attainable through the applicable remaining match
+// graph. `projected` provisionally holds supported live match states; it is a
+// current-state projection, never a forecast or probability model.
+export interface SeattleCupRaceStatus {
+  toWin: number | null
+  mode: RaceMode
+  state: RaceState
+  availablePoints: number
+  leaderTeamKeys: TeamKey[]
+}
+
 // Complete round snapshot — /api/seattle-cup/live?round=N returns THIS.
 // Self-contained: the renderer never coordinates multiple responses.
 export interface SeattleCupRoundSnapshot {
@@ -163,6 +179,13 @@ export interface SeattleCupRoundSnapshot {
   fetchedAt: number             // epoch ms (asOf)
   showingLastKnown: boolean     // stale-while-error signal — true when serving last cache after upstream error
   validationIssues: ValidationIssue[]
+}
+
+// Public /api/seattle-cup/live response. The normalized round snapshot remains
+// independently cacheable; the route attaches the shared tournament race state
+// after reading all four normalized rounds.
+export interface SeattleCupRoundResponse extends SeattleCupRoundSnapshot {
+  raceStatus: SeattleCupRaceStatus
 }
 
 export const POINTS_RULE = { win: 1, halve: 0.5, loss: 0 } as const
