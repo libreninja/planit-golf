@@ -104,15 +104,19 @@ function makeSnapshot(round: number, client: GGClient): Promise<SeattleCupRoundS
   })()
 }
 
-function teePlayer(name: string, teamName: string, id: string) {
-  return { name, team_name: teamName, member_card_id: id, score_array: [] }
+function teePlayer(name: string, teamName: string, id: string, handicapDots: number[] = []) {
+  return {
+    name, team_name: teamName, member_card_id: id,
+    handicap_dots_by_hole: handicapDots,
+    score_array: [],
+  }
 }
 
 function makePairingGroup(index: number, players: ReturnType<typeof teePlayer>[], hole: number | string = 1) {
   return { pairing_group: { tee_time: ` ${8 + Math.floor(index / 6)}:${String((index % 6) * 10).padStart(2, '0')} AM`, hole, date: '2026-08-29', players } }
 }
 
-function makePreplayClient(format: 'Chapman' | 'Singles', teeSheet: any[], scopes: any[] = []): GGClient {
+function makePreplayClient(format: 'Chapman' | 'Scramble' | 'Singles', teeSheet: any[], scopes: any[] = []): GGClient {
   return async (endpoint) => {
     if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return { event: { name: format, scopes } }
     if (endpoint.endsWith('/tournaments')) {
@@ -123,7 +127,7 @@ function makePreplayClient(format: 'Chapman' | 'Singles', teeSheet: any[], scope
     }
     if (endpoint.endsWith('/tee_sheet')) return teeSheet
     if (endpoint.endsWith('/team_points')) return { teams: [] }
-    return { round: { date: format === 'Chapman' ? '2026-08-29' : '2026-08-30', name: format } }
+    return { round: { date: format === 'Singles' ? '2026-08-30' : '2026-08-29', name: format } }
   }
 }
 
@@ -335,11 +339,13 @@ test('an impossible same-team competitive scope is retained but explicitly diagn
 })
 
 test('Chapman pre-play: published 2v2 tee groups expose scheduled players without scores or live/final state', async () => {
+  const sideADots = dotsAt([4, 1])
+  const sideBDots = dotsAt()
   const groups = Array.from({ length: 12 }, (_, index) => makePairingGroup(index, [
-    teePlayer(`Interbay ${index}A`, 'Interbay', `ib-${index}-a`),
-    teePlayer(`Interbay ${index}B`, 'Interbay', `ib-${index}-b`),
-    teePlayer(`Jackson ${index}A`, 'Jackson Park', `jp-${index}-a`),
-    teePlayer(`Jackson ${index}B`, 'Jackson Park', `jp-${index}-b`),
+    teePlayer(`Interbay ${index}A`, 'Interbay', `ib-${index}-a`, sideADots),
+    teePlayer(`Interbay ${index}B`, 'Interbay', `ib-${index}-b`, [...sideADots]),
+    teePlayer(`Jackson ${index}A`, 'Jackson Park', `jp-${index}-a`, sideBDots),
+    teePlayer(`Jackson ${index}B`, 'Jackson Park', `jp-${index}-b`, [...sideBDots]),
   ]))
   const snap = await makeSnapshot(3, makePreplayClient('Chapman', groups))
 
@@ -363,6 +369,8 @@ test('Chapman pre-play: published 2v2 tee groups expose scheduled players withou
     assert.ok(match.holes.every((hole) =>
       hole.sourceMatchStatusA === null && hole.sourceMatchStatusB === null))
     assert.ok(match.holes.every((hole) => hole.netA == null && hole.netB == null && hole.grossA == null && hole.grossB == null))
+    assert.deepEqual(match.holes.map((hole) => hole.dotsA), sideADots)
+    assert.deepEqual(match.holes.map((hole) => hole.dotsB), sideBDots)
   }
 })
 
@@ -856,6 +864,177 @@ function makeUnplayedChapmanClient(): GGClient {
     )))))
   return makePreplayClient('Chapman', groups, scopes)
 }
+
+function makeScheduledTeamDotsClient(
+  format: 'Chapman' | 'Scramble',
+  sideA: [number[], number[]],
+  sideB: [number[], number[]],
+  scores: {
+    grossA?: Array<number | null>
+    netA?: Array<number | null>
+    grossB?: Array<number | null>
+    netB?: Array<number | null>
+  } = {},
+): GGClient {
+  const teamA = format === 'Chapman' ? 'Bill Wright' : 'Jackson Park'
+  const teamB = format === 'Chapman' ? 'West Seattle' : 'Interbay'
+  const cards = ['dots-a1', 'dots-a2', 'dots-b1', 'dots-b2']
+  const scope = unplayedPairedScope(teamA, teamB, cards as [string, string, string, string])
+  Object.assign(scope.aggregates[0], { gross_scores: scores.grossA ?? [], net_scores: scores.netA ?? [] })
+  Object.assign(scope.aggregates[1], { gross_scores: scores.grossB ?? [], net_scores: scores.netB ?? [] })
+  const teeSheet = [makePairingGroup(0, [
+    teePlayer('Side A One', teamA, cards[0]!, sideA[0]),
+    teePlayer('Side A Two', teamA, cards[1]!, sideA[1]),
+    teePlayer('Side B One', teamB, cards[2]!, sideB[0]),
+    teePlayer('Side B Two', teamB, cards[3]!, sideB[1]),
+  ])]
+  return makePreplayClient(format, teeSheet, [scope])
+}
+
+function dotsAt(...holes: Array<[number, number]>): number[] {
+  const dots = Array<number>(18).fill(0)
+  for (const [hole, count] of holes) dots[hole - 1] = count
+  return dots
+}
+
+test('scheduled Chapman publishes unanimous GG teammate allocation as side dots', async () => {
+  const dotsA = dotsAt()
+  const dotsB = dotsAt([1, 1], [4, 1], [9, 1], [12, 1], [14, 1])
+  const snap = await makeSnapshot(3, makeScheduledTeamDotsClient('Chapman', [dotsA, [...dotsA]], [dotsB, [...dotsB]]))
+  const match = snap.matches[0]!
+
+  assert.equal(match.status, 'scheduled')
+  assert.deepEqual(match.holes.map((hole) => hole.dotsA), dotsA)
+  assert.deepEqual(match.holes.map((hole) => hole.dotsB), dotsB)
+  assert.equal(snap.validationIssues.filter((issue) => issue.kind === 'side-handicap-dots-conflict').length, 0)
+})
+
+test('scheduled Scramble publishes side allocation before scoring begins', async () => {
+  const dotsA = dotsAt([2, 1], [17, 1])
+  const dotsB = dotsAt()
+  const snap = await makeSnapshot(2, makeScheduledTeamDotsClient('Scramble', [dotsA, [...dotsA]], [dotsB, [...dotsB]]))
+  const match = snap.matches[0]!
+
+  assert.equal(match.status, 'scheduled')
+  assert.deepEqual(match.holes.map((hole) => hole.dotsA), dotsA)
+  assert.deepEqual(match.holes.map((hole) => hole.dotsB), dotsB)
+})
+
+test('paired teammate disagreement leaves the side unresolved and emits a structural diagnostic', async () => {
+  const dotsA1 = dotsAt([2, 1])
+  const dotsA2 = dotsAt([3, 1])
+  const noDots = dotsAt()
+  const snap = await makeSnapshot(3, makeScheduledTeamDotsClient('Chapman', [dotsA1, dotsA2], [noDots, [...noDots]]))
+  const match = snap.matches[0]!
+
+  assert.ok(match.holes.every((hole) => hole.dotsA === null), 'neither teammate wins')
+  assert.ok(match.holes.every((hole) => hole.dotsB === 0), 'agreed zero allocation remains authoritative')
+  const issues = snap.validationIssues.filter((issue) => issue.kind === 'side-handicap-dots-conflict')
+  assert.equal(issues.length, 1)
+  assert.equal(issues[0]!.matchNo, 25)
+  assert.match(issues[0]!.detail, /side A/)
+  assert.match(issues[0]!.detail, /lengths=18\/18/)
+  assert.match(issues[0]!.detail, /differingHoles=2,3/)
+  assert.ok(!issues[0]!.detail.includes('Side A One'))
+  assert.ok(!issues[0]!.detail.includes('dots-a1'))
+})
+
+test('duplicated teammate arrays normalize once rather than double-counting', async () => {
+  const oneSideStroke = dotsAt([1, 1])
+  const noDots = dotsAt()
+  const snap = await makeSnapshot(2, makeScheduledTeamDotsClient(
+    'Scramble', [oneSideStroke, [...oneSideStroke]], [noDots, [...noDots]],
+  ))
+
+  assert.equal(snap.matches[0]!.holes[0]!.dotsA, 1)
+  assert.equal(snap.matches[0]!.holes[0]!.dotsB, 0)
+})
+
+test('scheduled side allocation preserves integer multi-stroke counts', async () => {
+  const multi = dotsAt([1, 2], [18, 3])
+  const noDots = dotsAt()
+  const snap = await makeSnapshot(3, makeScheduledTeamDotsClient('Chapman', [noDots, [...noDots]], [multi, [...multi]]))
+
+  assert.equal(snap.matches[0]!.holes[0]!.dotsB, 2)
+  assert.equal(snap.matches[0]!.holes[17]!.dotsB, 3)
+})
+
+test('empty allocation stays null while an explicit no-stroke allocation stays zero', async () => {
+  const noDots = dotsAt()
+  const snap = await makeSnapshot(2, makeScheduledTeamDotsClient('Scramble', [[], []], [noDots, [...noDots]]))
+  const match = snap.matches[0]!
+
+  assert.ok(match.holes.every((hole) => hole.dotsA === null))
+  assert.ok(match.holes.every((hole) => hole.dotsB === 0))
+  assert.equal(snap.validationIssues.filter((issue) => issue.kind === 'side-handicap-dots-conflict').length, 0)
+})
+
+test('played Scramble gross/net dots take precedence over scheduled side allocation per hole', async () => {
+  const scheduledA = dotsAt([1, 2], [2, 1])
+  const scheduledB = dotsAt([1, 2])
+  const snap = await makeSnapshot(2, makeScheduledTeamDotsClient(
+    'Scramble', [scheduledA, [...scheduledA]], [scheduledB, [...scheduledB]],
+    { grossA: [5], netA: [4], grossB: [4], netB: [4] },
+  ))
+  const match = snap.matches[0]!
+
+  assert.equal(match.holes[0]!.dotsA, 1, 'played gross-net difference overrides scheduled 2')
+  assert.equal(match.holes[0]!.dotsB, 0, 'played zero overrides scheduled 2')
+  assert.equal(match.holes[1]!.dotsA, 1, 'unplayed hole retains scheduled allocation')
+})
+
+test('completed Chapman fixture retains played gross/net dot precedence', async () => {
+  const tournamentPayload = readFix('tournament_2025_Chapman.json')
+  const client: GGClient = async (endpoint) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return tournamentPayload
+    if (endpoint.endsWith('/tournaments')) return [{ event: { id: 'chapman-completed', name: 'Chapman', result_scope: 'rs_pos_group' } }]
+    if (endpoint.endsWith('/tee_sheet')) return readFix('tee_sheet_2025_Chapman.json')
+    if (endpoint.endsWith('/team_points')) return { teams: buildTeamPointsFromScopes(tournamentPayload.event.scopes) }
+    return { round: { date: '2025-08-23', name: 'Chapman' } }
+  }
+  const snap = await makeSnapshot(3, client)
+
+  for (const match of snap.matches) {
+    for (const hole of match.holes) {
+      if (hole.grossA != null && hole.netA != null) assert.equal(hole.dotsA, Math.max(0, hole.grossA - hole.netA))
+      if (hole.grossB != null && hole.netB != null) assert.equal(hole.dotsB, Math.max(0, hole.grossB - hole.netB))
+    }
+  }
+})
+
+test('Fourball keeps player-level GG dot arrays unchanged', async () => {
+  const snap = await makeSnapshot(1, makeFakeFourballClient())
+  const expected = new Map<string, number[]>()
+  for (const wrapper of readFix('tee_sheet_2025_Fourball.json')) {
+    for (const player of wrapper.pairing_group.players ?? []) {
+      expected.set(String(player.member_card_id), player.handicap_dots_by_hole)
+    }
+  }
+  for (const match of snap.matches) {
+    for (const player of [...match.playersA, ...match.playersB]) {
+      assert.deepEqual(player.handicapDots, expected.get(player.ggMemberCardId!) ?? [])
+    }
+  }
+})
+
+test('Singles keeps player-level dots authoritative and does not create side dots', async () => {
+  const teeGroups = makeOfficialSinglesTeeGroups()
+  const expectedA = dotsAt([1, 1], [18, 2])
+  const expectedB = dotsAt([4, 1])
+  const target = OFFICIAL_2026_SINGLES_MATCH_SCHEDULE[0]!
+  for (const wrapper of teeGroups) {
+    for (const player of wrapper.pairing_group.players ?? []) {
+      if (String(player.member_card_id) === target.playerA.ggMemberCardId) player.handicap_dots_by_hole = expectedA
+      if (String(player.member_card_id) === target.playerB.ggMemberCardId) player.handicap_dots_by_hole = expectedB
+    }
+  }
+  const snap = await makeSnapshot(4, makePreplayClient('Singles', teeGroups))
+  const match = snap.matches.find((candidate) => candidate.matchNo === target.matchNo)!
+
+  assert.deepEqual(match.playersA[0]!.handicapDots, expectedA)
+  assert.deepEqual(match.playersB[0]!.handicapDots, expectedB)
+  assert.ok(match.holes.every((hole) => hole.dotsA === null && hole.dotsB === null))
+})
 
 // 24 R4 scopes shaped like the production pre-play Singles payload: the
 // official 1v1 schedule's players with GG's placeholder score "-".

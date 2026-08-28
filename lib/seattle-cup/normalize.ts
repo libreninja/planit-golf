@@ -355,7 +355,58 @@ function normalizeResult(s: string | null | undefined): string {
   return t
 }
 
-function buildHoles(a: GGAggregate, b: GGAggregate, holeData: GGHoleData | null): MatchHole[] {
+function usesSideHandicapDots(format: Format): boolean {
+  return format === 'scramble' || format === 'chapman'
+}
+
+// GG has no explicit scheduled side-dot field. In Scramble/Chapman tee sheets
+// it duplicates the side allocation onto both teammates. Treat that as side
+// authority only after validating the complete 18-hole arrays as unanimous.
+// Empty arrays mean the source is unavailable, while an agreed all-zero array
+// is an authoritative no-stroke allocation.
+function resolveScheduledSideDots(
+  players: MatchPlayer[],
+  matchNo: number,
+  side: 'A' | 'B',
+  validationIssues: ValidationIssue[],
+): number[] | null {
+  if (players.length !== 2) return null
+  const allocations = players.map((player) => player.handicapDots)
+  if (allocations.every((allocation) => allocation.length === 0)) return null
+
+  const lengths = allocations.map((allocation) => allocation.length)
+  const invalidHoles = new Set<number>()
+  const differingHoles = new Set<number>()
+  const inspectedLength = Math.max(HOLES, ...lengths)
+  for (let i = 0; i < inspectedLength; i++) {
+    const values = allocations.map((allocation) => allocation[i])
+    if (values.some((value) => typeof value !== 'number' || !Number.isInteger(value) || value < 0)) {
+      invalidHoles.add(i + 1)
+    }
+    if (values[0] !== values[1]) differingHoles.add(i + 1)
+  }
+
+  if (lengths.some((length) => length !== HOLES) || invalidHoles.size > 0 || differingHoles.size > 0) {
+    validationIssues.push({
+      matchNo,
+      kind: 'side-handicap-dots-conflict',
+      detail: `side ${side}: teammate allocations unresolved; lengths=${lengths.join('/')} differingHoles=${[...differingHoles].join(',') || 'none'} invalidHoles=${[...invalidHoles].join(',') || 'none'}`,
+    })
+    return null
+  }
+
+  // Safe to copy either array only after complete structural equality. Never
+  // add the duplicate arrays: each value is already the side's stroke count.
+  return allocations[0]!.slice()
+}
+
+function buildHoles(
+  a: GGAggregate,
+  b: GGAggregate,
+  holeData: GGHoleData | null,
+  scheduledDotsA: number[] | null = null,
+  scheduledDotsB: number[] | null = null,
+): MatchHole[] {
   const ha = a.hbh_match_status ?? []
   const hb = b.hbh_match_status ?? []
   const netA = a.net_scores ?? []
@@ -370,9 +421,16 @@ function buildHoles(a: GGAggregate, b: GGAggregate, holeData: GGHoleData | null)
     const nB = netB[i] ?? null
     const gA = grossA[i] ?? null
     const gB = grossB[i] ?? null
-    // Side effective strokes = gross − net (GG already applied dots to net).
-    const dotsA = gA != null && nA != null ? Math.max(0, gA - nA) : null
-    const dotsB = gB != null && nB != null ? Math.max(0, gB - nB) : null
+    // Played side effective strokes = gross − net (GG already applied dots to
+    // net) and always win. Before scoring, fall back to the validated scheduled
+    // side allocation. Null means neither authority is available; zero is an
+    // explicit no-stroke value and must not collapse to null.
+    const dotsA = gA != null && nA != null
+      ? Math.max(0, gA - nA)
+      : scheduledDotsA?.[i] ?? null
+    const dotsB = gB != null && nB != null
+      ? Math.max(0, gB - nB)
+      : scheduledDotsB?.[i] ?? null
 
     let winner: HoleSideStatus = null
     // A hole is "played/decided" when both side nets are present OR hbh shows a
@@ -425,6 +483,12 @@ function buildMatch(
 
   const playersA = buildPlayers(a, teamA, teeSheet)
   const playersB = buildPlayers(b, teamB, teeSheet)
+  const scheduledDotsA = usesSideHandicapDots(format)
+    ? resolveScheduledSideDots(playersA, matchNo, 'A', validationIssues)
+    : null
+  const scheduledDotsB = usesSideHandicapDots(format)
+    ? resolveScheduledSideDots(playersB, matchNo, 'B', validationIssues)
+    : null
 
   // Finality: a match is final only when a side carries a REAL GG match result
   // (winner shows "5 & 3", loser ""; a halved match shows "Tied" on both).
@@ -433,7 +497,7 @@ function buildMatch(
   const sourceResultRaw = normalizeSourceResult(a.score) ?? normalizeSourceResult(b.score)
   const isFinal = sourceResultRaw != null
 
-  const holes = buildHoles(a, b, teeSheet.holeData)
+  const holes = buildHoles(a, b, teeSheet.holeData, scheduledDotsA, scheduledDotsB)
   const { leadSide, leadBy, holesPlayed } = computeRunningLead(a, b, isFinal)
 
   // Points: NULL until GG awards them. Final → from GG (validate sum === 1).
@@ -569,6 +633,7 @@ function buildPairedTeeSheetMatch(
   format: Format,
   course: string,
   holeData: GGHoleData | null,
+  validationIssues: ValidationIssue[],
 ): Match | null {
   const players = group.players ?? []
   const teamOrder: TeamKey[] = []
@@ -590,14 +655,24 @@ function buildPairedTeeSheetMatch(
   if (sideA.length !== 2 || sideB.length !== 2) return null
 
   const match = buildTbdMatch(slotIndex, round, format, course, { teamA, teamB }, holeData)
+  const playersA = sideA.map((player) => buildPlayerFromTee(player, teamA))
+  const playersB = sideB.map((player) => buildPlayerFromTee(player, teamB))
+  const matchNo = matchNoFor(round, slotIndex)
+  const scheduledDotsA = usesSideHandicapDots(format)
+    ? resolveScheduledSideDots(playersA, matchNo, 'A', validationIssues)
+    : null
+  const scheduledDotsB = usesSideHandicapDots(format)
+    ? resolveScheduledSideDots(playersB, matchNo, 'B', validationIssues)
+    : null
   return {
     ...match,
     teamAIdentity: scheduledTeamIdentity('tee-sheet-team', teamA),
     teamBIdentity: scheduledTeamIdentity('tee-sheet-team', teamB),
-    playersA: sideA.map((player) => buildPlayerFromTee(player, teamA)),
-    playersB: sideB.map((player) => buildPlayerFromTee(player, teamB)),
+    playersA,
+    playersB,
     teeTime: group.tee_time ?? null,
     startingHole: group.hole ?? null,
+    holes: buildHoles({}, {}, holeData, scheduledDotsA, scheduledDotsB),
   }
 }
 
@@ -915,7 +990,7 @@ export function normalizeRound(round: RoundNumber, raw: GGRoundRaw): NormalizeRe
     // pairing fallback. Invalid/partial groups remain configured TBD slots.
     for (let i = 0; i < def.matchCount; i++) {
       const fromTee = raw.teeSheet.groups[i]
-        ? buildPairedTeeSheetMatch(raw.teeSheet.groups[i], i, round, def.format, def.course, raw.teeSheet.holeData)
+        ? buildPairedTeeSheetMatch(raw.teeSheet.groups[i], i, round, def.format, def.course, raw.teeSheet.holeData, validationIssues)
         : null
       if (fromTee) {
         matches.push(fromTee)
