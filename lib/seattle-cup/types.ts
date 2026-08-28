@@ -157,6 +157,47 @@ export interface SeattleCupRaceStatus {
   projectedPoints: Record<TeamKey, number>
 }
 
+// Tournament-level OFFICIAL winner resolution (Seattle Cup published tiebreak
+// rules). Deliberately separate from raceStatus: raceStatus answers "who is
+// ahead / what does it take to win outright on points" and intentionally
+// leaves a final points tie unresolved; tournamentResolution answers "who
+// officially wins the Cup once the published tiebreak rules are applied".
+// Standings, tied leaders, head-to-head MATCH WINS, and playoff-required are
+// DERIVED; only the out-of-band sudden-death fourball playoff result is
+// persisted (see lib/seattle-cup/resolution.ts + seattle_cup_tournament_results).
+export type TournamentResolutionStatus =
+  | 'active'               // competition still in progress
+  | 'points-winner'        // final, unique points leader (no tiebreak)
+  | 'head-to-head-winner'  // final, 2-team tie resolved by head-to-head match wins
+  | 'playoff-required'     // final, tie unresolved — sudden-death fourball playoff needed
+  | 'playoff-winner'       // final, tie resolved by the recorded playoff result
+
+export type TournamentResolutionMethod =
+  | 'points'
+  | 'head-to-head-wins'
+  | 'fourball-playoff'
+  | null
+
+export interface SeattleCupPlayoffState {
+  required: boolean
+  resolved: boolean
+  resolvedAt: string | null   // ISO timestamp of the recorded playoff result
+  resolvedBy: string | null   // profile id of the admin who recorded it
+  notes: string | null
+}
+
+export interface SeattleCupTournamentResolution {
+  status: TournamentResolutionStatus
+  winnerTeamKey: TeamKey | null
+  tiedTeamKeys: TeamKey[]
+  method: TournamentResolutionMethod
+  // Present only for an exactly-2-team tie: head-to-head MATCH WINS between
+  // the two tied teams across all four rounds (a halved match is a win for
+  // neither). Absent otherwise — never pairwise-computed for 3+ ties.
+  headToHeadWins?: Partial<Record<TeamKey, number>>
+  playoff: SeattleCupPlayoffState | null
+}
+
 // Complete round snapshot — /api/seattle-cup/live?round=N returns THIS.
 // Self-contained: the renderer never coordinates multiple responses.
 export interface SeattleCupRoundSnapshot {
@@ -190,6 +231,7 @@ export interface SeattleCupRoundSnapshot {
 // after reading all four normalized rounds.
 export interface SeattleCupRoundResponse extends SeattleCupRoundSnapshot {
   raceStatus: SeattleCupRaceStatus
+  tournamentResolution: SeattleCupTournamentResolution
 }
 
 export const POINTS_RULE = { win: 1, halve: 0.5, loss: 0 } as const
