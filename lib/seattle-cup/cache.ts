@@ -9,6 +9,7 @@
 
 import { makeSingleFlight } from '../competition/cache.ts'
 import { resultsCacheKey } from '../competition/cache-keys.ts'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SeattleCupRoundSnapshot } from './types.ts'
 import type { RoundNumber } from './types.ts'
 
@@ -34,6 +35,44 @@ export interface SeattleCupCacheStore {
   write(args: SeattleCupCacheArgs, payload: SeattleCupRoundSnapshot): Promise<void>
 }
 
+export type SeattleCupCacheOperation = 'read-fresh' | 'read-stale' | 'write'
+
+export interface SeattleCupCacheErrorEvent {
+  operation: SeattleCupCacheOperation
+  code: string
+}
+
+export type SeattleCupCacheErrorReporter = (event: SeattleCupCacheErrorEvent) => void
+
+export class SeattleCupCacheError extends Error {
+  readonly operation: SeattleCupCacheOperation
+  readonly code: string
+
+  constructor(operation: SeattleCupCacheOperation, code = 'unknown') {
+    super(`Seattle Cup cache ${operation} failed (${code})`)
+    this.name = 'SeattleCupCacheError'
+    this.operation = operation
+    this.code = code
+  }
+}
+
+function cacheError(operation: SeattleCupCacheOperation, error: unknown): SeattleCupCacheError {
+  if (error instanceof SeattleCupCacheError) return error
+  const rawCode = typeof error === 'object' && error !== null && 'code' in error
+    ? String(error.code ?? 'unknown')
+    : 'unknown'
+  const code = /^[A-Za-z0-9_-]{1,32}$/.test(rawCode) ? rawCode : 'unknown'
+  return new SeattleCupCacheError(operation, code)
+}
+
+export function cacheErrorEvent(
+  operation: SeattleCupCacheOperation,
+  error: unknown,
+): SeattleCupCacheErrorEvent {
+  const normalized = cacheError(operation, error)
+  return { operation: normalized.operation, code: normalized.code }
+}
+
 export function makeMemorySeattleCupStore(): { store: SeattleCupCacheStore; rows: Map<string, { payload: SeattleCupRoundSnapshot; expiresAt: number; fetchedAt: number }> } {
   const rows = new Map<string, { payload: SeattleCupRoundSnapshot; expiresAt: number; fetchedAt: number }>()
   const k = (a: SeattleCupCacheArgs) => keyOf(a)
@@ -56,74 +95,65 @@ export function makeMemorySeattleCupStore(): { store: SeattleCupCacheStore; rows
   }
 }
 
-// Resolve the cache store: injected (tests) → DB-backed → in-memory fallback.
-// The cache is an optimization, never a hard dependency. If the service client
-// can't be constructed (e.g. no service-role key in local dev) or any DB op
-// throws, we degrade to an in-memory store so the endpoint still serves fresh
-// data — just without cross-request persistence. See ground-truth report §6.
+// Resolve the cache store: injected (tests) → DB-backed. The live orchestration
+// treats fresh-read and write failures as non-fatal cache optimization failures,
+// while preserving the distinction between a genuine miss and a failed read.
 let _dbStore: SeattleCupCacheStore | null = null
-let _memFallback: SeattleCupCacheStore | null = null
-function memFallbackStore(): SeattleCupCacheStore {
-  if (_memFallback) return _memFallback
-  const rows = new Map<string, { payload: SeattleCupRoundSnapshot; expiresAt: number }>()
-  _memFallback = {
+
+export function makeSupabaseSeattleCupCacheStore(supabase: SupabaseClient): SeattleCupCacheStore {
+  const table = 'competition_live_cache'
+  return {
     async readFresh(a) {
-      const r = rows.get(keyOf(a))
-      if (!r || r.expiresAt <= Date.now()) return null
-      return r.payload
+      try {
+        const { data, error } = await supabase.from(table).select('payload, expires_at')
+          .eq('cache_key', keyOf(a)).gt('expires_at', new Date().toISOString()).maybeSingle()
+        if (error) throw cacheError('read-fresh', error)
+        return (data?.payload as SeattleCupRoundSnapshot | undefined) ?? null
+      } catch (error) {
+        throw cacheError('read-fresh', error)
+      }
     },
-    async readStale(a) { return rows.get(keyOf(a))?.payload ?? null },
+    async readStale(a) {
+      try {
+        const { data, error } = await supabase.from(table).select('payload, fetched_at')
+          .eq('cache_key', keyOf(a)).order('fetched_at', { ascending: false }).limit(1).maybeSingle()
+        if (error) throw cacheError('read-stale', error)
+        return (data?.payload as SeattleCupRoundSnapshot | undefined) ?? null
+      } catch (error) {
+        throw cacheError('read-stale', error)
+      }
+    },
     async write(a, payload) {
-      rows.set(keyOf(a), { payload, expiresAt: Date.now() + TTL_SECONDS * 1000 })
+      try {
+        const now = new Date()
+        const { error } = await supabase.from(table).upsert({
+          cache_key: keyOf(a),
+          tenant_key: 'seattle-cup',
+          competition_key: 'seattle-cup',
+          occurrence_id: `round-${a.round}`,
+          scope: 'results',
+          scoring: 'match',
+          payload: payload as unknown as Record<string, unknown>,
+          result_status: payload.resultStatus,
+          fetched_at: now.toISOString(),
+          expires_at: new Date(now.getTime() + TTL_SECONDS * 1000).toISOString(),
+        })
+        if (error) throw cacheError('write', error)
+      } catch (error) {
+        throw cacheError('write', error)
+      }
     },
   }
-  return _memFallback
 }
 
 async function dbStore(): Promise<SeattleCupCacheStore> {
   if (_dbStore) return _dbStore
-  try {
-    const { createServiceClient } = await import('../supabase/service.ts')
-    const supabase = createServiceClient()
-    const table = 'competition_live_cache'
-    _dbStore = {
-      async readFresh(a) {
-        try {
-          const { data } = await supabase.from(table).select('payload, expires_at')
-            .eq('cache_key', keyOf(a)).gt('expires_at', new Date().toISOString()).maybeSingle()
-          return (data?.payload as SeattleCupRoundSnapshot | undefined) ?? null
-        } catch { return null }
-      },
-      async readStale(a) {
-        try {
-          const { data } = await supabase.from(table).select('payload, fetched_at')
-            .eq('cache_key', keyOf(a)).order('fetched_at', { ascending: false }).limit(1).maybeSingle()
-          return (data?.payload as SeattleCupRoundSnapshot | undefined) ?? null
-        } catch { return null }
-      },
-      async write(a, payload) {
-        try {
-          const now = new Date()
-          await supabase.from(table).upsert({
-            cache_key: keyOf(a),
-            tenant_key: 'seattle-cup',
-            competition_key: 'seattle-cup',
-            occurrence_id: `round-${a.round}`,
-            scope: 'results',
-            scoring: 'match',
-            payload: payload as unknown as Record<string, unknown>,
-            result_status: payload.resultStatus,
-            fetched_at: now.toISOString(),
-            expires_at: new Date(now.getTime() + TTL_SECONDS * 1000).toISOString(),
-          })
-        } catch { /* best-effort */ }
-      },
-    }
-    return _dbStore
-  } catch {
-    // No service-role key / client misconfigured → degrade to in-memory.
-    return memFallbackStore()
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Seattle Cup cache persistence is not configured')
   }
+  const { createServiceClient } = await import('../supabase/service.ts')
+  _dbStore = makeSupabaseSeattleCupCacheStore(createServiceClient())
+  return _dbStore
 }
 
 async function resolveStore(store?: SeattleCupCacheStore): Promise<SeattleCupCacheStore> {
@@ -131,13 +161,25 @@ async function resolveStore(store?: SeattleCupCacheStore): Promise<SeattleCupCac
 }
 
 export async function readSeattleCupFresh(args: SeattleCupCacheArgs, store?: SeattleCupCacheStore): Promise<SeattleCupRoundSnapshot | null> {
-  return (await resolveStore(store)).readFresh(args)
+  try {
+    return await (await resolveStore(store)).readFresh(args)
+  } catch (error) {
+    throw cacheError('read-fresh', error)
+  }
 }
 export async function readSeattleCupStale(args: SeattleCupCacheArgs, store?: SeattleCupCacheStore): Promise<SeattleCupRoundSnapshot | null> {
-  return (await resolveStore(store)).readStale(args)
+  try {
+    return await (await resolveStore(store)).readStale(args)
+  } catch (error) {
+    throw cacheError('read-stale', error)
+  }
 }
 export async function writeSeattleCup(args: SeattleCupCacheArgs, payload: SeattleCupRoundSnapshot, store?: SeattleCupCacheStore): Promise<void> {
-  await (await resolveStore(store)).write(args, payload)
+  try {
+    await (await resolveStore(store)).write(args, payload)
+  } catch (error) {
+    throw cacheError('write', error)
+  }
 }
 
 export const seattleCupSingleFlight = makeSingleFlight<SeattleCupRoundSnapshot>()

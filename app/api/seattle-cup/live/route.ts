@@ -5,6 +5,7 @@ import { ROUND_LIST } from '@/lib/seattle-cup/config'
 import { calculateSeattleCupRaceStatus } from '@/lib/seattle-cup/race'
 import { calculateSeattleCupTournamentResolution } from '@/lib/seattle-cup/resolution'
 import { readSeattleCupPlayoffRecord } from '@/lib/seattle-cup/playoff-store'
+import { createSeattleCupTimingCollector, serverTimingHeaders } from '@/lib/seattle-cup/timing'
 import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
 import type { SeattleCupRoundResponse } from '@/lib/seattle-cup/types'
 
@@ -46,6 +47,8 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const requestStartedAt = performance.now()
+  const timing = createSeattleCupTimingCollector()
   const url = new URL(request.url)
   const roundParam = url.searchParams.get('round')
   const round = roundParam ? Number(roundParam) : NaN
@@ -71,7 +74,10 @@ export async function GET(request: Request) {
     // round response. Concurrent CupCentral requests collapse through the
     // existing per-round single-flight/cache layer.
     const snapshots = await Promise.all(
-      ROUND_LIST.map((definition) => getSeattleCupLive({ round: definition.round })),
+      ROUND_LIST.map((definition) => getSeattleCupLive({
+        round: definition.round,
+        deps: { timing },
+      })),
     )
     const snapshot = snapshots.find((candidate) => candidate.round === round)
     if (!snapshot) throw new Error(`normalized round ${round} missing`)
@@ -87,9 +93,16 @@ export async function GET(request: Request) {
       raceStatus: calculateSeattleCupRaceStatus(snapshots),
       tournamentResolution: calculateSeattleCupTournamentResolution(snapshots, playoffRecord),
     }
-    return NextResponse.json(response, { headers: corsHeaders(origin) })
+    timing.add('total', performance.now() - requestStartedAt)
+    return NextResponse.json(response, {
+      headers: { ...corsHeaders(origin), ...serverTimingHeaders(timing) },
+    })
   } catch (err) {
     console.error(`[api/seattle-cup/live] round ${round}:`, err)
-    return NextResponse.json({ error: 'Failed to fetch Seattle Cup live results' }, { status: 502, headers: corsHeaders(origin) })
+    timing.add('total', performance.now() - requestStartedAt)
+    return NextResponse.json({ error: 'Failed to fetch Seattle Cup live results' }, {
+      status: 502,
+      headers: { ...corsHeaders(origin), ...serverTimingHeaders(timing) },
+    })
   }
 }

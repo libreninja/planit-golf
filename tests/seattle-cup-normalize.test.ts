@@ -451,9 +451,9 @@ test('Singles published identities use stable GG card ids and existing roster en
     deps: {
       ggClient: makePreplayClient('Singles', makeOfficialSinglesTeeGroups()),
       cacheStore: store,
-      rosterLookup: async (memberCardId) => memberCardId === kyussCardId
-        ? { name: 'Kyuss Lis', handicapIndex: null, ghin: 'test-ghin' }
-        : null,
+      rosterLookup: async (memberCardIds) => new Map(memberCardIds.includes(kyussCardId)
+        ? [[kyussCardId, { name: 'Kyuss Lis', handicapIndex: null, ghin: 'test-ghin' }]]
+        : []),
     },
   })
   const kyuss = snap.matches[0]!.playersA[0]!
@@ -741,6 +741,67 @@ test('no stale row + upstream error → rethrows (route returns 502)', async () 
     () => getSeattleCupLive({ round: 1, deps: { ggClient: badClient, cacheStore: store, rosterLookup: null } }),
     /upstream down/,
   )
+})
+
+test('cache read failure is observable and distinct from an ordinary miss', async () => {
+  const readFailureEvents: { operation: string; code: string }[] = []
+  const failingReadStore = {
+    async readFresh() {
+      throw Object.assign(new Error('sensitive database detail must not be reported'), { code: '42501' })
+    },
+    async readStale() { return null },
+    async write() {},
+  }
+  const recovered = await getSeattleCupLive({
+    round: 1,
+    deps: {
+      ggClient: makeFakeFourballClient(),
+      cacheStore: failingReadStore,
+      rosterLookup: null,
+      onCacheError: (event) => readFailureEvents.push(event),
+    },
+  })
+  assert.equal(recovered.resultStatus, 'final', 'fresh GG path remains available after cache read failure')
+  assert.deepEqual(readFailureEvents, [{ operation: 'read-fresh', code: '42501' }])
+
+  const missEvents: { operation: string; code: string }[] = []
+  const ordinaryMissStore = {
+    async readFresh() { return null },
+    async readStale() { return null },
+    async write() {},
+  }
+  await getSeattleCupLive({
+    round: 1,
+    deps: {
+      ggClient: makeFakeFourballClient(),
+      cacheStore: ordinaryMissStore,
+      rosterLookup: null,
+      onCacheError: (event) => missEvents.push(event),
+    },
+  })
+  assert.deepEqual(missEvents, [], 'a genuine no-row miss emits no cache failure diagnostic')
+})
+
+test('cache write failure is observable without breaking a fresh response', async () => {
+  const events: { operation: string; code: string }[] = []
+  const store = {
+    async readFresh() { return null },
+    async readStale() { return null },
+    async write() {
+      throw Object.assign(new Error('connection detail must not be reported'), { code: '08006' })
+    },
+  }
+  const snapshot = await getSeattleCupLive({
+    round: 1,
+    deps: {
+      ggClient: makeFakeFourballClient(),
+      cacheStore: store,
+      rosterLookup: null,
+      onCacheError: (event) => events.push(event),
+    },
+  })
+  assert.equal(snapshot.resultStatus, 'final')
+  assert.deepEqual(events, [{ operation: 'write', code: '08006' }])
 })
 
 // ---------------- public-response shape ----------------

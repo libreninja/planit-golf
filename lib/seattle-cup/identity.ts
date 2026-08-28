@@ -7,10 +7,11 @@
 // never a silently-guessed identity. See ground-truth report §3.
 //
 // Defensive by design: any lookup failure leaves the GG-derived identity
-// intact and never blocks the snapshot. The lookup is INJECTABLE so the pure
-// normalizer's behavior is unit-tested without Supabase, and this enricher is
-// tested with a fake lookup.
+// intact and never blocks the snapshot. The batched lookup is INJECTABLE so
+// the pure normalizer's behavior is unit-tested without Supabase, and this
+// enricher is tested with a fake lookup.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Match, MatchPlayer, SeattleCupRoundSnapshot, IdentityStatus } from './types.ts'
 
 export interface RosterEntry {
@@ -20,7 +21,9 @@ export interface RosterEntry {
   ghin?: string | null
 }
 
-export type RosterLookup = (memberCardId: string) => Promise<RosterEntry | null>
+export type RosterBatchLookup = (
+  memberCardIds: readonly string[],
+) => Promise<ReadonlyMap<string, RosterEntry>>
 
 // Resolve identities for an entire snapshot in place. Collects the unique card
 // ids and issues a single batched lookup (one round-trip) when a real lookup is
@@ -28,7 +31,7 @@ export type RosterLookup = (memberCardId: string) => Promise<RosterEntry | null>
 // enrichment is best-effort and never throws.
 export async function enrichIdentities(
   snapshot: SeattleCupRoundSnapshot,
-  lookup: RosterLookup | null,
+  lookup: RosterBatchLookup | null,
 ): Promise<SeattleCupRoundSnapshot> {
   if (!lookup) return snapshot
   const ids = new Set<string>()
@@ -38,10 +41,12 @@ export async function enrichIdentities(
     }
   }
   if (!ids.size) return snapshot
-  const cache = new Map<string, RosterEntry | null>()
-  await Promise.all([...ids].map(async (id) => {
-    try { cache.set(id, await lookup(id)) } catch { cache.set(id, null) }
-  }))
+  let cache: ReadonlyMap<string, RosterEntry>
+  try {
+    cache = await lookup([...ids])
+  } catch {
+    cache = new Map()
+  }
   for (const m of snapshot.matches) {
     m.playersA = m.playersA.map((p) => applyRoster(p, cache.get(p.ggMemberCardId ?? '') ?? null))
     m.playersB = m.playersB.map((p) => applyRoster(p, cache.get(p.ggMemberCardId ?? '') ?? null))
@@ -63,19 +68,41 @@ function applyRoster(p: MatchPlayer, entry: RosterEntry | null): MatchPlayer {
   return { ...p, identityStatus }
 }
 
-// Build a real roster lookup against igc_league_members (service role). Returns
-// null on any error so the enricher degrades gracefully. Seattle Cup is not a
-// league_key value, so we look up across all league_keys by member_card_id.
-export async function createRosterLookup(): Promise<RosterLookup | null> {
+// Build a real batched roster lookup against igc_league_members (service role).
+// Seattle Cup is not a league_key value, so lookup spans both league rosters.
+// Ordering makes the unlikely same-card-in-both-leagues case deterministic;
+// the first league_key row wins, matching the old "one matching row" shape.
+export function makeSupabaseRosterBatchLookup(supabase: SupabaseClient): RosterBatchLookup {
+  return async (memberCardIds) => {
+    const uniqueIds = [...new Set(memberCardIds.filter((id) => id.length > 0))]
+    if (!uniqueIds.length) return new Map()
+
+    const { data, error } = await supabase.from('igc_league_members')
+      .select('league_key, member_card_id, name, handicap_index')
+      .in('member_card_id', uniqueIds)
+      .order('league_key', { ascending: true })
+    if (error) {
+      throw new Error(`Unable to batch-read Seattle Cup roster identities (${error.code ?? 'unknown'})`)
+    }
+
+    const requested = new Set(uniqueIds)
+    const entries = new Map<string, RosterEntry>()
+    for (const row of data ?? []) {
+      const memberCardId = typeof row.member_card_id === 'string' ? row.member_card_id : ''
+      if (!requested.has(memberCardId) || entries.has(memberCardId)) continue
+      entries.set(memberCardId, {
+        name: row.name ?? null,
+        handicapIndex: row.handicap_index ?? null,
+      })
+    }
+    return entries
+  }
+}
+
+export async function createRosterBatchLookup(): Promise<RosterBatchLookup | null> {
   try {
     const { createServiceClient } = await import('../supabase/service.ts')
-    const supabase = createServiceClient()
-    return async (memberCardId: string): Promise<RosterEntry | null> => {
-      const { data, error } = await supabase.from('igc_league_members')
-        .select('name, handicap_index').eq('member_card_id', memberCardId).limit(1).maybeSingle()
-      if (error || !data) return null
-      return { name: data.name ?? null, handicapIndex: data.handicap_index ?? null }
-    }
+    return makeSupabaseRosterBatchLookup(createServiceClient())
   } catch {
     return null
   }
