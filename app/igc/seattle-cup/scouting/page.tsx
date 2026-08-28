@@ -71,7 +71,7 @@ export default async function ScoutingBoardPage({
           </div>
           {canManageAccess ? (
             <Button asChild variant="outline" size="sm">
-              <Link href="/admin/scouting">Manage access</Link>
+              <Link href="/admin/scouting">Seattle Cup admin</Link>
             </Button>
           ) : null}
         </div>

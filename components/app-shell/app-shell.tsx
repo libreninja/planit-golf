@@ -243,7 +243,7 @@ function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/admin')
     return [{ label: 'Interbay', href: '/igc' }, { label: 'Registration admin' }]
   if (pathname === '/admin/scouting')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Manage access' }]
+    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Admin' }]
   return []
 }
 

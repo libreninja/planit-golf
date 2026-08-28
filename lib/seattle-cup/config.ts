@@ -105,6 +105,14 @@ export interface RoundDef {
 // locked from the resolved 2026 event (ground-truth report §1).
 const GG_EVENT_ID = '12971191003644979032'
 
+// Stable tournament identity for durable Planit-owned facts that GG cannot
+// represent (currently only an out-of-band fourball playoff result).
+export const SEATTLE_CUP_EVENT = {
+  key: 'seattle-cup-2026',
+  season: 2026,
+  ggEventId: GG_EVENT_ID,
+} as const
+
 // Team-vs-team schedule ordering per round, extracted from the 2025 GG scopes
 // (same four teams, double round-robin). Each team plays 6 matches in the paired
 // rounds (Fourball/Scramble/Chapman) and 12 in Singles.

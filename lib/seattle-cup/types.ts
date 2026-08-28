@@ -157,6 +157,29 @@ export interface SeattleCupRaceStatus {
   projectedPoints: Record<TeamKey, number>
 }
 
+export type TournamentResolutionStatus =
+  | 'active'
+  | 'points-winner'
+  | 'head-to-head-winner'
+  | 'playoff-required'
+  | 'playoff-winner'
+
+export type TournamentResolutionMethod =
+  | 'points'
+  | 'head-to-head-wins'
+  | 'fourball-playoff'
+
+// Authoritative tournament-level outcome. Normal match data supplies every
+// field except a fourball-playoff winner, which is recorded by an authenticated
+// Planit admin. Public consumers never receive the admin note or actor audit.
+export interface SeattleCupTournamentResolution {
+  status: TournamentResolutionStatus
+  tiedTeamKeys: TeamKey[]
+  winnerTeamKey: TeamKey | null
+  method: TournamentResolutionMethod | null
+  headToHeadWins: Partial<Record<TeamKey, number>> | null
+}
+
 // Complete round snapshot — /api/seattle-cup/live?round=N returns THIS.
 // Self-contained: the renderer never coordinates multiple responses.
 export interface SeattleCupRoundSnapshot {
@@ -190,6 +213,7 @@ export interface SeattleCupRoundSnapshot {
 // after reading all four normalized rounds.
 export interface SeattleCupRoundResponse extends SeattleCupRoundSnapshot {
   raceStatus: SeattleCupRaceStatus
+  tournamentResolution: SeattleCupTournamentResolution
 }
 
 export const POINTS_RULE = { win: 1, halve: 0.5, loss: 0 } as const

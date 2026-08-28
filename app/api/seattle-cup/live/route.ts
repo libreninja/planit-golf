@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getSeattleCupLive } from '@/lib/seattle-cup/live'
 import { ROUND_LIST } from '@/lib/seattle-cup/config'
 import { calculateSeattleCupRaceStatus } from '@/lib/seattle-cup/race'
+import { getSeattleCupTournamentResolution } from '@/lib/seattle-cup/playoff-store'
 import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
 import type { SeattleCupRoundResponse } from '@/lib/seattle-cup/types'
 
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
     const response: SeattleCupRoundResponse = {
       ...snapshot,
       raceStatus: calculateSeattleCupRaceStatus(snapshots),
+      tournamentResolution: await getSeattleCupTournamentResolution(snapshots),
     }
     return NextResponse.json(response, { headers: corsHeaders(origin) })
   } catch (err) {

@@ -9,10 +9,10 @@ import {
   resendScoutingInvite,
 } from '@/app/scouting-admin-actions'
 import { Button } from '@/components/ui/button'
+import { TournamentResolutionAdmin } from '@/components/seattle-cup/tournament-resolution-admin'
 
-// Seattle Cup scouting access admin. Invite (email), grant to an existing
-// account, revoke access, and manage pending invites (resend/revoke). All
-// writes are service-role; the page is guarded by requireAdmin.
+// Seattle Cup admin: official tournament resolution plus scouting access.
+// All writes are service-role; the page is guarded by requireAdmin.
 
 function fmtDate(v: string | null | undefined): string {
   return v ? v.slice(0, 10) : '—'
@@ -72,7 +72,9 @@ export default async function ScoutingAdminPage() {
   return (
     <div>
       <div className="space-y-8 py-2">
-        <h1 className="text-xl font-semibold">Scouting Access</h1>
+        <h1 className="text-xl font-semibold">Seattle Cup Admin</h1>
+        <TournamentResolutionAdmin />
+        <h2 className="text-xl font-semibold">Scouting access</h2>
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Invite a new captain */}
           <section className="rounded-md border border-border bg-white/80 p-4">
