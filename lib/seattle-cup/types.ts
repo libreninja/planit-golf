@@ -24,7 +24,7 @@ export interface MatchPlayer {
   name: string                     // display name (GG roster / tee sheet)
   teamKey: TeamKey | null
   courseHandicap: number | null    // GG course_handicap (match-adjusted)
-  handicapDots: number[]           // per-hole stroke dots (GG handicap_dots_by_hole)
+  handicapDots: number[]           // GG player allocation; authoritative per-player for Fourball/Singles
   grossScores: Array<number | null> // authoritative GG individual_results.gross_scores; [] when unavailable
   netScores: Array<number | null>   // authoritative GG individual_results.net_scores; [] when unavailable
   identityStatus: IdentityStatus
@@ -66,7 +66,11 @@ export interface MatchHole {
   netB: number | null
   grossA: number | null      // side A best-ball / team gross
   grossB: number | null
-  dotsA: number | null       // handicap strokes applied on this hole (side A) — display
+  // Canonical SIDE display allocation for paired/team formats (Scramble and
+  // Chapman). Played GG gross/net is authoritative when present; otherwise
+  // this is the validated unanimous teammate allocation from the GG tee sheet.
+  // Consumers must not reconstruct it from an arbitrary player's handicapDots.
+  dotsA: number | null
   dotsB: number | null
   sourceMatchStatusA: string | null // GG side A hbh_match_status for this hole
   sourceMatchStatusB: string | null // GG side B hbh_match_status for this hole
@@ -170,6 +174,7 @@ export interface ValidationIssue {
     | 'team-identity-unresolved'
     | 'same-team-match'
     | 'player-team-mismatch'
+    | 'side-handicap-dots-conflict'
     | 'round-points-mismatch'
     | 'published-schedule-mismatch'
   detail: string

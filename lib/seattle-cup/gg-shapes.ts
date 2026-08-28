@@ -64,9 +64,11 @@ export interface GGTeamPoints {
 // tee_sheet: array of pairing groups; each wraps {pairing_group: {tee_time,
 // hole, date, players[]}}. Players carry identity + handicap dots + the tee's
 // hole_data (par/strokeIndex). The tee sheet is LOGISTICAL ONLY for match-play
-// (tee time, starting hole, per-player dots) — it never defines matches. For
+// (tee time, starting hole, dot allocation) — it never defines matches. For
 // Singles the foursome is 4 players from 4 teams = 2 separate 1v1 matches that
 // live in the tournament scopes, NOT the foursome grouping. See Singles invariant.
+// GG duplicates one side allocation onto both teammates for Scramble/Chapman;
+// normalize.ts validates that agreement before publishing side-level dots.
 export interface GGHoleData {
   par?: number[]
   handicap?: number[]   // stroke index per hole (1..18)
@@ -83,7 +85,7 @@ export interface GGPlayer {
   external_id?: string | null
   course_handicap?: number | string | null
   handicap_index?: number | string | null
-  handicap_dots_by_hole?: number[]
+  handicap_dots_by_hole?: number[] // per-player in individual formats; duplicated side allocation in team formats
   score_array?: (number | null)[]
   tee?: {
     hole_data?: GGHoleData
