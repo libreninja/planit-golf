@@ -10,10 +10,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { fetchRoundRaw, pickFormatTournamentId, type GGClient } from '../lib/seattle-cup/gg-fetch.ts'
-import { normalizeRound } from '../lib/seattle-cup/normalize.ts'
+import { normalizeRound, normalizeSourceResult } from '../lib/seattle-cup/normalize.ts'
 import { getSeattleCupLive } from '../lib/seattle-cup/live.ts'
 import { makeMemorySeattleCupStore } from '../lib/seattle-cup/cache.ts'
-import { OFFICIAL_2026_SINGLES_MATCH_SCHEDULE, SEATTLE_CUP_ROUNDS, SEATTLE_CUP_TEAMS } from '../lib/seattle-cup/config.ts'
+import { OFFICIAL_2026_SINGLES_MATCH_SCHEDULE, ROUND_LIST, SEATTLE_CUP_ROUNDS, SEATTLE_CUP_TEAMS } from '../lib/seattle-cup/config.ts'
+import { calculateSeattleCupRaceStatus } from '../lib/seattle-cup/race.ts'
+import { calculateSeattleCupTournamentResolution } from '../lib/seattle-cup/resolution.ts'
 import { identitySummary } from '../lib/seattle-cup/identity.ts'
 import type { SeattleCupRoundSnapshot, Match, RoundNumber } from '../lib/seattle-cup/types.ts'
 
@@ -590,4 +592,315 @@ test('the normalized response exposes no raw GG payload (only the contract)', as
   for (const leak of ['hbh_match_status', 'points_summary_team_id', 'member_card_id_str', 'aggregates', 'scorecard_statuses', 'disposition']) {
     assert.ok(!json.includes(`"${leak}"`), `raw GG field "${leak}" must not leak into the response`)
   }
+})
+
+// ---------------- GG placeholder finality (2026 R3/R4 production incident) ----------------
+//
+// Once GG published R3 Chapman / R4 Singles pairings, it supplied `score: "-"`
+// on every unplayed match's aggregates. The old finality rule ("either side's
+// score is non-empty") treated the placeholder as a real result and cascaded:
+// matches final → rounds final → fake 0-6 / 0-12 loss records → Race final
+// with toWin null. These tests protect the semantic boundary: PAIRINGS DO NOT
+// IMPLY FINALITY.
+
+// Production-shaped GG scope pair for a paired-but-unplayed match: players,
+// team names, and member cards populated; all 18 holes null; points null; and
+// GG's placeholder score "-" on both aggregates (recorded from production
+// /api/seattle-cup/live?round=3 on 2026-08-28).
+function unplayedPairedScope(teamAName: string, teamBName: string, cardIds: [string, string, string, string], score = '-') {
+  const aggregate = (name: string, cards: string[], scoreOverride?: string) => ({
+    name, member_cards: cards.map((id) => ({ member_card_id: id })),
+    net_scores: [], gross_scores: [], hbh_match_status: [],
+    score: scoreOverride ?? score, points: null,
+  })
+  return { aggregates: [
+    aggregate(teamAName, cardIds.slice(0, 2)),
+    aggregate(teamBName, cardIds.slice(2)),
+  ] }
+}
+
+function chapmanTeamName(teamKey: string): string {
+  return SEATTLE_CUP_TEAMS[teamKey as keyof typeof SEATTLE_CUP_TEAMS].label
+}
+
+// 12 R3 scopes + tee groups shaped exactly like the production pre-play R3
+// payload: one scope per scheduled slot, both sides populated, score "-".
+function makeUnplayedChapmanClient(): GGClient {
+  const scopes = ROUND_LIST[2]!.matchSlots.map((slot, index) => unplayedPairedScope(
+    chapmanTeamName(slot.teamA), chapmanTeamName(slot.teamB),
+    [`r3-${index}-a1`, `r3-${index}-a2`, `r3-${index}-b1`, `r3-${index}-b2`],
+  ))
+  const groups = scopes.map((scope, index) => makePairingGroup(index, scope.aggregates.flatMap((aggregate, side) =>
+    aggregate.member_cards.map((card: any, player: number) => teePlayer(
+      `R3 ${index}-${side}-${player}`, aggregate.name, card.member_card_id,
+    )))))
+  return makePreplayClient('Chapman', groups, scopes)
+}
+
+// 24 R4 scopes shaped like the production pre-play Singles payload: the
+// official 1v1 schedule's players with GG's placeholder score "-".
+function makeUnplayedSinglesClient(): GGClient {
+  const scopes = OFFICIAL_2026_SINGLES_MATCH_SCHEDULE.map((match) => ({
+    aggregates: [
+      {
+        name: `${chapmanTeamName(match.playerA.teamKey)} (${match.playerA.name})`,
+        member_cards: [{ member_card_id: match.playerA.ggMemberCardId ?? `official-${match.matchNo}-a` }],
+        net_scores: [], gross_scores: [], hbh_match_status: [], score: '-', points: null,
+      },
+      {
+        name: `${chapmanTeamName(match.playerB.teamKey)} (${match.playerB.name})`,
+        member_cards: [{ member_card_id: match.playerB.ggMemberCardId ?? `official-${match.matchNo}-b` }],
+        net_scores: [], gross_scores: [], hbh_match_status: [], score: '-', points: null,
+      },
+    ],
+  }))
+  return makePreplayClient('Singles', makeOfficialSinglesTeeGroups(), scopes)
+}
+
+test('normalizeSourceResult: GG placeholder/blank scores are not results; real result forms pass through', () => {
+  assert.equal(normalizeSourceResult('-'), null, 'GG "-" placeholder is not a result')
+  assert.equal(normalizeSourceResult(' - '), null, 'padded placeholder is not a result')
+  assert.equal(normalizeSourceResult(''), null)
+  assert.equal(normalizeSourceResult('   '), null)
+  assert.equal(normalizeSourceResult(null), null)
+  assert.equal(normalizeSourceResult(undefined), null)
+  // Real GG match-play result forms (fixture-evidenced) pass through verbatim.
+  assert.equal(normalizeSourceResult('Tied'), 'Tied')
+  assert.equal(normalizeSourceResult('2 up'), '2 up')
+  assert.equal(normalizeSourceResult('2 & 1'), '2 & 1')
+  assert.equal(normalizeSourceResult('3&2'), '3&2')
+  assert.equal(normalizeSourceResult('5 & 3'), '5 & 3')
+})
+
+test('R3 Chapman pairings-posted/unplayed: GG "-" placeholder never implies finality', async () => {
+  const snap = await makeSnapshot(3, makeUnplayedChapmanClient())
+
+  assert.equal(snap.competitionScopesAvailable, true, 'pairings/scopes are populated')
+  assert.equal(snap.pairingsPublished, true)
+  assert.equal(snap.roundStatus, 'pairings-available', 'round must not become final or live')
+  assert.equal(snap.resultStatus, 'not-started')
+  assert.equal(snap.matches.length, 12)
+  for (const match of snap.matches) {
+    assert.equal(match.sourceResult, null, 'GG "-" must not normalize into a result')
+    assert.equal(match.result, null)
+    assert.notEqual(match.status, 'final')
+    assert.equal(match.status, 'scheduled')
+    assert.equal(match.matchState, 'tbd')
+    assert.equal(match.through, 'not-started')
+    assert.equal(match.validationStatus, 'tbd')
+    assert.equal(match.pointsA, null)
+    assert.equal(match.pointsB, null)
+    assert.ok(match.holes.every((hole) =>
+      hole.netA == null && hole.netB == null && hole.grossA == null && hole.grossB == null),
+      'holes stay unplayed')
+  }
+  // No fake 0-6 loss records.
+  for (const standing of [...snap.roundStandings, ...snap.overallStandings]) {
+    assert.equal(standing.matchesPlayed, 0)
+    assert.equal(standing.matchesWon, 0)
+    assert.equal(standing.matchesHalved, 0)
+    assert.equal(standing.matchesLost, 0, 'an unplayed match must not count as a loss')
+    assert.equal(standing.roundPoints, 0)
+  }
+})
+
+test('R4 Singles pairings-posted/unplayed: 24 true 1v1 matches stay scheduled, never final', async () => {
+  const snap = await makeSnapshot(4, makeUnplayedSinglesClient())
+
+  assert.equal(snap.competitionScopesAvailable, true)
+  assert.equal(snap.matches.length, 24)
+  assert.equal(snap.roundStatus, 'pairings-available')
+  assert.equal(snap.resultStatus, 'not-started')
+  for (const match of snap.matches) {
+    assert.equal(match.sourceResult, null)
+    assert.notEqual(match.status, 'final')
+    assert.equal(match.status, 'scheduled')
+    assert.equal(match.playersA.length, 1, 'Singles stays independent 1v1')
+    assert.equal(match.playersB.length, 1)
+    assert.equal(match.pointsA, null)
+    assert.equal(match.pointsB, null)
+   }
+  // The asymmetric official graph is untouched: pair-edge counts 5/5/4/4/3/3.
+  const pairCounts = new Map<string, number>()
+  for (const match of snap.matches) {
+    const key = [match.teamA, match.teamB].sort().join('|')
+    pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1)
+  }
+  assert.deepEqual([...pairCounts.values()].sort((a, b) => a - b), [3, 3, 4, 4, 5, 5])
+  // No fake 0-12 loss records.
+  for (const standing of [...snap.roundStandings, ...snap.overallStandings]) {
+    assert.equal(standing.matchesPlayed, 0)
+    assert.equal(standing.matchesLost, 0, 'an unplayed Singles match must not count as a loss')
+   }
+})
+
+test('real GG results (Tied / 2 up / 2 & 1) still finalize matches, round, and standings', async () => {
+  // A fully played Chapman round in authentic GG shape: the winner's aggregate
+  // carries the result string, the loser's carries "" (a tie shows "Tied" on
+  // both), and GG has awarded points (fixture-recorded forms). Side A wins
+  // every decisive match so expected standings are computable.
+  const RESULT_CYCLE = ['Tied', '2 up', '2 & 1'] as const
+  const slots = ROUND_LIST[2]!.matchSlots
+  const scopes = slots.map((slot, index) => {
+    const result = RESULT_CYCLE[index % 3]!
+    const tie = result === 'Tied'
+    const cards = [`p${index}-a1`, `p${index}-a2`, `p${index}-b1`, `p${index}-b2`]
+    const aggregate = (name: string, cardIds: string[], score: string, points: string) => ({
+      name, member_cards: cardIds.map((id) => ({ member_card_id: id })),
+      net_scores: [], gross_scores: [], hbh_match_status: [], score, points,
+    })
+    return { aggregates: [
+      aggregate(chapmanTeamName(slot.teamA), cards.slice(0, 2), result, tie ? '0.50' : '1.00'),
+      aggregate(chapmanTeamName(slot.teamB), cards.slice(2), tie ? 'Tied' : '', tie ? '0.50' : '0.00'),
+    ] }
+  })
+  const snap = await makeSnapshot(3, makePreplayClient('Chapman', [], scopes))
+
+  assert.equal(snap.roundStatus, 'final', 'genuine results still finalize the round')
+  assert.equal(snap.resultStatus, 'final')
+  assert.ok(snap.matches.every((match) => match.status === 'final'))
+  assert.deepEqual(
+    snap.matches.map((m) => m.sourceResult),
+    slots.map((_, index) => RESULT_CYCLE[index % 3]),
+    'every real GG result form survives normalization',
+  )
+  for (const match of snap.matches) {
+    assert.equal(match.through, 'final')
+    assert.notEqual(match.pointsA, null)
+    assert.notEqual(match.pointsB, null)
+  }
+  // Standings reflect genuinely played matches: every team plays 6, and each
+  // team's W/H/L accounts for all 6 (no unplayed match counted as a loss).
+  for (const teamKey of Object.keys(SEATTLE_CUP_TEAMS)) {
+    let played = 0, won = 0, halved = 0, lost = 0
+    slots.forEach((slot, index) => {
+      if (slot.teamA !== teamKey && slot.teamB !== teamKey) return
+      played++
+      if (RESULT_CYCLE[index % 3] === 'Tied') halved++
+      else if (slot.teamA === teamKey) won++
+      else lost++
+    })
+    const standing = snap.roundStandings.find((s) => s.teamKey === teamKey)!
+    assert.equal(standing.matchesPlayed, played, `${teamKey} matchesPlayed`)
+    assert.equal(standing.matchesWon, won, `${teamKey} matchesWon`)
+    assert.equal(standing.matchesHalved, halved, `${teamKey} matchesHalved`)
+    assert.equal(standing.matchesLost, lost, `${teamKey} matchesLost`)
+    assert.equal(standing.roundPoints, won * 1 + halved * 0.5, `${teamKey} roundPoints`)
+  }
+})
+
+test('live match keeps GG "-" placeholder score but stays live — not final, not scheduled', async () => {
+  // GG also emits "-" while a match is on the course. Hole/hbh evidence is the
+  // live signal; the placeholder must not finalize it. This guards against
+  // replacing the old rule with its mirror image ("final iff score is not a
+  // placeholder").
+  const holes18 = (filled: number, values: string[]) =>
+    Array.from({ length: 18 }, (_, i) => (i < filled ? values[i] ?? '' : ''))
+  const scopes = [{ aggregates: [
+    {
+      name: 'Interbay (Alpha + Beta)',
+      member_cards: [{ member_card_id: 'live-a1' }, { member_card_id: 'live-a2' }],
+      gross_scores: [4, 3, 5], net_scores: [4, 3, 4],
+      hbh_match_status: holes18(3, ['T', 'T', '1 up']),
+      score: '-', points: null,
+    },
+    {
+      name: 'Jackson Park (Gamma + Delta)',
+      member_cards: [{ member_card_id: 'live-b1' }, { member_card_id: 'live-b2' }],
+      gross_scores: [4, 4, 5], net_scores: [4, 4, 5],
+      hbh_match_status: holes18(3, ['T', '', '']),
+      score: '-', points: null,
+    },
+  ] }]
+  const client: GGClient = async (endpoint) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return { event: { name: 'Chapman', scopes } }
+    if (endpoint.endsWith('/tournaments')) return [{ event: { id: 'ch-live', name: 'Chapman', result_scope: 'rs_pos_group' } }]
+    if (endpoint.endsWith('/tee_sheet')) return []
+    if (endpoint.endsWith('/team_points')) return { teams: [] }
+    return { round: { date: '2026-08-29', name: 'Chapman' } }
+  }
+
+  const snap = await makeSnapshot(3, client)
+  const match = snap.matches[0]!
+  assert.equal(match.status, 'live', 'in-play evidence makes the match live')
+  assert.notEqual(match.status, 'final')
+  assert.equal(match.sourceResult, null, 'placeholder is still not a result')
+  assert.equal(match.derivedResult, null)
+  assert.equal(match.pointsA, null)
+  assert.equal(match.pointsB, null)
+  assert.equal(match.through, 3)
+  assert.equal(snap.roundStatus, 'live')
+  assert.equal(snap.resultStatus, 'live')
+})
+
+test('full cascade — real R1/R2 finals + unplayed R3/R4 keep standings clean and the Race active with toWin restored', async () => {
+  // R1: replay the completed 2025 Fourball fixture (real finals). GG
+  // team_points.total_points is tournament-cumulative, so the played rounds
+  // carry the production cumulative totals (Interbay 7.5 / Jackson Park 7.5 /
+  // Bill Wright 5.5 / West Seattle 3.5 = 24 confirmed points).
+  const CUMULATIVE_TOTALS: Record<string, number> = {
+    Interbay: 7.5, 'Jackson Park': 7.5, 'Bill Wright': 5.5, 'West Seattle': 3.5,
+  }
+  const fourballPayload = readFix('tournament_2025_Fourball.json')
+  const r1Client: GGClient = async (endpoint) => {
+    const base = makeFakeFourballClient()
+    if (endpoint.endsWith('/team_points')) {
+      return { teams: buildTeamPointsFromScopes(fourballPayload.event.scopes).map((team) => ({
+        ...team, total_points: CUMULATIVE_TOTALS[team.name] ?? team.round_points,
+      })) }
+    }
+    return base(endpoint)
+  }
+  const r1 = await makeSnapshot(1, r1Client)
+
+  // R2 (Scramble): replay the completed 2025 Scramble fixture (real finals).
+  const scramblePayload = readFix('tournament_2025_Scramble.json')
+  const r2Client: GGClient = async (endpoint) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return scramblePayload
+    if (endpoint.endsWith('/tournaments')) return [{ event: { id: 'sc2-tid', name: 'Scramble', result_scope: 'rs_pos_group' } }]
+    if (endpoint.endsWith('/tee_sheet')) return readFix('tee_sheet_2025_Scramble.json')
+    if (endpoint.endsWith('/team_points')) return { teams: buildTeamPointsFromScopes(scramblePayload.event.scopes) }
+    return { round: { date: '2026-08-28', name: 'Scramble' } }
+  }
+  const r2 = await makeSnapshot(2, r2Client)
+
+  // R3/R4: pairings posted, unplayed — GG supplies "-" on every match.
+  const r3 = await makeSnapshot(3, makeUnplayedChapmanClient())
+  const r4 = await makeSnapshot(4, makeUnplayedSinglesClient())
+
+  // Played rounds remain final; unplayed placeholder rounds do not.
+  assert.equal(r1.roundStatus, 'final')
+  assert.equal(r2.roundStatus, 'final')
+  assert.equal(r3.roundStatus, 'pairings-available')
+  assert.equal(r4.roundStatus, 'pairings-available')
+  assert.ok(r1.matches.every((m) => m.status === 'final'), 'R1 real results remain final')
+  assert.ok(r2.matches.every((m) => m.status === 'final'), 'R2 real results remain final')
+  assert.ok(r3.matches.every((m) => m.status !== 'final'), 'R3 placeholder matches are not final')
+  assert.ok(r4.matches.every((m) => m.status !== 'final'), 'R4 placeholder matches are not final')
+
+  // Standings: unplayed rounds acquire no fake 0-6 / 0-12 loss records.
+  for (const snap of [r3, r4]) {
+    for (const standing of [...snap.roundStandings, ...snap.overallStandings]) {
+      assert.equal(standing.matchesPlayed, 0, `${snap.round}: no matches played`)
+      assert.equal(standing.matchesLost, 0, `${snap.round}: unplayed ≠ loss`)
+    }
+  }
+
+  // Race: 60 tournament points, 24 confirmed → 36 available, active with a
+  // populated toWin (23 = runner-up ceiling 22.5 + 0.5). This is the exact
+  // production shape the incident destroyed (state "final", toWin null).
+  const race = calculateSeattleCupRaceStatus([r1, r2, r3, r4])
+  assert.deepEqual(race, {
+    toWin: 23,
+    mode: 'outright',
+    state: 'active',
+    availablePoints: 36,
+    leaderTeamKeys: ['interbay', 'jackson-park'],
+    projectedPoints: { interbay: 0, 'jackson-park': 0, 'bill-wright': 0, 'west-seattle': 0 },
+  })
+
+  // Official tournament resolution stays sane: active, no fabricated winner.
+  const resolution = calculateSeattleCupTournamentResolution([r1, r2, r3, r4], null)
+  assert.equal(resolution.status, 'active')
+  assert.equal(resolution.winnerTeamKey, null)
 })

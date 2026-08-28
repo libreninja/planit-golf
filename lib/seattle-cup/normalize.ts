@@ -47,6 +47,28 @@ function nonEmpty(s: string | null | undefined): boolean {
   return s != null && String(s).trim() !== ''
 }
 
+// SEMANTIC RULE (locked by the 2026 R3/R4 production incident): a GG aggregate
+// `score` is a REAL MATCH RESULT only when it is one of GG's actual match-play
+// result forms ("Tied"/"TIED", "N up", "N & M" — any spacing/case, see the 2025
+// fixtures). GG also emits non-result values: "" on the trailing side of a
+// decided match, and a bare "-" placeholder on paired-but-unplayed matches
+// (recorded from production R3/R4 on 2026-08-28: every unplayed match carried
+// score "-"). A placeholder or blank is NOT a result and must never imply
+// match finality — pairings existing does not imply play. Real-but-unknown
+// result strings still pass through: GG is authoritative and a mismatch is
+// surfaced by the validation cross-check, so the denylist stays minimal.
+const GG_SCORE_PLACEHOLDERS = new Set(['-'])
+
+// Normalize a raw GG score into "a real result string, or null when GG is not
+// reporting a result". This is the ONLY sanctioned way to read finality from a
+// GG score.
+export function normalizeSourceResult(s: string | null | undefined): string | null {
+  if (s == null) return null
+  const t = String(s).trim()
+  if (t === '' || GG_SCORE_PLACEHOLDERS.has(t)) return null
+  return t
+}
+
 // Public source-status fields preserve GG's non-empty value verbatim. GG pads
 // unplayed/trailing-side entries with empty strings; expose those as null so a
 // consumer can distinguish an available cumulative status from no status.
@@ -301,9 +323,11 @@ function buildMatch(
   const playersA = buildPlayers(a, teamA ?? 'interbay', teeSheet)
   const playersB = buildPlayers(b, teamB ?? 'interbay', teeSheet)
 
-  // Finality: a match is final when EITHER side has a non-empty GG `score`.
-  // (Winner shows "5 & 3"; loser shows "". A halved match shows "Tied" on both.)
-  const sourceResultRaw = nonEmpty(a.score) ? a.score : (nonEmpty(b.score) ? b.score : null)
+  // Finality: a match is final only when a side carries a REAL GG match result
+  // (winner shows "5 & 3", loser ""; a halved match shows "Tied" on both).
+  // GG's "-" placeholder on paired-but-unplayed matches (and blank strings)
+  // normalize to null — a pairing is not a result. See normalizeSourceResult.
+  const sourceResultRaw = normalizeSourceResult(a.score) ?? normalizeSourceResult(b.score)
   const isFinal = sourceResultRaw != null
 
   const holes = buildHoles(a, b, teeSheet.holeData)
