@@ -74,3 +74,17 @@ export function seattleCupPublicCacheHeaders(
 export function seattleCupNoStoreHeaders(): Record<string, string> {
   return { 'Cache-Control': NO_STORE }
 }
+
+// Vary must be present even when a request has no allowed Origin. Otherwise a
+// no-Origin CDN entry can be reused for a later browser request and omit the
+// CORS allow-origin header that CupCentral needs.
+export function seattleCupCorsHeaders(origin: string | null): Record<string, string> {
+  if (!origin) return { Vary: 'Origin' }
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '300',
+  }
+}

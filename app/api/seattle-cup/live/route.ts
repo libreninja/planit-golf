@@ -8,6 +8,7 @@ import { readSeattleCupPlayoffRecord } from '@/lib/seattle-cup/playoff-store'
 import { createSeattleCupTimingCollector, serverTimingHeaders } from '@/lib/seattle-cup/timing'
 import {
   parseSeattleCupRound,
+  seattleCupCorsHeaders,
   seattleCupNoStoreHeaders,
   seattleCupPublicCacheHeaders,
 } from '@/lib/seattle-cup/http-cache'
@@ -38,20 +39,9 @@ function allowedOrigin(requestOrigin: string | null): string | null {
   return null
 }
 
-function corsHeaders(origin: string | null): Record<string, string> {
-  if (!origin) return {}
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Vary': 'Origin',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Max-Age': '300',
-  }
-}
-
 export async function OPTIONS(request: Request) {
   const origin = allowedOrigin(request.headers.get('origin'))
-  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) })
+  return new NextResponse(null, { status: 204, headers: seattleCupCorsHeaders(origin) })
 }
 
 export async function GET(request: Request) {
@@ -109,7 +99,7 @@ export async function GET(request: Request) {
     timing.add('total', performance.now() - requestStartedAt)
     return NextResponse.json(response, {
       headers: {
-        ...corsHeaders(origin),
+        ...seattleCupCorsHeaders(origin),
         ...seattleCupPublicCacheHeaders(snapshots, tournamentResolution),
         ...serverTimingHeaders(timing),
       },
@@ -120,7 +110,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch Seattle Cup live results' }, {
       status: 502,
       headers: {
-        ...corsHeaders(origin),
+        ...seattleCupCorsHeaders(origin),
         ...seattleCupNoStoreHeaders(),
         ...serverTimingHeaders(timing),
       },

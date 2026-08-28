@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   parseSeattleCupRound,
+  seattleCupCorsHeaders,
   seattleCupHttpCacheState,
   seattleCupNoStoreHeaders,
   seattleCupPublicCacheHeaders,
@@ -148,4 +149,15 @@ test('stale fallback, error, and authorization-failure responses are not public-
     { 'Cache-Control': 'no-store' },
     'the route uses this policy for invalid, denied/private, and 502 responses',
   )
+})
+
+test('every cache variant varies on Origin so CupCentral never receives a no-CORS cache entry', () => {
+  assert.deepEqual(seattleCupCorsHeaders(null), { Vary: 'Origin' })
+  assert.deepEqual(seattleCupCorsHeaders('https://seattlecup.golf'), {
+    'Access-Control-Allow-Origin': 'https://seattlecup.golf',
+    'Vary': 'Origin',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '300',
+  })
 })
