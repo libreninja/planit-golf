@@ -58,15 +58,29 @@ export const SEATTLE_CUP_TEAMS: Record<TeamKey, TeamDef> = {
 
 export const TEAM_LIST: TeamDef[] = Object.values(SEATTLE_CUP_TEAMS)
 
-// Resolve a GG aggregate (name prefix + affiliation) to a team key. GG `team_id`
-// is per-match-scoped and NOT a stable team identifier (Interbay appears as
-// 5/6/12/14/18/21 across matches) — so we match on the human team name, never id.
+// Return every configured team named by one GG text field. This is deliberately
+// separate from resolveTeamKey so a comma-separated affiliation can be treated
+// as ambiguous instead of silently selecting whichever configured team happens
+// to be iterated first.
+export function resolveTeamKeys(value: string | null | undefined): TeamKey[] {
+  const hay = (value ?? '').toLowerCase()
+  if (!hay) return []
+  return TEAM_LIST
+    .filter((team) => team.nameMatches.some((match) => hay.includes(match)))
+    .map((team) => team.key)
+}
+
+// Resolve the aggregate's explicit name prefix first. `affiliation` is a
+// last-resort fallback only when it identifies exactly one club: current GG
+// paired-format payloads use comma-separated affiliation lists for the member
+// clubs on a side, so combining it with the prefix corrupts competitive team
+// identity. GG `team_id` is per-match-scoped and is never used here.
 export function resolveTeamKey(namePrefix: string | null, affiliation: string | null): TeamKey | null {
-  const hay = `${namePrefix ?? ''} ${affiliation ?? ''}`.toLowerCase()
-  for (const t of TEAM_LIST) {
-    if (t.nameMatches.some((m) => hay.includes(m))) return t.key
-  }
-  return null
+  const prefixKeys = resolveTeamKeys(namePrefix)
+  if (prefixKeys.length === 1) return prefixKeys[0]!
+  if (prefixKeys.length > 1) return null
+  const affiliationKeys = resolveTeamKeys(affiliation)
+  return affiliationKeys.length === 1 ? affiliationKeys[0]! : null
 }
 
 export interface MatchSlot {
