@@ -2,17 +2,22 @@
 // tournament-resolution fact Planit stores (everything else is derived in
 // lib/seattle-cup/resolution.ts). Backed by the seattle_cup_tournament_results
 // table via the service-role client (RLS: no public policies, same convention
-// as competition_live_cache). Injectable store for tests; in-memory fallback
-// when no service-role key is available — persistence is an optimization for
-// READS here only in the sense that a failed write THROWS (an admin recording
-// a playoff result must not silently vanish), while a failed read degrades to
-// "no playoff recorded" and the derived resolution still renders.
+// as competition_live_cache). Injectable store for tests. Failure contract:
+// a failed write THROWS (an admin recording a playoff result must not silently
+// vanish — there is NO in-memory fallback on the server path), while a read
+// returns null only for a genuine no-row result or the narrowly recognized
+// missing-table rollout condition; every other read failure propagates to the
+// caller (the live route logs it and 502s; the admin section renders its
+// unavailable state) so a database failure can never silently masquerade as
+// "no playoff recorded".
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { SEATTLE_CUP_EVENT_ID, SEATTLE_CUP_SEASON_YEAR } from './config.ts'
 import type { SeattleCupPlayoffRecord } from './resolution.ts'
 import type { TeamKey } from './types.ts'
 
 const COMPETITION_KEY = 'seattle-cup'
+const ACTIVE_TABLE = 'seattle_cup_tournament_results'
 
 export interface SeattleCupPlayoffStore {
   read(): Promise<SeattleCupPlayoffRecord | null>
@@ -27,7 +32,9 @@ export const SEATTLE_CUP_RESOLUTION_IDENTITY = {
   ggEventId: SEATTLE_CUP_EVENT_ID,
 } as const
 
-// Injectable DB layer (real = service client; tests inject an in-memory store).
+// Explicit in-memory store for tests / explicit local development. It is ONLY
+// reachable through explicit injection (see resolveStore) — never as an
+// automatic fallback, so it can never mask a production persistence failure.
 export function makeMemoryPlayoffStore() {
   let record: SeattleCupPlayoffRecord | null = null
   return {
@@ -39,18 +46,32 @@ export function makeMemoryPlayoffStore() {
   }
 }
 
-let _dbStore: SeattleCupPlayoffStore | null = null
-async function dbStore(): Promise<SeattleCupPlayoffStore> {
-  if (_dbStore) return _dbStore
-  const { createServiceClient } = await import('../supabase/service.ts')
-  const supabase = createServiceClient()
-  const table = 'seattle_cup_tournament_results'
-  _dbStore = {
+// Additive-rollout safety, deliberately narrow: a code deploy briefly
+// preceding the backing-table migration must degrade the READ to "no playoff
+// recorded" — but ONLY for the exact missing-table/schema-cache condition
+// naming the active table. Permission/auth/network/duplicate-key errors, and
+// missing-table errors for any other table, must propagate.
+export function isMissingPlayoffTable(error: { code?: string; message?: string }): boolean {
+  const message = error.message ?? ''
+  if (!message.includes(ACTIVE_TABLE)) return false
+  return error.code === '42P01'
+    || error.code === 'PGRST205'
+    || /does not exist|schema cache|Could not find/i.test(message)
+}
+
+// Injectable supabase-backed store (extracted so tests can drive the
+// query-builder contract without a live database).
+export function makeSupabasePlayoffStore(supabase: SupabaseClient): SeattleCupPlayoffStore {
+  return {
     async read() {
-      const { data } = await supabase.from(table).select('*')
+      const { data, error } = await supabase.from(ACTIVE_TABLE).select('*')
         .eq('competition_key', COMPETITION_KEY)
         .eq('gg_event_id', SEATTLE_CUP_EVENT_ID)
         .maybeSingle()
+      if (error) {
+        if (isMissingPlayoffTable(error)) return null
+        throw new Error(`Unable to read Seattle Cup playoff result (${error.code ?? 'unknown'}): ${error.message}`)
+      }
       if (!data) return null
       return {
         competitionKey: data.competition_key as string,
@@ -64,7 +85,7 @@ async function dbStore(): Promise<SeattleCupPlayoffStore> {
       } satisfies SeattleCupPlayoffRecord
     },
     async write(record) {
-      const { error } = await supabase.from(table).upsert(
+      const { error } = await supabase.from(ACTIVE_TABLE).upsert(
         {
           competition_key: record.competitionKey,
           season_year: record.seasonYear,
@@ -81,39 +102,51 @@ async function dbStore(): Promise<SeattleCupPlayoffStore> {
       if (error) throw error
     },
     async remove() {
-      const { error } = await supabase.from(table)
+      const { error } = await supabase.from(ACTIVE_TABLE)
         .delete()
         .eq('competition_key', COMPETITION_KEY)
         .eq('gg_event_id', SEATTLE_CUP_EVENT_ID)
       if (error) throw error
     },
   }
+}
+
+let _dbStore: SeattleCupPlayoffStore | null = null
+async function dbStore(): Promise<SeattleCupPlayoffStore> {
+  if (_dbStore) return _dbStore
+  // Fail loudly on misconfiguration BEFORE any query: the service client would
+  // otherwise be built against undefined credentials and every query would
+  // fail with an opaque auth error instead of a diagnosable one.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      'Seattle Cup playoff persistence unavailable: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not configured',
+    )
+  }
+  const { createServiceClient } = await import('../supabase/service.ts')
+  _dbStore = makeSupabasePlayoffStore(createServiceClient())
   return _dbStore
 }
 
+// Store resolution is deliberately NOT guarded: there is no in-memory fallback.
+// If the persistent store cannot be constructed, every caller fails loudly —
+// a recorded playoff result must never silently vanish into process memory.
 async function resolveStore(store?: SeattleCupPlayoffStore): Promise<SeattleCupPlayoffStore> {
   if (store) return store
-  try {
-    return await dbStore()
-  } catch {
-    // No service-role key / client misconfigured → degrade to in-memory.
-    return makeMemoryPlayoffStore().store
-  }
+  return dbStore()
 }
 
-// Best-effort read for the public API route: a persistence failure must never
-// break the live response — it degrades to "no playoff recorded" and the
-// derived resolution stands.
+// Public read: degrades to null ONLY for a genuine no-row result or the
+// narrow active-table-missing rollout condition (handled inside the supabase
+// store). Any other persistence failure propagates to the caller — the live
+// API route logs it and returns 502; the admin section renders its
+// unavailable state.
 export async function readSeattleCupPlayoffRecord(store?: SeattleCupPlayoffStore): Promise<SeattleCupPlayoffRecord | null> {
-  try {
-    return await (await resolveStore(store)).read()
-  } catch {
-    return null
-  }
+  return (await resolveStore(store)).read()
 }
 
 // Authoritative write for the admin action: failures propagate so a recorded
-// result is never lost silently.
+// result is never lost silently — including when the persistent store cannot
+// be constructed (no silent in-memory fallback).
 export async function writeSeattleCupPlayoffRecord(record: SeattleCupPlayoffRecord, store?: SeattleCupPlayoffStore): Promise<void> {
   await (await resolveStore(store)).write(record)
 }
