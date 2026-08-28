@@ -9,6 +9,7 @@ import {
   resendScoutingInvite,
 } from '@/app/scouting-admin-actions'
 import { Button } from '@/components/ui/button'
+import { CupResolutionSection } from './cup-resolution'
 
 // Seattle Cup scouting access admin. Invite (email), grant to an existing
 // account, revoke access, and manage pending invites (resend/revoke). All
@@ -135,6 +136,10 @@ export default async function ScoutingAdminPage() {
             )}
           </section>
         </div>
+
+        {/* Cup resolution / tiebreak — compact; derived state + out-of-band
+            playoff recording. See cup-resolution.tsx. */}
+        <CupResolutionSection />
 
         {/* People with access */}
         <section>

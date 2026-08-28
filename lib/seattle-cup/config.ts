@@ -105,6 +105,12 @@ export interface RoundDef {
 // locked from the resolved 2026 event (ground-truth report §1).
 const GG_EVENT_ID = '12971191003644979032'
 
+// Season/event identity for out-of-band records (e.g. the persisted playoff
+// resolution). The event id is the locked 2026 GG event; the season year is
+// the competition year this config describes.
+export const SEATTLE_CUP_EVENT_ID = GG_EVENT_ID
+export const SEATTLE_CUP_SEASON_YEAR = 2026
+
 // Team-vs-team schedule ordering per round, extracted from the 2025 GG scopes
 // (same four teams, double round-robin). Each team plays 6 matches in the paired
 // rounds (Fourball/Scramble/Chapman) and 12 in Singles.

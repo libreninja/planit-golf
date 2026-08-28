@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getSeattleCupLive } from '@/lib/seattle-cup/live'
 import { ROUND_LIST } from '@/lib/seattle-cup/config'
 import { calculateSeattleCupRaceStatus } from '@/lib/seattle-cup/race'
+import { calculateSeattleCupTournamentResolution } from '@/lib/seattle-cup/resolution'
+import { readSeattleCupPlayoffRecord } from '@/lib/seattle-cup/playoff-store'
 import { authorizeLiveRead, resolveCompetitionVisibility } from '@/lib/competition/live-auth'
 import type { SeattleCupRoundResponse } from '@/lib/seattle-cup/types'
 
@@ -73,9 +75,15 @@ export async function GET(request: Request) {
     )
     const snapshot = snapshots.find((candidate) => candidate.round === round)
     if (!snapshot) throw new Error(`normalized round ${round} missing`)
+    // raceStatus = points-race state. tournamentResolution = OFFICIAL winner
+    // state (published tiebreak rules applied by lib/seattle-cup/resolution).
+    // The only persisted input is the out-of-band playoff record; its read is
+    // best-effort and degrades to "no playoff recorded".
+    const playoffRecord = await readSeattleCupPlayoffRecord()
     const response: SeattleCupRoundResponse = {
       ...snapshot,
       raceStatus: calculateSeattleCupRaceStatus(snapshots),
+      tournamentResolution: calculateSeattleCupTournamentResolution(snapshots, playoffRecord),
     }
     return NextResponse.json(response, { headers: corsHeaders(origin) })
   } catch (err) {
