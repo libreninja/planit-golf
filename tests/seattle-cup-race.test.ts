@@ -188,6 +188,29 @@ test('malformed live state falls back to OUTRIGHT instead of inventing a project
   assert.deepEqual(race.projectedPoints, ZERO)
 })
 
+test('malformed live match does not suppress projections from supported live matches', () => {
+  const supportedOnly = calculateSeattleCupRaceStatus(input(CURRENT, (matches) => {
+    finalizeThrough(matches, 24)
+    setStatus(matches, 25, 'live', 'a-up', 'A')
+  }))
+  const mixed = calculateSeattleCupRaceStatus(input(CURRENT, (matches) => {
+    finalizeThrough(matches, 24)
+    setStatus(matches, 25, 'live', 'a-up', 'A')
+    setStatus(matches, 26, 'live', 'a-up', null)
+  }))
+
+  assert.equal(mixed.mode, 'projected')
+  assert.deepEqual(mixed.projectedPoints, {
+    ...ZERO,
+    interbay: 1,
+  })
+  assert.equal(
+    mixed.toWin,
+    supportedOnly.toWin,
+    'unsupported live match remains unresolved just like a scheduled match',
+  )
+})
+
 test('a trailing team with no legal strict-points path is mathematically eliminated', () => {
   const late: Points = {
     interbay: 24,
