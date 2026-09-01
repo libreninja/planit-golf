@@ -1,0 +1,47 @@
+{
+  "purpose": "Bounded raw Golf Genius evidence for replaying the final 2026 Seattle Cup R3/R4 normalization diagnostics",
+  "capturedAt": "2026-09-01T18:26:38Z",
+  "ggEventId": "12971191003644979032",
+  "rounds": [
+    {
+      "round": 3,
+      "format": "Chapman",
+      "ggRoundId": "12971191135178352198",
+      "ggTournamentId": "12971191228224792120",
+      "files": {
+        "tournament": {
+          "path": "tournament_2026_Chapman.json",
+          "sha256": "124f95d5b578382d565aaa6f9370cd239be95a53b8f1edbd101251a78a5bc151"
+        },
+        "teeSheet": {
+          "path": "tee_sheet_2026_Chapman.json",
+          "sha256": "5993258972d7f43181f3214c8886bb6e24039741671fe01357f1e8dd46f2f5f2"
+        },
+        "teamPoints": {
+          "path": "team_points_2026_Chapman.json",
+          "sha256": "cd375323b74f3359e6a5110810614d4e5dfdf01c78407866cd3211c7b6226bf4"
+        }
+      }
+    },
+    {
+      "round": 4,
+      "format": "Singles",
+      "ggRoundId": "12971191137325835847",
+      "ggTournamentId": "12971191249129203257",
+      "files": {
+        "tournament": {
+          "path": "tournament_2026_Singles.json",
+          "sha256": "fdd786267d5ada724e2acc47224b0232a2f1f446a4d09e4cacecd3913de106c3"
+        },
+        "teeSheet": {
+          "path": "tee_sheet_2026_Singles.json",
+          "sha256": "fed75e162b6330c0d10d35f37cdf44699b74b7f2f8db5994dd8f1cc756046fe6"
+        },
+        "teamPoints": {
+          "path": "team_points_2026_Singles.json",
+          "sha256": "f04d95473be77b74d83a84210958e845e23bfefec4ef0e416659cf6afcf97fc3"
+        }
+      }
+    }
+  ]
+}
