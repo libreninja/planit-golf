@@ -13,7 +13,7 @@ export type ReportKind = 'player_assessment' | 'course_observation' | 'general_o
 export type ContributorRole = 'player' | 'caddie' | 'captain' | 'watcher_supporter' | 'other_firsthand'
 export type RelationshipContext =
   | 'played_against' | 'played_with' | 'caddied' | 'watched_match' | 'watched_player'
-  | 'prior_golf_experience' | 'captain_observation' | 'other_firsthand' | 'relayed'
+  | 'prior_golf_experience' | 'captain_observation' | 'other_firsthand'
 export type AssessmentLevel = 'strength' | 'solid' | 'mixed' | 'struggled' | 'didnt_see_enough'
 export type OffTeeCharacteristic = 'missed_left' | 'missed_right' | 'both_ways' | 'distance_stood_out' | 'accuracy_stood_out'
 export type PuttingSpecific = 'exceptional' | 'strong_inside_10' | 'lag_putting_stood_out' | 'short_putt_struggles'
@@ -73,22 +73,64 @@ export type GuidedResponseV1 = PlayerAssessmentResponseV1 | CourseObservationRes
 export const GUIDED_QUESTIONNAIRE_V1 = {
   key: GUIDED_QUESTIONNAIRE_KEY,
   version: GUIDED_QUESTIONNAIRE_VERSION,
-  prompts: {
-    offTheTee: 'Off the tee',
-    approachIrons: 'Approach / irons',
-    shortGame: 'Short game',
-    putting: 'Putting',
-    temperament: 'On-course temperament',
-    temperamentSupport: 'What did you see?',
-    finalAdvice: 'What would you tell an Interbay teammate playing this person next year?',
-    courseHole: 'Any course or hole lesson worth saving?',
-    general: 'What did you see? What should we know?',
-  },
-  options: {
-    assessment: ['strength', 'solid', 'mixed', 'struggled', 'didnt_see_enough'],
-    offTheTee: ['missed_left', 'missed_right', 'both_ways', 'distance_stood_out', 'accuracy_stood_out'],
-    putting: ['exceptional', 'strong_inside_10', 'lag_putting_stood_out', 'short_putt_struggles'],
-    temperament: ['ice_cold', 'steady', 'rides_momentum', 'hot_head', 'club_thrower', 'checks_out', 'talker', 'quiet_locked_in', 'didnt_see_enough'],
+  reportKinds: [
+    { key: 'player_assessment', label: 'Player assessment' },
+    { key: 'course_observation', label: 'Course / hole observation' },
+    { key: 'general_observation', label: 'General or multi-player observation' },
+  ],
+  sectionOrder: ['offTheTee', 'approachIrons', 'shortGame', 'putting', 'temperament', 'finalAdvice', 'courseHole'],
+  assessmentHelperText: 'Choose only if you saw enough',
+  assessmentOptions: [
+    { key: 'strength', label: 'Strength' },
+    { key: 'solid', label: 'Solid' },
+    { key: 'mixed', label: 'Mixed' },
+    { key: 'struggled', label: 'Struggled' },
+    { key: 'didnt_see_enough', label: "Didn't see enough" },
+  ],
+  sections: {
+    offTheTee: {
+      prompt: 'Off the tee',
+      helperText: 'Choose only what you personally observed.',
+      characteristics: [
+        { key: 'missed_left', label: 'Missed mostly left' },
+        { key: 'missed_right', label: 'Missed mostly right' },
+        { key: 'both_ways', label: 'Both ways' },
+        { key: 'distance_stood_out', label: 'Distance stood out' },
+        { key: 'accuracy_stood_out', label: 'Accuracy stood out' },
+      ],
+      notePrompt: 'Optional note',
+    },
+    approachIrons: { prompt: 'Approach / irons', notePrompt: 'Optional note' },
+    shortGame: { prompt: 'Short game', notePrompt: 'Optional note' },
+    putting: {
+      prompt: 'Putting',
+      specifics: [
+        { key: 'exceptional', label: 'Exceptional / made everything' },
+        { key: 'strong_inside_10', label: 'Strong inside ~10 feet' },
+        { key: 'lag_putting_stood_out', label: 'Lag putting stood out' },
+        { key: 'short_putt_struggles', label: 'Short-putt struggles' },
+      ],
+      notePrompt: 'Optional note',
+    },
+    temperament: {
+      prompt: 'On-course temperament',
+      helperText: 'Private Interbay golf shorthand based on what you observed.',
+      labels: [
+        { key: 'ice_cold', label: 'Ice cold' },
+        { key: 'steady', label: 'Steady' },
+        { key: 'rides_momentum', label: 'Rides momentum' },
+        { key: 'hot_head', label: 'Hot head' },
+        { key: 'club_thrower', label: 'Club thrower' },
+        { key: 'checks_out', label: 'Checks out' },
+        { key: 'talker', label: 'Talker' },
+        { key: 'quiet_locked_in', label: 'Quiet / locked in' },
+        { key: 'didnt_see_enough', label: "Didn't see enough" },
+      ],
+      supportingNotePrompt: 'What did you see? Especially useful for stronger labels.',
+    },
+    finalAdvice: { prompt: 'What would you tell an Interbay teammate playing this person next year?' },
+    courseHole: { prompt: 'Any course or hole lesson worth saving?', holePrompt: 'Hole numbers, e.g. 4, 12, 18' },
+    general: { prompt: 'What did you see? What should we know?', advicePrompt: 'Optional teammate advice' },
   },
 } as const
 
@@ -127,21 +169,32 @@ export interface ReporterIdentityResolution {
   requiresConfirmation: boolean
 }
 
-const assessmentLevels = new Set<AssessmentLevel>(GUIDED_QUESTIONNAIRE_V1.options.assessment)
-const offTeeCharacteristics = new Set<OffTeeCharacteristic>(GUIDED_QUESTIONNAIRE_V1.options.offTheTee)
-const puttingSpecifics = new Set<PuttingSpecific>(GUIDED_QUESTIONNAIRE_V1.options.putting)
-const temperamentLabels = new Set<TemperamentLabel>(GUIDED_QUESTIONNAIRE_V1.options.temperament)
+const assessmentLevels = new Set<AssessmentLevel>(GUIDED_QUESTIONNAIRE_V1.assessmentOptions.map((option) => option.key))
+const offTeeCharacteristics = new Set<OffTeeCharacteristic>(GUIDED_QUESTIONNAIRE_V1.sections.offTheTee.characteristics.map((option) => option.key))
+const puttingSpecifics = new Set<PuttingSpecific>(GUIDED_QUESTIONNAIRE_V1.sections.putting.specifics.map((option) => option.key))
+const temperamentLabels = new Set<TemperamentLabel>(GUIDED_QUESTIONNAIRE_V1.sections.temperament.labels.map((option) => option.key))
 
 function validOptionalText(value: unknown): value is string | undefined {
-  return value == null || (typeof value === 'string' && value.trim().length > 0)
+  return value == null || typeof value === 'string'
 }
 
 function validHoles(value: unknown): value is number[] | undefined {
   return value == null || (Array.isArray(value) && value.every((hole) => Number.isInteger(hole) && hole >= 1 && hole <= 18))
 }
 
-function validRating(section: RatedSection | undefined): boolean {
-  return section == null || ((!section.overall || assessmentLevels.has(section.overall)) && validOptionalText(section.note))
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  return Object.keys(value).every((key) => allowed.includes(key))
+}
+
+function validRating(section: unknown, allowedKeys: readonly string[]): boolean {
+  if (section == null) return true
+  if (!isObject(section) || !hasOnlyKeys(section, allowedKeys)) return false
+  return (section.overall == null || (typeof section.overall === 'string' && assessmentLevels.has(section.overall as AssessmentLevel)))
+    && validOptionalText(section.note)
 }
 
 function validEnumArray<T extends string>(value: unknown, allowed: Set<T>): value is T[] | undefined {
@@ -152,24 +205,50 @@ function hasSectionEvidence(section: object | undefined): boolean {
   return !!section && Object.values(section).some((value) => Array.isArray(value) ? value.length > 0 : typeof value === 'string' && value.trim().length > 0)
 }
 
-export function validateGuidedResponse(response: GuidedResponseV1): boolean {
-  if (response.schemaVersion !== 1) return false
+export function validateGuidedResponse(response: unknown): response is GuidedResponseV1 {
+  if (!isObject(response) || response.schemaVersion !== 1 || typeof response.kind !== 'string') return false
   if (response.kind === 'course_observation') {
-    return response.courseHole.note.trim().length > 0 && validHoles(response.courseHole.holeNumbers)
+    if (!hasOnlyKeys(response, ['schemaVersion', 'kind', 'courseHole']) || !isObject(response.courseHole)) return false
+    return hasOnlyKeys(response.courseHole, ['note', 'holeNumbers'])
+      && typeof response.courseHole.note === 'string' && response.courseHole.note.trim().length > 0
+      && validHoles(response.courseHole.holeNumbers)
   }
   if (response.kind === 'general_observation') {
-    return response.note.trim().length > 0 && validOptionalText(response.finalAdvice)
+    return hasOnlyKeys(response, ['schemaVersion', 'kind', 'note', 'finalAdvice'])
+      && typeof response.note === 'string' && response.note.trim().length > 0
+      && validOptionalText(response.finalAdvice)
   }
-  const { sections } = response
-  if (!validRating(sections.offTheTee) || !validRating(sections.approachIrons) || !validRating(sections.shortGame) || !validRating(sections.putting)) return false
-  if (!validEnumArray(sections.offTheTee?.characteristics, offTeeCharacteristics)) return false
-  if (!validEnumArray(sections.putting?.specifics, puttingSpecifics)) return false
-  if (!validEnumArray(sections.temperament?.labels, temperamentLabels)) return false
-  if (!validOptionalText(sections.temperament?.supportingNote) || !validOptionalText(response.finalAdvice)) return false
-  if (response.courseHole && (!response.courseHole.note.trim() || !validHoles(response.courseHole.holeNumbers))) return false
-  return Object.values(sections).some(hasSectionEvidence)
-    || !!response.finalAdvice
-    || !!response.courseHole
+  if (response.kind !== 'player_assessment'
+    || !hasOnlyKeys(response, ['schemaVersion', 'kind', 'sections', 'finalAdvice', 'courseHole'])
+    || !isObject(response.sections)
+    || !hasOnlyKeys(response.sections, ['offTheTee', 'approachIrons', 'shortGame', 'putting', 'temperament'])) return false
+  const sections = response.sections
+  if (!validRating(sections.offTheTee, ['overall', 'note', 'characteristics'])
+    || !validRating(sections.approachIrons, ['overall', 'note'])
+    || !validRating(sections.shortGame, ['overall', 'note'])
+    || !validRating(sections.putting, ['overall', 'note', 'specifics'])) return false
+  const offTheTee = isObject(sections.offTheTee) ? sections.offTheTee : undefined
+  const putting = isObject(sections.putting) ? sections.putting : undefined
+  const temperament = isObject(sections.temperament) ? sections.temperament : undefined
+  if (!validEnumArray(offTheTee?.characteristics, offTeeCharacteristics)
+    || !validEnumArray(putting?.specifics, puttingSpecifics)) return false
+  if (sections.temperament != null && (!temperament || !hasOnlyKeys(temperament, ['labels', 'supportingNote']))) return false
+  if (!validEnumArray(temperament?.labels, temperamentLabels)
+    || !validOptionalText(temperament?.supportingNote)
+    || !validOptionalText(response.finalAdvice)) return false
+  if (response.courseHole != null) {
+    if (!isObject(response.courseHole) || !hasOnlyKeys(response.courseHole, ['note', 'holeNumbers'])
+      || typeof response.courseHole.note !== 'string' || !response.courseHole.note.trim()
+      || !validHoles(response.courseHole.holeNumbers)) return false
+  }
+  return Object.values(sections).some((section) => isObject(section) && hasSectionEvidence(section))
+    || (typeof response.finalAdvice === 'string' && response.finalAdvice.trim().length > 0)
+    || response.courseHole != null
+}
+
+export function validateQuestionnaireSnapshot(snapshot: unknown, key: string, version: number): boolean {
+  return key === GUIDED_QUESTIONNAIRE_KEY && version === GUIDED_QUESTIONNAIRE_VERSION
+    && JSON.stringify(snapshot) === JSON.stringify(GUIDED_QUESTIONNAIRE_V1)
 }
 
 export function buildScoutingReportDraft(input: {
@@ -271,13 +350,50 @@ export function contextForArchivedMatch(archive: SeattleCupEditionArchive, match
   return { archiveId: HARVEST_EDITION_REF, matchNos: [match.matchNo], round: match.round, format: match.format, course: match.course }
 }
 
+const relationshipsByRole: Record<ContributorRole, readonly RelationshipContext[]> = {
+  player: ['played_against', 'played_with'],
+  caddie: ['caddied'],
+  captain: ['captain_observation'],
+  watcher_supporter: ['watched_match', 'watched_player'],
+  other_firsthand: ['prior_golf_experience', 'other_firsthand'],
+}
+
+export function validateContributorRoleContext(input: {
+  hasArchiveAppearances: boolean
+  role: ContributorRole
+  relationship: RelationshipContext
+}): boolean {
+  if (input.hasArchiveAppearances !== (input.role === 'player')) return false
+  return relationshipsByRole[input.role].includes(input.relationship)
+}
+
+export function subjectsAppearInArchivedMatch(
+  archive: SeattleCupEditionArchive,
+  matchNo: number,
+  subjects: PlayerExternalRef[],
+): boolean {
+  const match = allArchiveMatches(archive).find((row) => row.matchNo === matchNo)
+  if (!match) return false
+  const appearances = new Set([...match.playersA, ...match.playersB].map((player) => player.ggMemberCardId).filter(Boolean))
+  return subjects.every((subject) => appearances.has(subject.value))
+}
+
+export function relationshipForPlayerSubjects(
+  match: Pick<HarvestMatchContext, 'partners'>,
+  subjects: PlayerExternalRef[],
+): Extract<RelationshipContext, 'played_against' | 'played_with'> {
+  const partnerIds = new Set(match.partners.map((partner) => partner.value))
+  return subjects.some((subject) => partnerIds.has(subject.value)) ? 'played_with' : 'played_against'
+}
+
 export function canAccessHarvest(input: { contributor: boolean; scouting: boolean; admin: boolean }): boolean {
   return input.contributor || input.scouting || input.admin
 }
 export function canAccessScoutingBoard(input: { scouting: boolean }): boolean { return input.scouting }
 export function canReviewHarvest(input: { scouting: boolean; admin: boolean }): boolean { return input.scouting || input.admin }
-export function canViewHarvestReport(input: { viewerUserId: string; reporterUserId: string; scouting: boolean; admin: boolean }): boolean {
-  return input.viewerUserId === input.reporterUserId || canReviewHarvest(input)
+export function canViewHarvestReport(input: { viewerUserId: string; reporterUserId: string; visibility: ReportVisibility; contributor: boolean; scouting: boolean; admin: boolean }): boolean {
+  if (input.viewerUserId === input.reporterUserId) return input.contributor
+  return input.admin || (input.visibility === 'team' && input.scouting)
 }
 export function inviteAcceptanceMode(input: { userEmail: string | null; inviteEmail: string }): 'signup' | 'claim' | 'wrong_account' {
   if (!input.userEmail) return 'signup'

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   createIntelHarvestInvite,
+  revokeIntelHarvestContributor,
   resendIntelHarvestInvite,
   revokeIntelHarvestInvite,
 } from '@/app/intel-harvest-admin-actions'
@@ -14,6 +15,8 @@ import {
   type PlayerExternalRef,
 } from '@/lib/seattle-cup/harvest/domain'
 import type { HarvestParticipantRow, StoredScoutingReport } from '@/lib/seattle-cup/harvest/repository'
+import { getIgcClubId } from '@/lib/scouting-access'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +30,6 @@ const relationshipLabels: Record<string, string> = {
   prior_golf_experience: 'Prior golf experience',
   captain_observation: 'Captain observation',
   other_firsthand: 'Other firsthand',
-  relayed: 'Relayed',
 }
 
 function statusLabel(participant: HarvestParticipantRow, reportCount: number): string {
@@ -70,10 +72,12 @@ export default async function HarvestReviewPage({
   await requireHarvestReviewAccess()
   const filters = await searchParams
   const service = createServiceClient()
+  const userClient = await createClient()
+  const clubId = await getIgcClubId()
   const [{ data: reportsRaw, error: reportsError }, { data: participantsRaw, error: participantsError }, { data: invitesRaw }] = await Promise.all([
-    service.from('scouting_reports').select('*').eq('campaign_id', HARVEST_CAMPAIGN_ID).order('contributed_at', { ascending: false }),
+    userClient.from('scouting_reports').select('*').eq('campaign_id', HARVEST_CAMPAIGN_ID).order('contributed_at', { ascending: false }),
     service.from('intel_harvest_participants').select('*').eq('campaign_id', HARVEST_CAMPAIGN_ID).order('created_at', { ascending: false }),
-    service.from('capability_invites').select('id, email, display_name, status, created_at, claimed_at').eq('feature_key', HARVEST_FEATURE_KEY).order('created_at', { ascending: false }),
+    service.from('capability_invites').select('id, email, display_name, status, created_at, claimed_at').eq('club_id', clubId).eq('feature_key', HARVEST_FEATURE_KEY).order('created_at', { ascending: false }),
   ])
   if (reportsError) throw reportsError
   if (participantsError) throw participantsError
@@ -104,7 +108,7 @@ export default async function HarvestReviewPage({
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Private captain review</p><h1 className="mt-2 text-3xl">Seattle Cup 2026 Intel Harvest</h1></div>
+        <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Private scouting review</p><h1 className="mt-2 text-3xl">Seattle Cup 2026 Reports</h1></div>
         <div className="flex gap-2"><Button asChild variant="outline"><Link href="/api/seattle-cup/harvest/2026/export">Export CSV</Link></Button><Button asChild variant="outline"><Link href="/igc/seattle-cup/harvest/2026">Contribute</Link></Button></div>
       </div>
 
@@ -115,12 +119,15 @@ export default async function HarvestReviewPage({
       <section className="mt-8 rounded-2xl border border-border bg-white/80 p-5">
         <h2 className="text-xl">Invite a contributor</h2>
         <p className="mt-1 text-sm text-muted-foreground">Any email address is allowed. Choose a 2026 player only when proposing a personalized player match; they must confirm it once.</p>
-        <form action={createIntelHarvestInvite} className="mt-4 grid gap-3 md:grid-cols-4">
+        <form action={createIntelHarvestInvite} className="mt-4 grid gap-3 md:grid-cols-5">
           <input name="email" type="email" required placeholder="email@example.com" className="rounded-xl border border-input bg-white px-3 py-2" />
           <input name="displayName" placeholder="Name (optional)" className="rounded-xl border border-input bg-white px-3 py-2" />
           <select name="ggMemberCardId" defaultValue="" className="rounded-xl border border-input bg-white px-3 py-2">
             <option value="">Observer / caddie / watcher</option>
             {playerOptions.map((player) => <option key={player.value} value={player.value}>{player.displayName} · 2026 player</option>)}
+          </select>
+          <select name="contributorRole" defaultValue="watcher_supporter" className="rounded-xl border border-input bg-white px-3 py-2">
+            <option value="watcher_supporter">Watched / supported</option><option value="caddie">Caddie</option><option value="captain">Captain</option><option value="other_firsthand">Other firsthand</option>
           </select>
           <Button type="submit">Send private invite</Button>
         </form>
@@ -134,7 +141,7 @@ export default async function HarvestReviewPage({
       <section className="mt-8">
         <h2 className="text-xl">Campaign completion</h2>
         <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-white/75">
-          <table className="w-full text-left text-sm"><thead className="bg-muted/45"><tr><th className="px-4 py-3">Contributor</th><th className="px-4 py-3">Context</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Reports</th></tr></thead><tbody>{participants.map((participant) => { const profile = participant.user_id ? profileById.get(participant.user_id) : undefined; const player = participant.reporter_player_ref as PlayerExternalRef | null; const count = participant.user_id ? reportsByUser.get(participant.user_id) ?? 0 : 0; return <tr key={participant.id} className="border-t border-border"><td className="px-4 py-3"><div className="font-medium">{profile?.display_name ?? player?.displayName ?? participant.email}</div><div className="text-xs text-muted-foreground">{participant.email}</div></td><td className="px-4 py-3">{player ? `2026 player · ${participant.identity_status}` : 'Observer / non-player'}</td><td className="px-4 py-3">{statusLabel(participant, count)}</td><td className="px-4 py-3">{count}</td></tr> })}</tbody></table>
+          <table className="w-full text-left text-sm"><thead className="bg-muted/45"><tr><th className="px-4 py-3">Contributor</th><th className="px-4 py-3">Context</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Reports</th><th className="px-4 py-3">Access</th></tr></thead><tbody>{participants.map((participant) => { const profile = participant.user_id ? profileById.get(participant.user_id) : undefined; const player = participant.reporter_player_ref as PlayerExternalRef | null; const count = participant.user_id ? reportsByUser.get(participant.user_id) ?? 0 : 0; return <tr key={participant.id} className="border-t border-border"><td className="px-4 py-3"><div className="font-medium">{profile?.display_name ?? player?.displayName ?? participant.email}</div><div className="text-xs text-muted-foreground">{participant.email}</div></td><td className="px-4 py-3">{player ? `2026 player · ${participant.identity_status}` : participant.contributor_role.replaceAll('_', ' ')}</td><td className="px-4 py-3">{statusLabel(participant, count)}</td><td className="px-4 py-3">{count}</td><td className="px-4 py-3">{participant.user_id ? <form action={revokeIntelHarvestContributor}><input type="hidden" name="userId" value={participant.user_id} /><Button size="sm" variant="outline">Revoke contribution access</Button></form> : 'Not claimed'}</td></tr> })}</tbody></table>
         </div>
       </section>
 

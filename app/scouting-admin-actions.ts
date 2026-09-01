@@ -138,10 +138,14 @@ export async function revokeScoutingInvite(formData: FormData) {
   const inviteId = String(formData.get('inviteId') || '')
   if (!inviteId) throw new Error('inviteId is required')
 
+  const clubId = await getIgcClubId()
   const { error } = await service
     .from('capability_invites')
     .update({ status: 'revoked', updated_at: new Date().toISOString() })
     .eq('id', inviteId)
+    .eq('club_id', clubId)
+    .eq('feature_key', SCOUTING_FEATURE_KEY)
+    .eq('status', 'pending')
   if (error) throw error
 
   revalidatePath('/admin/scouting')
@@ -154,6 +158,7 @@ export async function resendScoutingInvite(formData: FormData) {
   if (!inviteId) throw new Error('inviteId is required')
 
   const token = randomUUID()
+  const clubId = await getIgcClubId()
   const { data, error } = await service
     .from('capability_invites')
     .update({
@@ -162,6 +167,10 @@ export async function resendScoutingInvite(formData: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', inviteId)
+    .eq('club_id', clubId)
+    .eq('feature_key', SCOUTING_FEATURE_KEY)
+    .eq('status', 'pending')
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .select('email, display_name')
     .maybeSingle()
   if (error) throw error

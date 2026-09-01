@@ -8,6 +8,9 @@ import {
   buildPersonalizedMatches,
   buildScoutingReportDraft,
   contextForArchivedMatch,
+  relationshipForPlayerSubjects,
+  subjectsAppearInArchivedMatch,
+  validateContributorRoleContext,
   type AssessmentLevel,
   type ContributorRole,
   type GuidedResponseV1,
@@ -22,7 +25,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 const HARVEST_PATH = '/igc/seattle-cup/harvest/2026'
 const roles = new Set<ContributorRole>(['player', 'caddie', 'captain', 'watcher_supporter', 'other_firsthand'])
-const relationships = new Set<RelationshipContext>(['played_against', 'played_with', 'caddied', 'watched_match', 'watched_player', 'prior_golf_experience', 'captain_observation', 'other_firsthand', 'relayed'])
+const relationships = new Set<RelationshipContext>(['played_against', 'played_with', 'caddied', 'watched_match', 'watched_player', 'prior_golf_experience', 'captain_observation', 'other_firsthand'])
 const reportKinds = new Set<ReportKind>(['player_assessment', 'course_observation', 'general_observation'])
 
 function str(formData: FormData, key: string): string { return String(formData.get(key) ?? '') }
@@ -52,10 +55,12 @@ export async function submitGuidedScoutingReportAction(formData: FormData) {
   const { user } = await requireHarvestAccess()
   const session = await loadContributorHarvestSession(user)
   const archive = loadSeattleCup2026Archive()
-  const role = str(formData, 'contributorRole') as ContributorRole
-  const relationship = str(formData, 'relationshipContext') as RelationshipContext
+  const requestedRole = str(formData, 'contributorRole') as ContributorRole
+  const role = session.participant.contributor_role
+  let relationship = str(formData, 'relationshipContext') as RelationshipContext
   const reportKind = str(formData, 'reportKind') as ReportKind
-  if (!roles.has(role) || !relationships.has(relationship) || !reportKinds.has(reportKind)) throw new Error('Choose valid contributor and report context')
+  if (!roles.has(requestedRole) || requestedRole !== role) throw new Error('Contributor role does not match this invitation')
+  if (!relationships.has(relationship) || !reportKinds.has(reportKind)) throw new Error('Choose valid contributor and firsthand context')
 
   const matchNoRaw = Number(str(formData, 'matchNo'))
   const matchNo = Number.isInteger(matchNoRaw) && matchNoRaw > 0 ? matchNoRaw : undefined
@@ -74,15 +79,26 @@ export async function submitGuidedScoutingReportAction(formData: FormData) {
     return subject
   }).filter((subject, index, all) => all.findIndex((row) => row.value === subject.value) === index)
 
-  if (role === 'player' && session.reporterPlayerRef) {
+  if (matchNo != null && !subjectsAppearInArchivedMatch(archive, matchNo, subjects)) {
+    throw new Error('Every selected player must appear in the archived match')
+  }
+
+  if (role === 'player') {
+    if (!session.reporterPlayerRef) throw new Error('A player contribution requires a confirmed archive identity')
     if (session.requiresIdentityConfirmation) throw new Error('Confirm your player identity before submitting a match report')
     const match = buildPersonalizedMatches(archive, session.reporterPlayerRef.value).find((row) => row.matchNo === matchNo)
     if (!match) throw new Error('That match is not one of your archived appearances')
-    if (reportKind === 'player_assessment' && !match.opponents.some((opponent) => opponent.value === subjects[0]?.value)) {
-      throw new Error('Choose an opponent from that archived match')
+    const subjectIsOpponent = subjects.some((subject) => match.opponents.some((opponent) => opponent.value === subject.value))
+    const subjectIsPartner = subjects.some((subject) => match.partners.some((partner) => partner.value === subject.value))
+    if (reportKind === 'player_assessment' && !subjectIsOpponent && !subjectIsPartner) {
+      throw new Error('Choose an opponent or partner from that archived match')
     }
-    if (relationship !== 'played_against') throw new Error('Personalized opponent reports use played-against context')
+    // Any report that includes a teammate is captain-sensitive. This keeps a
+    // mixed pair/opponent general note from becoming TEAM-visible merely
+    // because it also names an opponent.
+    relationship = relationshipForPlayerSubjects(match, subjects)
   }
+  if (!validateContributorRoleContext({ hasArchiveAppearances: session.matches.length > 0, role, relationship })) throw new Error('Contributor role and relationship do not match')
 
   let responsePayload: GuidedResponseV1
   if (reportKind === 'player_assessment') {

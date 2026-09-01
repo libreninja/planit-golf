@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import { getHarvestAccess } from '@/lib/seattle-cup/harvest/access'
 import { HARVEST_CAMPAIGN_ID, canReviewHarvest } from '@/lib/seattle-cup/harvest/domain'
-import { createServiceClient } from '@/lib/supabase/service'
+import { createClient } from '@/lib/supabase/server'
 
 function csv(value: unknown): string {
   const text = value == null ? '' : typeof value === 'string' ? value : JSON.stringify(value)
@@ -14,8 +14,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const access = await getHarvestAccess(user)
   if (!canReviewHarvest(access)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  const service = createServiceClient()
-  const { data: reports, error } = await service
+  const supabase = await createClient()
+  const { data: reports, error } = await supabase
     .from('scouting_reports')
     .select('*')
     .eq('campaign_id', HARVEST_CAMPAIGN_ID)

@@ -15,8 +15,12 @@ import {
   contextForArchivedMatch,
   interbayArchivePlayerRefs,
   inviteAcceptanceMode,
+  relationshipForPlayerSubjects,
   resolveReporterIdentity,
+  subjectsAppearInArchivedMatch,
+  validateContributorRoleContext,
   validateGuidedResponse,
+  validateQuestionnaireSnapshot,
   type GuidedResponseV1,
 } from '../lib/seattle-cup/harvest/domain.ts'
 
@@ -93,6 +97,33 @@ test('guided payload validation rejects unknown taxonomy values', () => {
   assert.equal(validateGuidedResponse(invalid), false)
 })
 
+test('guided payload rejects unknown sections and extra keys but permits empty optional notes', () => {
+  assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { bogus: { anything: 'x' } } }), false)
+  assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: 'solid', extra: true } } }), false)
+  assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: 'didnt_see_enough', note: '' } } }), true)
+})
+
+test('questionnaire snapshot preserves ordered human labels and must match key/version exactly', () => {
+  assert.equal(GUIDED_QUESTIONNAIRE_V1.sections.putting.specifics[0].label, 'Exceptional / made everything')
+  assert.deepEqual(GUIDED_QUESTIONNAIRE_V1.sectionOrder, ['offTheTee', 'approachIrons', 'shortGame', 'putting', 'temperament', 'finalAdvice', 'courseHole'])
+  assert.equal(validateQuestionnaireSnapshot(GUIDED_QUESTIONNAIRE_V1, GUIDED_QUESTIONNAIRE_V1.key, 1), true)
+  assert.equal(validateQuestionnaireSnapshot({ ...GUIDED_QUESTIONNAIRE_V1, version: 2 }, GUIDED_QUESTIONNAIRE_V1.key, 1), false)
+})
+
+test('server role vocabulary prevents forged player and relationship semantics', () => {
+  assert.equal(validateContributorRoleContext({ hasArchiveAppearances: true, role: 'player', relationship: 'played_against' }), true)
+  assert.equal(validateContributorRoleContext({ hasArchiveAppearances: false, role: 'player', relationship: 'played_against' }), false)
+  assert.equal(validateContributorRoleContext({ hasArchiveAppearances: true, role: 'caddie', relationship: 'caddied' }), false)
+  assert.equal(validateContributorRoleContext({ hasArchiveAppearances: false, role: 'caddie', relationship: 'watched_match' }), false)
+})
+
+test('observer match context only accepts players who appeared in that archived match', () => {
+  const match = buildPersonalizedMatches(archive, interbayPlayers[0]!.value)[0]!
+  assert.equal(subjectsAppearInArchivedMatch(archive, match.matchNo, [match.opponents[0]!]), true)
+  const outsider = players.find((player) => ![...match.opponents, ...match.partners, interbayPlayers[0]!].some((appearance) => appearance.value === player.value))!
+  assert.equal(subjectsAppearInArchivedMatch(archive, match.matchNo, [outsider]), false)
+})
+
 test('player assessments require exactly one archive subject', () => {
   const payload = { schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: 'solid' } } } as const
   assert.throws(() => buildScoutingReportDraft({ reporterUserId: 'u', reporterPlayerRef: null, contributorRole: 'caddie', relationshipContext: 'caddied', reportKind: 'player_assessment', subjects: [], context: { matchNos: [] }, responsePayload: payload, visibility: 'team' }), /exactly one subject/)
@@ -110,6 +141,14 @@ test('general report supports multiple subjects without splitting source testimo
   assert.equal(draft.visibility, 'captain')
 })
 
+test('any player report naming a partner uses captain-sensitive played-with context', () => {
+  const reporter = interbayPlayers.find((player) => buildPersonalizedMatches(archive, player.value).some((match) => match.partners.length > 0))!
+  const match = buildPersonalizedMatches(archive, reporter.value).find((row) => row.partners.length > 0)!
+  assert.equal(relationshipForPlayerSubjects(match, [match.opponents[0]!]), 'played_against')
+  assert.equal(relationshipForPlayerSubjects(match, [match.partners[0]!]), 'played_with')
+  assert.equal(relationshipForPlayerSubjects(match, [match.opponents[0]!, match.partners[0]!]), 'played_with')
+})
+
 test('invited non-player can submit observer testimony without reporterPlayerRef or roster appearance', () => {
   const draft = buildScoutingReportDraft({ reporterUserId: 'observer', reporterPlayerRef: null, contributorRole: 'caddie', relationshipContext: 'caddied', reportKind: 'player_assessment', subjects: [players[0]!], context: contextForArchivedMatch(archive, 44), responsePayload: { schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: 'solid', note: 'Watched all 18.' } } }, visibility: 'team' })
   assert.equal(draft.reporterPlayerRef, null)
@@ -118,8 +157,11 @@ test('invited non-player can submit observer testimony without reporterPlayerRef
 })
 
 test('non-player contributor cannot see other reports or private scouting', () => {
-  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'other', scouting: false, admin: false }), false)
-  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', scouting: false, admin: false }), true)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'other', visibility: 'team', contributor: true, scouting: false, admin: false }), false)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', visibility: 'captain', contributor: true, scouting: false, admin: false }), true)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', visibility: 'captain', contributor: false, scouting: false, admin: false }), false)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'reviewer', reporterUserId: 'other', visibility: 'team', contributor: false, scouting: true, admin: false }), true)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'reviewer', reporterUserId: 'other', visibility: 'captain', contributor: false, scouting: true, admin: false }), false)
   assert.equal(canAccessScoutingBoard({ scouting: false }), false)
 })
 
@@ -146,7 +188,22 @@ test('migration uses a versioned validated evidence envelope and remains private
   assert.match(sql, /reporter_player_ref JSONB,/) // optional for non-players
   assert.doesNotMatch(sql, /prompt_key|original_text/)
   assert.match(sql, /Harvest contributors view their own reports/)
-  assert.match(sql, /Scouting captains and admins review harvested reports/)
-  assert.match(sql, /REVOKE UPDATE, DELETE ON public\.scouting_reports/)
+  assert.match(sql, /Authorized reviewers read harvest reports by visibility/)
+  assert.match(sql, /REVOKE INSERT, UPDATE, DELETE ON public\.scouting_reports FROM authenticated/)
+  assert.doesNotMatch(sql, /FOR INSERT\s+WITH CHECK/)
+  assert.doesNotMatch(sql, /'relayed'/)
   assert.doesNotMatch(sql, /CREATE TABLE public\.observations/i)
+})
+
+test('invite lifecycle actions scope resend/revoke to pending IGC campaign capability and retain report history', () => {
+  const harvestActions = readFileSync(new URL('../app/intel-harvest-admin-actions.ts', import.meta.url), 'utf8')
+  const scoutingActions = readFileSync(new URL('../app/scouting-admin-actions.ts', import.meta.url), 'utf8')
+  assert.match(harvestActions, /\.eq\('campaign_id', HARVEST_CAMPAIGN_ID\)/)
+  assert.match(harvestActions, /\.eq\('club_id', clubId\)/)
+  assert.match(harvestActions, /\.eq\('feature_key', HARVEST_FEATURE_KEY\)/)
+  assert.match(harvestActions, /\.eq\('status', 'pending'\)/)
+  assert.match(harvestActions, /feature_entitlements/)
+  assert.doesNotMatch(harvestActions, /from\('scouting_reports'\).*delete/s)
+  assert.match(scoutingActions, /\.eq\('feature_key', SCOUTING_FEATURE_KEY\)/)
+  assert.match(scoutingActions, /\.eq\('status', 'pending'\)/)
 })

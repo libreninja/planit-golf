@@ -20,7 +20,7 @@ export default async function SeattleCupHarvestPage() {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
         <div className="rounded-3xl border border-white/70 bg-white/90 p-8 shadow-xl shadow-primary/10">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Seattle Cup 2026 Intel Harvest</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">2026 Cup Feedback</p>
           <h1 className="mt-3 text-3xl">Before we show any matches, is this you?</h1>
           <p className="mt-2 text-sm text-muted-foreground">We matched the invitation/account to an archive player, but a name or email match is not canonical identity. Confirm once before continuing.</p>
           <div className="mt-6 space-y-3">
@@ -46,13 +46,14 @@ export default async function SeattleCupHarvestPage() {
     format: match.format,
     course: match.course,
     label: `Match ${match.matchNo} · R${match.round} ${match.format} · ${match.course}`,
+    playerCardIds: [...match.playersA, ...match.playersB].map((player) => player.ggMemberCardId).filter((id): id is string => !!id),
   }))
   const courses = [...new Set(archive.content.schedule.map((round) => round.course))]
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
       <header className="mb-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Seattle Cup 2026 Intel Harvest</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">2026 Cup Feedback</p>
         <h1 className="mt-2 text-3xl sm:text-4xl">{isPlayerFlow ? 'We already found your 2026 matches.' : "What did you see during this year's Cup?"}</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
           {isPlayerFlow
@@ -67,7 +68,7 @@ export default async function SeattleCupHarvestPage() {
       {isPlayerFlow ? (
         <PersonalizedHarvestFlow matches={session.matches} players={archivePlayerRefs(archive)} matchOptions={matchOptions} courses={courses} initialReportCount={session.ownReports.length} />
       ) : (
-        <ObserverHarvestFlow players={archivePlayerRefs(archive)} matches={matchOptions} courses={courses} initialReportCount={session.ownReports.length} />
+        <ObserverHarvestFlow players={archivePlayerRefs(archive)} matches={matchOptions} courses={courses} initialReportCount={session.ownReports.length} contributorRole={session.participant.contributor_role as Exclude<typeof session.participant.contributor_role, 'player'>} />
       )}
       {session.ownReports.length > 0 ? (
         <section className="mt-8 rounded-2xl border border-border bg-white/70 p-5">

@@ -27,9 +27,9 @@ export default async function IntelHarvestInvitePage({ params }: { params: Promi
     .select('id, email, display_name, feature_key, status, expires_at')
     .eq('invite_token', token)
     .maybeSingle()
-  if (!invite || invite.feature_key !== HARVEST_FEATURE_KEY) return <Notice title="Invite not found" description="This Intel Harvest invitation is not valid. Ask a Seattle Cup captain to send a new one." />
+  if (!invite || invite.feature_key !== HARVEST_FEATURE_KEY) return <Notice title="Invite not found" description="This 2026 Cup feedback invitation is not valid. Ask a Seattle Cup captain to send a new one." />
   const expired = !!invite.expires_at && new Date(invite.expires_at as string) < new Date()
-  if (invite.status === 'claimed') return <Notice title="Invite already used" description="This invitation has already been used. Sign in to return to the Intel Harvest." />
+  if (invite.status === 'claimed') return <Notice title="Invite already used" description="This invitation has already been used. Sign in to return to Share What You Learned." />
   if (invite.status === 'revoked' || expired) return <Notice title="Invite no longer valid" description="This invitation has expired or was revoked. Ask a captain to resend it." />
 
   const acceptanceMode = inviteAcceptanceMode({ userEmail: user?.email ?? null, inviteEmail: invite.email as string })

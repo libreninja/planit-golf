@@ -1,6 +1,8 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { createClient } from '@/lib/supabase/server'
+import { getIgcClubId } from '@/lib/scouting-access'
 import type { User } from '@supabase/supabase-js'
 import { loadSeattleCup2026Archive } from './archive-context.ts'
 import {
@@ -29,6 +31,7 @@ export interface HarvestParticipantRow {
   user_id: string | null
   email: string
   reporter_team_key: string
+  contributor_role: ContributorRole
   reporter_player_ref: PlayerExternalRef | null
   identity_status: 'canonical' | 'confirmation_required' | 'confirmed' | 'not_applicable'
   identity_source: 'profile_member' | 'invite_email' | 'admin' | 'none'
@@ -76,10 +79,12 @@ function samePlayer(a: PlayerExternalRef | null, b: PlayerExternalRef | null): b
 
 async function syncClaimedParticipant(user: User): Promise<void> {
   const service = createServiceClient()
+  const clubId = await getIgcClubId()
   const { data: invites, error } = await service
     .from('capability_invites')
     .select('id')
     .eq('feature_key', HARVEST_FEATURE_KEY)
+    .eq('club_id', clubId)
     .eq('claimed_by_user_id', user.id)
     .eq('status', 'claimed')
   if (error) throw error
@@ -141,6 +146,7 @@ async function ensureParticipant(user: User): Promise<HarvestParticipantRow> {
     user_id: user.id,
     email: (user.email ?? `${user.id}@unknown.invalid`).toLowerCase(),
     reporter_team_key: HARVEST_TEAM_KEY,
+    contributor_role: canonical ? 'player' : 'captain',
     reporter_player_ref: canonical,
     identity_status: canonical ? 'canonical' : 'not_applicable',
     identity_source: canonical ? 'profile_member' : 'none',
@@ -203,7 +209,8 @@ export async function loadContributorHarvestSession(user: User): Promise<Contrib
     proposed,
     identityStatus: participant.identity_status,
   })
-  const { data: reports, error: reportsError } = await service
+  const userClient = await createClient()
+  const { data: reports, error: reportsError } = await userClient
     .from('scouting_reports')
     .select('*')
     .eq('reporter_user_id', user.id)
