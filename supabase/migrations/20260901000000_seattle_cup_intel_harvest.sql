@@ -69,9 +69,11 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.claim_capability_invite(UUID, TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.claim_capability_invite(UUID, TEXT, TEXT, TEXT) FROM anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.claim_capability_invite(UUID, TEXT, TEXT, TEXT) TO authenticated;
 
 REVOKE ALL ON FUNCTION public.validate_capability_invite(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.validate_capability_invite(TEXT, TEXT) FROM anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.validate_capability_invite(TEXT, TEXT) TO anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.has_intel_harvest_entitlement(p_user_id UUID)
@@ -93,6 +95,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.has_intel_harvest_entitlement(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.has_intel_harvest_entitlement(UUID) FROM anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.has_intel_harvest_entitlement(UUID) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.has_scouting_entitlement(p_user_id UUID)
@@ -114,6 +117,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.has_scouting_entitlement(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.has_scouting_entitlement(UUID) FROM anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.has_scouting_entitlement(UUID) TO authenticated;
 
 -- Seattle Cup captain intelligence is deliberately distinct from both the
@@ -138,6 +142,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.has_intel_harvest_captain_entitlement(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.has_intel_harvest_captain_entitlement(UUID) FROM anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.has_intel_harvest_captain_entitlement(UUID) TO authenticated;
 
 -- A participant binds an email-bound capability invite/account to one event
@@ -196,10 +201,9 @@ CREATE POLICY "Seattle Cup reviewers view harvest participants"
     OR public.has_intel_harvest_captain_entitlement(auth.uid())
   );
 
+REVOKE ALL ON public.intel_harvest_participants FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON public.intel_harvest_participants TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.intel_harvest_participants TO service_role;
-REVOKE INSERT, UPDATE, DELETE ON public.intel_harvest_participants FROM authenticated;
-REVOKE ALL ON public.intel_harvest_participants FROM anon;
 
 -- Questionnaire responses are versioned source evidence, not derived
 -- Observations. The application validates the same contract before insert;
@@ -376,6 +380,11 @@ REVOKE ALL ON FUNCTION public.seattle_cup_guided_snapshot_v1() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.validate_seattle_cup_guided_snapshot_v1(JSONB) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.validate_seattle_cup_guided_report_v1(TEXT, JSONB) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.validate_scouting_report_payload(TEXT, TEXT, INTEGER, JSONB, JSONB) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.jsonb_has_only_keys(JSONB, TEXT[]) FROM anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.seattle_cup_guided_snapshot_v1() FROM anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.validate_seattle_cup_guided_snapshot_v1(JSONB) FROM anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.validate_seattle_cup_guided_report_v1(TEXT, JSONB) FROM anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.validate_scouting_report_payload(TEXT, TEXT, INTEGER, JSONB, JSONB) FROM anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.jsonb_has_only_keys(JSONB, TEXT[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.seattle_cup_guided_snapshot_v1() TO service_role;
 GRANT EXECUTE ON FUNCTION public.validate_seattle_cup_guided_snapshot_v1(JSONB) TO service_role;
@@ -470,7 +479,6 @@ CREATE POLICY "Authorized reviewers read harvest reports by visibility"
 -- Raw reports are source testimony. Only the guarded server action's service
 -- client may append. Browser/PostgREST authenticated clients cannot bypass
 -- archive and role/context validation, and nobody receives UPDATE/DELETE.
+REVOKE ALL ON public.scouting_reports FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON public.scouting_reports TO authenticated;
 GRANT SELECT, INSERT ON public.scouting_reports TO service_role;
-REVOKE INSERT, UPDATE, DELETE ON public.scouting_reports FROM authenticated;
-REVOKE ALL ON public.scouting_reports FROM anon;

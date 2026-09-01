@@ -93,7 +93,11 @@ SELECT pg_temp.assert_true(has_function_privilege('service_role','public.validat
 SELECT pg_temp.assert_true(NOT has_table_privilege('authenticated','public.scouting_reports','INSERT'), 'direct authenticated insert denied');
 SELECT pg_temp.assert_true(NOT has_table_privilege('authenticated','public.scouting_reports','UPDATE'), 'authenticated update denied');
 SELECT pg_temp.assert_true(NOT has_table_privilege('authenticated','public.scouting_reports','DELETE'), 'authenticated delete denied');
+SELECT pg_temp.assert_true(NOT has_table_privilege('authenticated','public.scouting_reports','TRUNCATE'), 'authenticated truncate denied');
 SELECT pg_temp.assert_true(has_table_privilege('service_role','public.scouting_reports','INSERT'), 'guarded service write enabled');
+SELECT pg_temp.assert_true(NOT has_table_privilege('service_role','public.scouting_reports','UPDATE'), 'service update denied');
+SELECT pg_temp.assert_true(NOT has_table_privilege('service_role','public.scouting_reports','DELETE'), 'service delete denied');
+SELECT pg_temp.assert_true(NOT has_table_privilege('service_role','public.scouting_reports','TRUNCATE'), 'service truncate denied');
 
 SET ROLE service_role;
 INSERT INTO public.scouting_reports (
