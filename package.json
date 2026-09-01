@@ -19,6 +19,7 @@
     "sync:events": "node scripts/sync-events.mjs",
     "sync:league": "node scripts/sync-igc-league.mjs",
     "reconcile": "node -e \"import('./lib/competition/reconcile/reconcile.ts').then(async m => { const s = await m.reconcileAllCompetitions({ deadlineMs: Date.now() + 90000, nowIso: new Date().toISOString() }); console.log(s); })\"",
+    "archive:seattle-cup": "node scripts/archive-seattle-cup.mjs",
     "generate:public-pace-qr": "node scripts/generate-public-pace-qr.mjs"
   },
   "dependencies": {
