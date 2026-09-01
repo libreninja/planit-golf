@@ -7,8 +7,8 @@
 //
 // PROJECTED uses the same invariant after provisionally holding every supported
 // live match at its current normalized match-play state (leader 1-0, all-square
-// 0.5-0.5). Scheduled matches remain mathematically unresolved. This is a
-// current-state projection, not a forecast.
+// 0.5-0.5). Scheduled and unsupported live matches remain mathematically
+// unresolved. This is a current-state projection, not a forecast.
 
 import {
   MAX_TEAM_POINTS,
@@ -199,12 +199,13 @@ export function calculateSeattleCupRaceStatus(snapshots: SeattleCupRaceInput[]):
   const prepared = prepareRace(snapshots)
   const nonFinal = prepared.matches.filter((match) => match.status !== 'final')
   const live = nonFinal.filter((match) => match.status === 'live')
-  const canProject = live.length > 0 && live.every(isSupportedLiveState)
+  const supportedLive = live.filter(isSupportedLiveState)
+  const canProject = supportedLive.length > 0
   const mode = canProject ? 'projected' : 'outright'
   const allMatchesFinal = prepared.matches.every((match) => match.status === 'final')
   const projectedPoints = emptyScores()
   if (canProject) {
-    for (const match of live) {
+    for (const match of supportedLive) {
       if (!validOpponents(match)) continue
       if (match.matchState === 'all-square') {
         projectedPoints[match.teamA] += 0.5
@@ -243,7 +244,7 @@ export function calculateSeattleCupRaceStatus(snapshots: SeattleCupRaceInput[]):
   let unresolved = nonFinal
   if (canProject) {
     for (const teamKey of TEAM_KEYS) base[teamKey] += projectedPoints[teamKey]
-    unresolved = nonFinal.filter((match) => match.status === 'scheduled')
+    unresolved = nonFinal.filter((match) => !isSupportedLiveState(match))
   }
 
   return {
