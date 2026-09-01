@@ -28,16 +28,17 @@ const archive = JSON.parse(readFileSync(new URL('../data/seattle-cup/archive/202
 const players = archivePlayerRefs(archive)
 const interbayPlayers = interbayArchivePlayerRefs(archive)
 
-test('contributor capability grants harvest but never the scouting board', () => {
-  assert.equal(canAccessHarvest({ contributor: true, scouting: false, admin: false }), true)
+test('contributor capability grants harvest but never scouting or captain review', () => {
+  assert.equal(canAccessHarvest({ contributor: true, scouting: false, captain: false }), true)
   assert.equal(canAccessScoutingBoard({ scouting: false }), false)
-  assert.equal(canAccessHarvest({ contributor: false, scouting: false, admin: false }), false)
+  assert.equal(canReviewHarvest({ scouting: false, captain: false }), false)
+  assert.equal(canAccessHarvest({ contributor: false, scouting: false, captain: false }), false)
 })
 
-test('captains/admins can review while ordinary contributors cannot', () => {
-  assert.equal(canReviewHarvest({ scouting: true, admin: false }), true)
-  assert.equal(canReviewHarvest({ scouting: false, admin: true }), true)
-  assert.equal(canReviewHarvest({ scouting: false, admin: false }), false)
+test('Seattle Cup reviewers and captains can review without treating Planit admin as authority', () => {
+  assert.equal(canReviewHarvest({ scouting: true, captain: false }), true)
+  assert.equal(canReviewHarvest({ scouting: false, captain: true }), true)
+  assert.equal(canReviewHarvest({ scouting: false, captain: false }), false)
 })
 
 test('existing and new account invite paths remain email-bound', () => {
@@ -157,11 +158,13 @@ test('invited non-player can submit observer testimony without reporterPlayerRef
 })
 
 test('non-player contributor cannot see other reports or private scouting', () => {
-  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'other', visibility: 'team', contributor: true, scouting: false, admin: false }), false)
-  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', visibility: 'captain', contributor: true, scouting: false, admin: false }), true)
-  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', visibility: 'captain', contributor: false, scouting: false, admin: false }), false)
-  assert.equal(canViewHarvestReport({ viewerUserId: 'reviewer', reporterUserId: 'other', visibility: 'team', contributor: false, scouting: true, admin: false }), true)
-  assert.equal(canViewHarvestReport({ viewerUserId: 'reviewer', reporterUserId: 'other', visibility: 'captain', contributor: false, scouting: true, admin: false }), false)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'other', visibility: 'team', contributor: true, scouting: false, captain: false }), false)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', visibility: 'captain', contributor: true, scouting: false, captain: false }), true)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'observer', reporterUserId: 'observer', visibility: 'captain', contributor: false, scouting: false, captain: false }), false)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'reviewer', reporterUserId: 'other', visibility: 'team', contributor: false, scouting: true, captain: false }), true)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'reviewer', reporterUserId: 'other', visibility: 'captain', contributor: false, scouting: true, captain: false }), false)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'captain', reporterUserId: 'other', visibility: 'team', contributor: false, scouting: false, captain: true }), true)
+  assert.equal(canViewHarvestReport({ viewerUserId: 'captain', reporterUserId: 'other', visibility: 'captain', contributor: false, scouting: false, captain: true }), true)
   assert.equal(canAccessScoutingBoard({ scouting: false }), false)
 })
 
@@ -189,6 +192,9 @@ test('migration uses a versioned validated evidence envelope and remains private
   assert.doesNotMatch(sql, /prompt_key|original_text/)
   assert.match(sql, /Harvest contributors view their own reports/)
   assert.match(sql, /Authorized reviewers read harvest reports by visibility/)
+  assert.match(sql, /seattle_cup_intel_captain/)
+  assert.match(sql, /has_intel_harvest_captain_entitlement/)
+  assert.doesNotMatch(sql, /is_planit_admin/)
   assert.match(sql, /REVOKE INSERT, UPDATE, DELETE ON public\.scouting_reports FROM authenticated/)
   assert.doesNotMatch(sql, /FOR INSERT\s+WITH CHECK/)
   assert.doesNotMatch(sql, /'relayed'/)
@@ -206,4 +212,14 @@ test('invite lifecycle actions scope resend/revoke to pending IGC campaign capab
   assert.doesNotMatch(harvestActions, /from\('scouting_reports'\).*delete/s)
   assert.match(scoutingActions, /\.eq\('feature_key', SCOUTING_FEATURE_KEY\)/)
   assert.match(scoutingActions, /\.eq\('status', 'pending'\)/)
+  assert.match(scoutingActions, /HARVEST_CAPTAIN_FEATURE_KEY/)
+})
+
+test('application harvest gates use Seattle Cup capabilities, never Planit admin status', () => {
+  const access = readFileSync(new URL('../lib/seattle-cup/harvest/access.ts', import.meta.url), 'utf8')
+  const shellUser = readFileSync(new URL('../lib/app-shell/user.ts', import.meta.url), 'utf8')
+  assert.match(access, /hasHarvestCaptainAccess/)
+  assert.doesNotMatch(access, /getProfileRoles|is_admin|is_system_admin/)
+  assert.match(shellUser, /harvestReview: scouting \|\| harvestCaptain/)
+  assert.doesNotMatch(shellUser, /harvestReview: scouting \|\| isAdmin/)
 })

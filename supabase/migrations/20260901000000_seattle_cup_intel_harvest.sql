@@ -116,7 +116,10 @@ $$;
 REVOKE ALL ON FUNCTION public.has_scouting_entitlement(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.has_scouting_entitlement(UUID) TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.is_planit_admin(p_user_id UUID)
+-- Seattle Cup captain intelligence is deliberately distinct from both the
+-- broader Seattle Cup scouting capability and Planit administration. It grants
+-- CAPTAIN-report visibility only inside the IGC Seattle Cup intelligence seam.
+CREATE OR REPLACE FUNCTION public.has_intel_harvest_captain_entitlement(p_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
@@ -124,15 +127,18 @@ SET search_path = public
 AS $$
   SELECT EXISTS (
     SELECT 1
-    FROM public.profiles
+    FROM public.feature_entitlements AS fe
+    JOIN public.clubs AS c ON c.id = fe.club_id
     WHERE p_user_id = auth.uid()
-      AND id = p_user_id
-      AND (is_admin = true OR is_system_admin = true)
+      AND fe.user_id = p_user_id
+      AND c.slug = 'igc'
+      AND fe.feature_key = 'seattle_cup_intel_captain'
+      AND fe.status = 'active'
   );
 $$;
 
-REVOKE ALL ON FUNCTION public.is_planit_admin(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_planit_admin(UUID) TO authenticated;
+REVOKE ALL ON FUNCTION public.has_intel_harvest_captain_entitlement(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.has_intel_harvest_captain_entitlement(UUID) TO authenticated;
 
 -- A participant binds an email-bound capability invite/account to one event
 -- identity and records only the minimum campaign progress needed for outreach.
@@ -183,11 +189,11 @@ CREATE POLICY "Harvest participants view themselves"
   ON public.intel_harvest_participants FOR SELECT
   USING (user_id = auth.uid());
 
-CREATE POLICY "Scouting captains and admins view harvest participants"
+CREATE POLICY "Seattle Cup reviewers view harvest participants"
   ON public.intel_harvest_participants FOR SELECT
   USING (
     public.has_scouting_entitlement(auth.uid())
-    OR public.is_planit_admin(auth.uid())
+    OR public.has_intel_harvest_captain_entitlement(auth.uid())
   );
 
 GRANT SELECT ON public.intel_harvest_participants TO authenticated;
@@ -444,13 +450,17 @@ CREATE POLICY "Harvest contributors view their own reports"
   ON public.scouting_reports FOR SELECT
   USING (
     reporter_user_id = auth.uid()
-    AND public.has_intel_harvest_entitlement(auth.uid())
+    AND (
+      public.has_intel_harvest_entitlement(auth.uid())
+      OR public.has_scouting_entitlement(auth.uid())
+      OR public.has_intel_harvest_captain_entitlement(auth.uid())
+    )
   );
 
 CREATE POLICY "Authorized reviewers read harvest reports by visibility"
   ON public.scouting_reports FOR SELECT
   USING (
-    public.is_planit_admin(auth.uid())
+    public.has_intel_harvest_captain_entitlement(auth.uid())
     OR (
       visibility = 'team'
       AND public.has_scouting_entitlement(auth.uid())

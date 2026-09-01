@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import { getProfileRoles, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getIgcClubId, hasScoutingAccess } from '@/lib/scouting-access'
 import {
   HARVEST_FEATURE_KEY,
+  HARVEST_CAPTAIN_FEATURE_KEY,
   canAccessHarvest,
   canReviewHarvest,
 } from './domain.ts'
@@ -13,7 +14,7 @@ export interface HarvestAccess {
   user: User
   contributor: boolean
   scouting: boolean
-  admin: boolean
+  captain: boolean
 }
 
 export async function hasHarvestContributorAccess(userId: string): Promise<boolean> {
@@ -34,17 +35,35 @@ export async function hasHarvestContributorAccess(userId: string): Promise<boole
   return !!data
 }
 
+export async function hasHarvestCaptainAccess(userId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const clubId = await getIgcClubId()
+  const { data, error } = await supabase
+    .from('feature_entitlements')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('club_id', clubId)
+    .eq('feature_key', HARVEST_CAPTAIN_FEATURE_KEY)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (error) {
+    console.error('[intel-harvest-captain-access] entitlement query failed:', error.message)
+    return false
+  }
+  return !!data
+}
+
 export async function getHarvestAccess(user: User): Promise<HarvestAccess> {
-  const [contributor, scouting, roles] = await Promise.all([
+  const [contributor, scouting, captain] = await Promise.all([
     hasHarvestContributorAccess(user.id),
     hasScoutingAccess(user.id),
-    getProfileRoles(user.id),
+    hasHarvestCaptainAccess(user.id),
   ])
   return {
     user,
     contributor,
     scouting,
-    admin: roles.is_admin || roles.is_system_admin,
+    captain,
   }
 }
 

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { hasScoutingAccess } from '@/lib/scouting-access'
-import { hasHarvestContributorAccess } from '@/lib/seattle-cup/harvest/access'
+import { hasHarvestCaptainAccess, hasHarvestContributorAccess } from '@/lib/seattle-cup/harvest/access'
 
 // The single "who is the current viewer" object the application shell needs.
 // Non-redirecting and side-effect free (it performs no writes and never bounces
@@ -19,6 +19,7 @@ export interface AppShellUser {
   // condition in lib/home-page-data.ts without its redirect logic.
   gtgAccess: boolean
   scouting: boolean
+  harvestCaptain: boolean
   harvest: boolean
   harvestReview: boolean
   isAdmin: boolean
@@ -32,6 +33,7 @@ const ANON: AppShellUser = {
   league: null,
   gtgAccess: false,
   scouting: false,
+  harvestCaptain: false,
   harvest: false,
   harvestReview: false,
   isAdmin: false,
@@ -69,11 +71,12 @@ export async function getAppShellUser(): Promise<AppShellUser> {
     p?.member_id && (p?.invite_id || p?.is_system_admin) && !p?.membership_revoked,
   )
   const isAdmin = Boolean(p?.is_admin || p?.is_system_admin)
-  const [scouting, contributor] = await Promise.all([
+  const [scouting, contributor, harvestCaptain] = await Promise.all([
     hasScoutingAccess(user.id),
     hasHarvestContributorAccess(user.id),
+    hasHarvestCaptainAccess(user.id),
   ])
-  const harvest = contributor || scouting || isAdmin
+  const harvest = contributor || scouting || harvestCaptain
 
   return {
     signedIn: true,
@@ -83,8 +86,9 @@ export async function getAppShellUser(): Promise<AppShellUser> {
     league,
     gtgAccess,
     scouting,
+    harvestCaptain,
     harvest,
-    harvestReview: scouting || isAdmin,
+    harvestReview: scouting || harvestCaptain,
     isAdmin,
   }
 }

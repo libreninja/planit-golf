@@ -9,7 +9,9 @@ INSERT INTO auth.users (id, email, email_confirmed_at) VALUES
   ('10000000-0000-0000-0000-000000000003', 'reviewer@example.com', NOW()),
   ('10000000-0000-0000-0000-000000000004', 'admin@example.com', NOW()),
   ('10000000-0000-0000-0000-000000000005', 'cross@example.com', NOW()),
-  ('10000000-0000-0000-0000-000000000006', 'unverified@example.com', NULL);
+  ('10000000-0000-0000-0000-000000000006', 'unverified@example.com', NULL),
+  ('10000000-0000-0000-0000-000000000007', 'captain@example.com', NOW()),
+  ('10000000-0000-0000-0000-000000000008', 'other-event@example.com', NOW());
 
 INSERT INTO public.clubs (id, slug) VALUES
   ('20000000-0000-0000-0000-000000000001', 'igc'),
@@ -20,14 +22,20 @@ INSERT INTO public.profiles (id, is_admin, is_system_admin) VALUES
   ('10000000-0000-0000-0000-000000000003', false, false),
   ('10000000-0000-0000-0000-000000000004', true, false),
   ('10000000-0000-0000-0000-000000000005', false, false),
-  ('10000000-0000-0000-0000-000000000006', false, false);
+  ('10000000-0000-0000-0000-000000000006', false, false),
+  ('10000000-0000-0000-0000-000000000007', false, false),
+  ('10000000-0000-0000-0000-000000000008', false, false);
 
 INSERT INTO public.feature_entitlements (user_id, club_id, feature_key, status, source) VALUES
   ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','seattle_cup_intel_contribute','active','admin'),
   ('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','seattle_cup_intel_contribute','active','admin'),
   ('10000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000001','seattle_cup_scouting','active','admin'),
+  ('10000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000001','seattle_cup_scouting','active','admin'),
   ('10000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000002','seattle_cup_intel_contribute','active','admin'),
-  ('10000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000002','seattle_cup_scouting','active','admin');
+  ('10000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000002','seattle_cup_scouting','active','admin'),
+  ('10000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000002','seattle_cup_intel_captain','active','admin'),
+  ('10000000-0000-0000-0000-000000000007','20000000-0000-0000-0000-000000000001','seattle_cup_intel_captain','active','admin'),
+  ('10000000-0000-0000-0000-000000000008','20000000-0000-0000-0000-000000000001','other_event_intel_captain','active','admin');
 
 INSERT INTO public.capability_invites (id, club_id, feature_key, email, invite_token, status, expires_at) VALUES
   ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','seattle_cup_intel_contribute','one@example.com','claim-good','pending',NOW()+INTERVAL '1 day'),
@@ -67,11 +75,17 @@ SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
 SELECT pg_temp.assert_true(NOT public.has_intel_harvest_entitlement('10000000-0000-0000-0000-000000000005'), 'cross-club entitlement rejected');
 SELECT pg_temp.assert_true(NOT public.has_scouting_entitlement('10000000-0000-0000-0000-000000000005'), 'cross-club scouting entitlement rejected');
+SELECT pg_temp.assert_true(NOT public.has_intel_harvest_captain_entitlement('10000000-0000-0000-0000-000000000005'), 'cross-club captain entitlement rejected');
+RESET ROLE;
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000008',false);
+SELECT pg_temp.assert_true(NOT public.has_intel_harvest_captain_entitlement('10000000-0000-0000-0000-000000000008'), 'unrelated event capability rejected');
 RESET ROLE;
 
 -- Helper execution is explicit; validation internals are not browser-callable.
 SELECT pg_temp.assert_true(NOT has_function_privilege('anon','public.has_intel_harvest_entitlement(uuid)','EXECUTE'), 'anonymous harvest helper execution revoked');
 SELECT pg_temp.assert_true(NOT has_function_privilege('anon','public.has_scouting_entitlement(uuid)','EXECUTE'), 'anonymous scouting helper execution revoked');
+SELECT pg_temp.assert_true(NOT has_function_privilege('anon','public.has_intel_harvest_captain_entitlement(uuid)','EXECUTE'), 'anonymous captain helper execution revoked');
 SELECT pg_temp.assert_true(NOT has_function_privilege('authenticated','public.validate_scouting_report_payload(text,text,integer,jsonb,jsonb)','EXECUTE'), 'authenticated validator execution revoked');
 SELECT pg_temp.assert_true(has_function_privilege('service_role','public.validate_scouting_report_payload(text,text,integer,jsonb,jsonb)','EXECUTE'), 'service validator execution granted');
 
@@ -99,21 +113,39 @@ SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 2, '
 SELECT pg_temp.assert_true(NOT EXISTS(SELECT 1 FROM public.scouting_reports WHERE reporter_user_id='10000000-0000-0000-0000-000000000002'), 'contributor cannot read another');
 RESET ROLE;
 
--- Scouting reviewer sees TEAM only; admin sees TEAM and CAPTAIN.
+-- A scouting reviewer sees TEAM only.
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000003',false);
 SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 2, 'reviewer reads team reports');
 SELECT pg_temp.assert_true(NOT EXISTS(SELECT 1 FROM public.scouting_reports WHERE visibility='captain'), 'reviewer cannot read captain reports');
 RESET ROLE;
+
+-- General Planit admin status does not elevate an otherwise ordinary scouting
+-- reviewer to CAPTAIN visibility.
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
-SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 3, 'admin reads captain-sensitive reports');
+SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 2, 'admin with scouting reads team reports only');
+SELECT pg_temp.assert_true(NOT EXISTS(SELECT 1 FROM public.scouting_reports WHERE visibility='captain'), 'Planit admin without captain entitlement cannot read captain reports');
 RESET ROLE;
+
+-- Narrow IGC Seattle Cup captain entitlement reads both classes without
+-- granting or requiring either Planit admin or scouting authority.
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000007',false);
+SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 3, 'Seattle Cup captain reads team and captain reports');
+SELECT pg_temp.assert_true(public.has_intel_harvest_captain_entitlement('10000000-0000-0000-0000-000000000007'), 'captain entitlement active');
+SELECT pg_temp.assert_true(NOT public.has_scouting_entitlement('10000000-0000-0000-0000-000000000007'), 'captain entitlement does not grant scouting');
+RESET ROLE;
+SELECT pg_temp.assert_true((SELECT NOT is_admin AND NOT is_system_admin FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000007'), 'Seattle Cup captain has no Planit admin role');
 
 -- Unauthorized and revoked users read nothing; historical rows remain.
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
 SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 0, 'unauthorized user reads nothing');
+RESET ROLE;
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000008',false);
+SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 0, 'unrelated event capability reads nothing');
 RESET ROLE;
 UPDATE public.feature_entitlements SET status='revoked' WHERE user_id='10000000-0000-0000-0000-000000000001' AND feature_key='seattle_cup_intel_contribute';
 SET ROLE authenticated;
@@ -121,6 +153,14 @@ SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001'
 SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 0, 'revoked contributor loses read access');
 RESET ROLE;
 SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports WHERE reporter_user_id='10000000-0000-0000-0000-000000000001') = 2, 'reports remain after revocation');
+
+UPDATE public.feature_entitlements SET status='revoked' WHERE user_id='10000000-0000-0000-0000-000000000007' AND feature_key='seattle_cup_intel_captain';
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000007',false);
+SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 0, 'revoked captain loses report access');
+SELECT pg_temp.assert_true(NOT public.has_intel_harvest_captain_entitlement('10000000-0000-0000-0000-000000000007'), 'revoked captain helper denies access');
+RESET ROLE;
+SELECT pg_temp.assert_true((SELECT count(*) FROM public.scouting_reports) = 3, 'captain revocation leaves historical testimony intact');
 
 -- Malformed, unknown-only, and snapshot/version disagreement are DB-rejected.
 DO $$

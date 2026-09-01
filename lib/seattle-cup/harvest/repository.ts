@@ -3,6 +3,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { getIgcClubId } from '@/lib/scouting-access'
+import { hasHarvestCaptainAccess } from './access.ts'
 import type { User } from '@supabase/supabase-js'
 import { loadSeattleCup2026Archive } from './archive-context.ts'
 import {
@@ -136,9 +137,12 @@ async function ensureParticipant(user: User): Promise<HarvestParticipantRow> {
   if (error) throw error
   if (existing) return existing as HarvestParticipantRow
 
-  // Captains/admins may enter without an invite. They are valid observers even
-  // when they have no 2026 playing appearance.
-  const canonical = await canonicalPlayerForProfile(user.id)
+  // Seattle Cup reviewers/captains may enter without a contributor invite.
+  // Only the narrow captain entitlement creates captain-observation semantics.
+  const [canonical, captain] = await Promise.all([
+    canonicalPlayerForProfile(user.id),
+    hasHarvestCaptainAccess(user.id),
+  ])
   const now = new Date().toISOString()
   const row = {
     campaign_id: HARVEST_CAMPAIGN_ID,
@@ -146,7 +150,7 @@ async function ensureParticipant(user: User): Promise<HarvestParticipantRow> {
     user_id: user.id,
     email: (user.email ?? `${user.id}@unknown.invalid`).toLowerCase(),
     reporter_team_key: HARVEST_TEAM_KEY,
-    contributor_role: canonical ? 'player' : 'captain',
+    contributor_role: canonical ? 'player' : captain ? 'captain' : 'other_firsthand',
     reporter_player_ref: canonical,
     identity_status: canonical ? 'canonical' : 'not_applicable',
     identity_source: canonical ? 'profile_member' : 'none',

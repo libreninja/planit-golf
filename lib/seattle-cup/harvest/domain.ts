@@ -4,6 +4,7 @@ import type { Match, MatchPlayer, RoundNumber, TeamKey } from '../types.ts'
 export const HARVEST_CAMPAIGN_ID = 'seattle-cup-2026-post-event'
 export const HARVEST_EDITION_REF = 'seattle-cup:2026'
 export const HARVEST_FEATURE_KEY = 'seattle_cup_intel_contribute'
+export const HARVEST_CAPTAIN_FEATURE_KEY = 'seattle_cup_intel_captain'
 export const HARVEST_TEAM_KEY: TeamKey = 'interbay'
 export const GUIDED_QUESTIONNAIRE_KEY = 'seattle-cup-guided-scouting'
 export const GUIDED_QUESTIONNAIRE_VERSION = 1
@@ -386,14 +387,14 @@ export function relationshipForPlayerSubjects(
   return subjects.some((subject) => partnerIds.has(subject.value)) ? 'played_with' : 'played_against'
 }
 
-export function canAccessHarvest(input: { contributor: boolean; scouting: boolean; admin: boolean }): boolean {
-  return input.contributor || input.scouting || input.admin
+export function canAccessHarvest(input: { contributor: boolean; scouting: boolean; captain: boolean }): boolean {
+  return input.contributor || input.scouting || input.captain
 }
 export function canAccessScoutingBoard(input: { scouting: boolean }): boolean { return input.scouting }
-export function canReviewHarvest(input: { scouting: boolean; admin: boolean }): boolean { return input.scouting || input.admin }
-export function canViewHarvestReport(input: { viewerUserId: string; reporterUserId: string; visibility: ReportVisibility; contributor: boolean; scouting: boolean; admin: boolean }): boolean {
-  if (input.viewerUserId === input.reporterUserId) return input.contributor
-  return input.admin || (input.visibility === 'team' && input.scouting)
+export function canReviewHarvest(input: { scouting: boolean; captain: boolean }): boolean { return input.scouting || input.captain }
+export function canViewHarvestReport(input: { viewerUserId: string; reporterUserId: string; visibility: ReportVisibility; contributor: boolean; scouting: boolean; captain: boolean }): boolean {
+  if (input.viewerUserId === input.reporterUserId) return input.contributor || input.scouting || input.captain
+  return input.captain || (input.visibility === 'team' && input.scouting)
 }
 export function inviteAcceptanceMode(input: { userEmail: string | null; inviteEmail: string }): 'signup' | 'claim' | 'wrong_account' {
   if (!input.userEmail) return 'signup'

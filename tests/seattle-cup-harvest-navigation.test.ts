@@ -3,7 +3,7 @@ import test from 'node:test'
 import { buildBreadcrumb, buildNav } from '../lib/app-shell/navigation.ts'
 import type { AppShellUser } from '../lib/app-shell/user.ts'
 
-const base: AppShellUser = { signedIn: true, userId: 'u', email: 'u@example.com', displayName: 'User', league: null, gtgAccess: false, scouting: false, harvest: false, harvestReview: false, isAdmin: false }
+const base: AppShellUser = { signedIn: true, userId: 'u', email: 'u@example.com', displayName: 'User', league: null, gtgAccess: false, scouting: false, harvestCaptain: false, harvest: false, harvestReview: false, isAdmin: false }
 const labels = (user: AppShellUser) => buildNav(user).filter((item) => item.type === 'link').map((item) => item.label)
 
 test('existing league member plus harvest keeps league and tee-time navigation and gains contribution', () => {
@@ -19,6 +19,18 @@ test('scouting reviewer plus harvest retains scouting and gains contribution and
   assert.ok(nav.includes('Opposition Intel'))
   assert.ok(nav.includes('Share What You Learned'))
   assert.ok(nav.includes('Review Reports'))
+})
+
+test('Seattle Cup captain without scouting or Planit admin gets harvest review but no unrelated destinations', () => {
+  const nav = labels({ ...base, harvestCaptain: true, harvest: true, harvestReview: true })
+  assert.deepEqual(nav, ['Home', 'Share What You Learned', 'Review Reports'])
+  assert.equal(nav.includes('Scouting'), false)
+})
+
+test('Planit admin without Seattle Cup capability does not gain harvest navigation', () => {
+  const nav = labels({ ...base, isAdmin: true })
+  assert.equal(nav.includes('Share What You Learned'), false)
+  assert.equal(nav.includes('Review Reports'), false)
 })
 
 test('new contributor-only and observer-only accounts get a focused return destination', () => {

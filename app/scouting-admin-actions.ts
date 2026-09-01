@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getProfileRoles } from '@/lib/auth'
 import { getIgcClubId, SCOUTING_FEATURE_KEY } from '@/lib/scouting-access'
+import { HARVEST_CAPTAIN_FEATURE_KEY } from '@/lib/seattle-cup/harvest/domain'
 import { sendScoutingInviteEmail } from '@/lib/email/mailer'
 
 async function requireAdminUser() {
@@ -35,7 +36,7 @@ function normEmail(raw: FormDataEntryValue | null | undefined): string {
     .toLowerCase()
 }
 
-// Invite a (possibly not-yet-existing) captain by email. Upserts the pending
+// Invite a (possibly not-yet-existing) scouting reviewer by email. Upserts the pending
 // capability_invite (re-invite replaces the token) and sends the email.
 export async function createScoutingInvite(formData: FormData) {
   const { user, service } = await requireAdminUser()
@@ -68,8 +69,7 @@ export async function createScoutingInvite(formData: FormData) {
 }
 
 // Grant scouting to an EXISTING PlanIt account by email (no invite, no email,
-// no re-registration, no club_memberships row). Use this for already-validated
-// captains like Noah.
+// no re-registration, no club_memberships row).
 export async function grantScoutingByEmail(formData: FormData) {
   const { user, service } = await requireAdminUser()
   const email = normEmail(formData.get('email'))
@@ -105,6 +105,54 @@ export async function grantScoutingByEmail(formData: FormData) {
   )
   if (error) throw error
 
+  revalidatePath('/admin/scouting')
+}
+
+// Grant only the IGC Seattle Cup Intel Harvest captain capability. This does
+// not grant scouting-board access, club membership, or any Planit admin role.
+export async function grantIntelCaptainByEmail(formData: FormData) {
+  const { user, service } = await requireAdminUser()
+  const email = normEmail(formData.get('email'))
+  if (!email || !email.includes('@')) throw new Error('A valid email is required')
+
+  const { data: profile, error: profileError } = await service
+    .from('profiles')
+    .select('id')
+    .ilike('email', email)
+    .maybeSingle()
+  if (profileError) throw profileError
+  if (!profile?.id) throw new Error('No existing PlanIt account found for that email')
+
+  const clubId = await getIgcClubId()
+  const { error } = await service.from('feature_entitlements').upsert({
+    user_id: profile.id,
+    club_id: clubId,
+    feature_key: HARVEST_CAPTAIN_FEATURE_KEY,
+    status: 'active',
+    source: 'admin',
+    granted_by: user.id,
+    granted_at: new Date().toISOString(),
+    revoked_by: null,
+    revoked_at: null,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id,club_id,feature_key' })
+  if (error) throw error
+  revalidatePath('/admin/scouting')
+}
+
+export async function revokeIntelCaptain(formData: FormData) {
+  const { user, service } = await requireAdminUser()
+  const userId = String(formData.get('userId') || '')
+  if (!userId) throw new Error('userId is required')
+  const clubId = await getIgcClubId()
+  const { error } = await service
+    .from('feature_entitlements')
+    .update({ status: 'revoked', revoked_by: user.id, revoked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('club_id', clubId)
+    .eq('feature_key', HARVEST_CAPTAIN_FEATURE_KEY)
+    .eq('status', 'active')
+  if (error) throw error
   revalidatePath('/admin/scouting')
 }
 
