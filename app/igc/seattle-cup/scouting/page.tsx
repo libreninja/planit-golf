@@ -74,6 +74,9 @@ export default async function ScoutingBoardPage({
           {canManageAccess ? (
             <div className="flex flex-none items-center gap-2">
               <Button asChild variant="outline" size="sm">
+                <Link href="/igc/seattle-cup/harvest/2026/review">Intel harvest</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
                 <Link href="/admin/scouting#cup-resolution">Cup resolution</Link>
               </Button>
               <Button asChild variant="outline" size="sm">

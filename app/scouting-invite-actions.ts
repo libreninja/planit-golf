@@ -9,7 +9,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
-export async function validateScoutingInviteForSignUp(email: string, token: string) {
+export async function validateCapabilityInviteForSignUp(email: string, token: string) {
   if (!email || !token) {
     return { valid: false, authStatus: 'none' as const }
   }
@@ -47,3 +47,5 @@ export async function validateScoutingInviteForSignUp(email: string, token: stri
       : ('none' as const),
   }
 }
+
+export const validateScoutingInviteForSignUp = validateCapabilityInviteForSignUp

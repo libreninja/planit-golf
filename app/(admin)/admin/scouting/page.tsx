@@ -10,6 +10,7 @@ import {
 } from '@/app/scouting-admin-actions'
 import { Button } from '@/components/ui/button'
 import { CupResolutionSection } from './cup-resolution'
+import Link from 'next/link'
 
 // Seattle Cup scouting access admin. Invite (email), grant to an existing
 // account, revoke access, and manage pending invites (resend/revoke). All
@@ -73,7 +74,10 @@ export default async function ScoutingAdminPage() {
   return (
     <div>
       <div className="space-y-8 py-2">
-        <h1 className="text-xl font-semibold">Scouting Access</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Scouting Access</h1>
+          <Button asChild variant="outline"><Link href="/igc/seattle-cup/harvest/2026/review">2026 Intel Harvest</Link></Button>
+        </div>
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Invite a new captain */}
           <section className="rounded-md border border-border bg-white/80 p-4">
