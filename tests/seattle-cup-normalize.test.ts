@@ -6,6 +6,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -74,6 +75,35 @@ function makeFake2026CompetitiveClient(format: 'Fourball' | 'Scramble'): GGClien
     if (endpoint.endsWith('/tee_sheet')) return teeSheet
     if (endpoint.endsWith('/team_points')) return { teams: teamPoints }
     return { round: { date: format === 'Fourball' ? '2026-08-22' : '2026-08-23', name: format } }
+  }
+}
+
+// Final, raw production captures retained as forensic evidence for the two
+// Weekend 2 rounds. These fixtures intentionally replay GG's source result and
+// per-hole evidence together so known disagreements remain reproducible.
+function makeFakeFinalWeekendClient(format: 'Chapman' | 'Singles'): GGClient {
+  const tournamentPayload = readFix(`tournament_2026_${format}.json`)
+  const teeSheet = readFix(`tee_sheet_2026_${format}.json`)
+  const teamPoints = readFix(`team_points_2026_${format}.json`)
+  const tournamentId = format === 'Chapman'
+    ? '12971191228224792120'
+    : '12971191249129203257'
+
+  return async (endpoint: string) => {
+    if (endpoint.includes('/tournaments/') && endpoint.endsWith('.json')) return tournamentPayload
+    if (endpoint.endsWith('/tournaments')) {
+      return [{ event: {
+        id: tournamentId,
+        name: format,
+        result_scope: format === 'Singles' ? 'rs_pos_partners' : 'rs_pos_group',
+      } }]
+    }
+    if (endpoint.endsWith('/tee_sheet')) return teeSheet
+    if (endpoint.endsWith('/team_points')) return teamPoints
+    return { round: {
+      date: format === 'Chapman' ? '2026-08-29' : '2026-08-30',
+      name: format,
+    } }
   }
 }
 
@@ -263,6 +293,61 @@ test('2026 production-shaped R1/R2 competitive matches satisfy team identity inv
     assert.equal(snap.validationIssues.filter((issue) =>
       ['same-team-match', 'player-team-mismatch', 'team-identity-conflict', 'team-identity-unresolved'].includes(issue.kind)).length, 0)
   }
+})
+
+test('final 2026 R3/R4 fixtures reproduce source results, substitutions, and diagnostics', async () => {
+  const manifest = readFix('2026-weekend2-forensics.json')
+  for (const round of manifest.rounds) {
+    for (const fixture of Object.values(round.files) as Array<{ path: string; sha256: string }>) {
+      const bytes = fs.readFileSync(path.join(FIX, fixture.path))
+      assert.equal(createHash('sha256').update(bytes).digest('hex'), fixture.sha256,
+        `${fixture.path} matches its capture manifest`)
+    }
+  }
+
+  const [chapman, singles] = await Promise.all([
+    makeSnapshot(3, makeFakeFinalWeekendClient('Chapman')),
+    makeSnapshot(4, makeFakeFinalWeekendClient('Singles')),
+  ])
+
+  assert.equal(chapman.resultStatus, 'final')
+  assert.equal(singles.resultStatus, 'final')
+  assert.deepEqual(chapman.matches.map((match) => match.matchNo),
+    Array.from({ length: 12 }, (_, index) => 25 + index))
+  assert.deepEqual(singles.matches.map((match) => match.matchNo),
+    Array.from({ length: 24 }, (_, index) => 37 + index))
+  assert.ok([...chapman.matches, ...singles.matches].every((match) =>
+    match.status === 'final'
+      && match.sourceResult != null
+      && match.pointsA != null
+      && match.pointsB != null
+      && match.holes.length === 18))
+
+  assert.equal(chapman.validationIssues.length, 0)
+  assert.deepEqual(singles.validationIssues
+    .filter((issue) => issue.kind === 'result-mismatch')
+    .map((issue) => issue.matchNo), [39, 42, 43, 44, 46, 48, 49, 50, 51, 54, 55, 56, 57, 58, 59, 60])
+  assert.deepEqual(singles.validationIssues
+    .filter((issue) => issue.kind === 'published-schedule-mismatch')
+    .map(({ matchNo, detail }) => ({ matchNo, detail })), [
+    {
+      matchNo: 49,
+      detail: 'bill-wright: published=Mark Than/7701317057685513892 GG=Root, Graham/12980021976834795193',
+    },
+    {
+      matchNo: 60,
+      detail: 'bill-wright: published=Tyson Than/10868631878961751933 GG=Pearlman, Nathan/12980024572303664827',
+    },
+  ])
+
+  const match49 = singles.matches.find((match) => match.matchNo === 49)!
+  const match60 = singles.matches.find((match) => match.matchNo === 60)!
+  assert.deepEqual(match49.playersA.map(({ name, ggMemberCardId }) => ({ name, ggMemberCardId })), [{
+    name: 'Root, Graham', ggMemberCardId: '12980021976834795193',
+  }])
+  assert.deepEqual(match60.playersB.map(({ name, ggMemberCardId }) => ({ name, ggMemberCardId })), [{
+    name: 'Pearlman, Nathan', ggMemberCardId: '12980024572303664827',
+  }])
 })
 
 test('stable member-card team identity wins over ambiguous affiliation without tee-order inference', async () => {

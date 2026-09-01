@@ -1,0 +1,32 @@
+{
+  "teams": [
+    {
+      "id": 12980046342251375000,
+      "name": "Interbay",
+      "tournament_points": {},
+      "round_points": "3.5",
+      "total_points": "19.0"
+    },
+    {
+      "id": 12980046340909197000,
+      "name": "Bill Wright",
+      "tournament_points": {},
+      "round_points": "3.5",
+      "total_points": "15.5"
+    },
+    {
+      "id": 12980046343593552000,
+      "name": "Jackson Park",
+      "tournament_points": {},
+      "round_points": "3.5",
+      "total_points": "15.0"
+    },
+    {
+      "id": 12980046344969284000,
+      "name": "West Seattle",
+      "tournament_points": {},
+      "round_points": "1.5",
+      "total_points": "10.5"
+    }
+  ]
+}
