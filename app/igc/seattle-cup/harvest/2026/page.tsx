@@ -39,7 +39,7 @@ export default async function SeattleCupHarvestPage() {
   }
 
   const completed = session.participant.campaign_status === 'completed' || session.participant.campaign_status === 'skipped'
-  const isPlayerFlow = session.matches.length > 0
+  const isPlayerFlow = session.participant.contributor_role === 'player' && session.matches.length > 0
   const matchOptions = allArchiveMatches(archive).map((match) => ({
     matchNo: match.matchNo,
     round: match.round,
@@ -63,7 +63,7 @@ export default async function SeattleCupHarvestPage() {
         <p className="mt-2 text-xs text-muted-foreground">About five minutes · every question is optional · nothing here is public</p>
       </header>
       {completed ? (
-        <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">You already completed this harvest. You can still add another pass if something else came back to you.</div>
+        <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">You already completed this feedback. You can still add another pass if something else came back to you.</div>
       ) : null}
       {isPlayerFlow ? (
         <PersonalizedHarvestFlow matches={session.matches} players={archivePlayerRefs(archive)} matchOptions={matchOptions} courses={courses} initialReportCount={session.ownReports.length} />

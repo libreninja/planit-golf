@@ -227,7 +227,12 @@ export async function loadContributorHarvestSession(user: User): Promise<Contrib
     reporterPlayerRef: identity.reporterPlayerRef,
     confirmationCandidates: identity.confirmationCandidates,
     requiresIdentityConfirmation: identity.requiresConfirmation,
-    matches: identity.reporterPlayerRef ? buildPersonalizedMatches(archive, identity.reporterPlayerRef.value) : [],
+    // An archive identity is context, not eligibility and not a forced role.
+    // Someone who played in 2026 may still be invited specifically as a
+    // caddie/captain/watcher and must remain in the observer flow.
+    matches: participant.contributor_role === 'player' && identity.reporterPlayerRef
+      ? buildPersonalizedMatches(archive, identity.reporterPlayerRef.value)
+      : [],
     ownReports: (reports ?? []) as StoredScoutingReport[],
   }
 }

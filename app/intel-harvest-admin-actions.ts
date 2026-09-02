@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
-import { requireHarvestReviewAccess } from '@/lib/seattle-cup/harvest/access'
+import { requireHarvestCampaignManager } from '@/lib/seattle-cup/harvest/access'
 import { loadSeattleCup2026Archive } from '@/lib/seattle-cup/harvest/archive-context'
 import {
   HARVEST_CAMPAIGN_ID,
@@ -23,7 +23,7 @@ function normEmail(value: FormDataEntryValue | null): string {
 }
 
 export async function createIntelHarvestInvite(formData: FormData) {
-  const { user } = await requireHarvestReviewAccess()
+  const { user } = await requireHarvestCampaignManager()
   const service = createServiceClient()
   const email = normEmail(formData.get('email'))
   const displayName = String(formData.get('displayName') ?? '').trim() || null
@@ -98,7 +98,7 @@ export async function createIntelHarvestInvite(formData: FormData) {
 }
 
 export async function revokeIntelHarvestInvite(formData: FormData) {
-  await requireHarvestReviewAccess()
+  await requireHarvestCampaignManager()
   const inviteId = String(formData.get('inviteId') ?? '')
   if (!inviteId) throw new Error('inviteId is required')
   const service = createServiceClient()
@@ -115,7 +115,7 @@ export async function revokeIntelHarvestInvite(formData: FormData) {
 }
 
 export async function resendIntelHarvestInvite(formData: FormData) {
-  await requireHarvestReviewAccess()
+  await requireHarvestCampaignManager()
   const inviteId = String(formData.get('inviteId') ?? '')
   if (!inviteId) throw new Error('inviteId is required')
   const token = randomUUID()
@@ -145,7 +145,7 @@ export async function resendIntelHarvestInvite(formData: FormData) {
 }
 
 export async function revokeIntelHarvestContributor(formData: FormData) {
-  const { user } = await requireHarvestReviewAccess()
+  const { user } = await requireHarvestCampaignManager()
   const userId = String(formData.get('userId') ?? '')
   if (!userId) throw new Error('userId is required')
   const service = createServiceClient()

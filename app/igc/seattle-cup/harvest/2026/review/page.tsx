@@ -6,7 +6,7 @@ import {
   revokeIntelHarvestInvite,
 } from '@/app/intel-harvest-admin-actions'
 import { Button } from '@/components/ui/button'
-import { requireHarvestReviewAccess } from '@/lib/seattle-cup/harvest/access'
+import { requireHarvestReviewOrManagerAccess } from '@/lib/seattle-cup/harvest/access'
 import { loadSeattleCup2026Archive } from '@/lib/seattle-cup/harvest/archive-context'
 import {
   HARVEST_CAMPAIGN_ID,
@@ -41,24 +41,46 @@ function statusLabel(participant: HarvestParticipantRow, reportCount: number): s
 
 function contextLine(report: StoredScoutingReport): string {
   const relationship = relationshipLabels[report.relationship_context] ?? report.relationship_context
-  const matches = Array.isArray(report.context.matchNos) && report.context.matchNos.length > 0
-    ? ` · Match ${report.context.matchNos.join(', ')}`
-    : ''
-  return `${relationship}${matches}`
+  const facts = [
+    Array.isArray(report.context.matchNos) && report.context.matchNos.length > 0 ? `Match ${report.context.matchNos.join(', ')}` : null,
+    report.context.round ? `Round ${report.context.round}` : null,
+    report.context.format ?? null,
+    report.context.course ?? null,
+    report.context.holeNumbers?.length ? `Holes ${report.context.holeNumbers.join(', ')}` : null,
+  ].filter((value): value is string => !!value)
+  return [relationship, ...facts].join(' · ')
+}
+
+function snapshotLabels(report: StoredScoutingReport): Map<string, string> {
+  const labels = new Map<string, string>()
+  const visit = (value: unknown) => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item)
+      return
+    }
+    if (!value || typeof value !== 'object') return
+    const row = value as Record<string, unknown>
+    if (typeof row.key === 'string' && typeof row.label === 'string') labels.set(row.key, row.label)
+    for (const nested of Object.values(row)) visit(nested)
+  }
+  visit(report.questionnaire_snapshot)
+  return labels
 }
 
 function reportSummary(report: StoredScoutingReport): string[] {
   const payload = report.response_payload
+  const labels = snapshotLabels(report)
+  const label = (key: string) => labels.get(key) ?? key.replaceAll('_', ' ')
   if (payload.kind === 'course_observation') return [payload.courseHole.note]
   if (payload.kind === 'general_observation') return [payload.note, payload.finalAdvice].filter((value): value is string => !!value)
   const lines: string[] = []
-  const labels: Record<string, string> = { offTheTee: 'Off the tee', approachIrons: 'Approach / irons', shortGame: 'Short game', putting: 'Putting' }
+  const sectionLabels: Record<string, string> = { offTheTee: 'Off the tee', approachIrons: 'Approach / irons', shortGame: 'Short game', putting: 'Putting' }
   for (const [key, section] of Object.entries(payload.sections)) {
     if (!section || key === 'temperament') continue
     const rated = section as { overall?: string; note?: string; characteristics?: string[]; specifics?: string[] }
-    lines.push(`${labels[key] ?? key}: ${[rated.overall?.replaceAll('_', ' '), ...(rated.characteristics ?? []), ...(rated.specifics ?? []), rated.note].filter(Boolean).join(' · ')}`)
+    lines.push(`${sectionLabels[key] ?? key}: ${[rated.overall ? label(rated.overall) : null, ...(rated.characteristics ?? []).map(label), ...(rated.specifics ?? []).map(label), rated.note].filter(Boolean).join(' · ')}`)
   }
-  if (payload.sections.temperament) lines.push(`Temperament: ${[...(payload.sections.temperament.labels ?? []), payload.sections.temperament.supportingNote].filter(Boolean).join(' · ')}`)
+  if (payload.sections.temperament) lines.push(`Temperament: ${[...(payload.sections.temperament.labels ?? []).map(label), payload.sections.temperament.supportingNote].filter(Boolean).join(' · ')}`)
   if (payload.finalAdvice) lines.push(`Advice: ${payload.finalAdvice}`)
   if (payload.courseHole) lines.push(`Course / holes: ${payload.courseHole.note}`)
   return lines
@@ -69,7 +91,7 @@ export default async function HarvestReviewPage({
 }: {
   searchParams: Promise<{ visibility?: string; kind?: string }>
 }) {
-  await requireHarvestReviewAccess()
+  const access = await requireHarvestReviewOrManagerAccess()
   const filters = await searchParams
   const service = createServiceClient()
   const userClient = await createClient()
@@ -116,7 +138,7 @@ export default async function HarvestReviewPage({
         {Object.entries(summary).map(([label, count]) => <div key={label} className="rounded-2xl border border-border bg-white/80 p-4"><div className="text-2xl font-semibold">{count}</div><div className="text-xs capitalize text-muted-foreground">{label}</div></div>)}
       </section>
 
-      <section className="mt-8 rounded-2xl border border-border bg-white/80 p-5">
+      {access.captain || access.isAdmin ? <section className="mt-8 rounded-2xl border border-border bg-white/80 p-5">
         <h2 className="text-xl">Invite a contributor</h2>
         <p className="mt-1 text-sm text-muted-foreground">Any email address is allowed. Choose a 2026 player only when proposing a personalized player match; they must confirm it once.</p>
         <form action={createIntelHarvestInvite} className="mt-4 grid gap-3 md:grid-cols-5">
@@ -132,21 +154,21 @@ export default async function HarvestReviewPage({
           <Button type="submit">Send private invite</Button>
         </form>
         <p className="mt-3 text-xs text-muted-foreground">{playerOptions.length} archived Interbay players are available for personalized invitations; arbitrary non-player invitees are also supported.</p>
-      </section>
+      </section> : null}
 
-      {pendingInvites.length > 0 ? (
+      {(access.captain || access.isAdmin) && pendingInvites.length > 0 ? (
         <section className="mt-8"><h2 className="text-xl">Pending invites</h2><div className="mt-3 space-y-2">{pendingInvites.map((invite) => <div key={invite.id as string} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white/70 p-3 text-sm"><div><div className="font-medium">{invite.display_name ?? invite.email}</div><div className="text-xs text-muted-foreground">{invite.email}</div></div><div className="flex gap-2"><form action={resendIntelHarvestInvite}><input type="hidden" name="inviteId" value={invite.id as string} /><Button size="sm" variant="outline">Resend</Button></form><form action={revokeIntelHarvestInvite}><input type="hidden" name="inviteId" value={invite.id as string} /><Button size="sm" variant="outline">Revoke</Button></form></div></div>)}</div></section>
       ) : null}
 
       <section className="mt-8">
         <h2 className="text-xl">Campaign completion</h2>
         <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-white/75">
-          <table className="w-full text-left text-sm"><thead className="bg-muted/45"><tr><th className="px-4 py-3">Contributor</th><th className="px-4 py-3">Context</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Reports</th><th className="px-4 py-3">Access</th></tr></thead><tbody>{participants.map((participant) => { const profile = participant.user_id ? profileById.get(participant.user_id) : undefined; const player = participant.reporter_player_ref as PlayerExternalRef | null; const count = participant.user_id ? reportsByUser.get(participant.user_id) ?? 0 : 0; return <tr key={participant.id} className="border-t border-border"><td className="px-4 py-3"><div className="font-medium">{profile?.display_name ?? player?.displayName ?? participant.email}</div><div className="text-xs text-muted-foreground">{participant.email}</div></td><td className="px-4 py-3">{player ? `2026 player · ${participant.identity_status}` : participant.contributor_role.replaceAll('_', ' ')}</td><td className="px-4 py-3">{statusLabel(participant, count)}</td><td className="px-4 py-3">{count}</td><td className="px-4 py-3">{participant.user_id ? <form action={revokeIntelHarvestContributor}><input type="hidden" name="userId" value={participant.user_id} /><Button size="sm" variant="outline">Revoke contribution access</Button></form> : 'Not claimed'}</td></tr> })}</tbody></table>
+          <table className="w-full text-left text-sm"><thead className="bg-muted/45"><tr><th className="px-4 py-3">Contributor</th><th className="px-4 py-3">Context</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Reports</th><th className="px-4 py-3">Access</th></tr></thead><tbody>{participants.map((participant) => { const profile = participant.user_id ? profileById.get(participant.user_id) : undefined; const player = participant.reporter_player_ref as PlayerExternalRef | null; const count = participant.user_id ? reportsByUser.get(participant.user_id) ?? 0 : 0; const canManage = access.captain || access.isAdmin; return <tr key={participant.id} className="border-t border-border"><td className="px-4 py-3"><div className="font-medium">{profile?.display_name ?? player?.displayName ?? participant.email}</div><div className="text-xs text-muted-foreground">{participant.email}</div></td><td className="px-4 py-3">{participant.contributor_role === 'player' && player ? `2026 player · ${participant.identity_status}` : participant.contributor_role.replaceAll('_', ' ')}</td><td className="px-4 py-3">{statusLabel(participant, count)}</td><td className="px-4 py-3">{count}</td><td className="px-4 py-3">{participant.user_id && canManage ? <form action={revokeIntelHarvestContributor}><input type="hidden" name="userId" value={participant.user_id} /><Button size="sm" variant="outline">Revoke contribution access</Button></form> : participant.user_id ? 'Active' : 'Not claimed'}</td></tr> })}</tbody></table>
         </div>
       </section>
 
       <section className="mt-8">
-        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl">Harvested reports</h2><form className="flex gap-2"><select name="visibility" defaultValue={filters.visibility ?? ''} className="rounded-lg border border-input bg-white px-2 py-1 text-sm"><option value="">All visibility</option><option value="team">Team</option><option value="captain">Captain</option></select><Button type="submit" size="sm" variant="outline">Filter</Button></form></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl">Harvested reports</h2><form className="flex flex-wrap gap-2"><select name="visibility" defaultValue={filters.visibility ?? ''} className="rounded-lg border border-input bg-white px-2 py-1 text-sm"><option value="">All visibility</option><option value="team">Team</option><option value="captain">Captain</option></select><select name="kind" defaultValue={filters.kind ?? ''} className="rounded-lg border border-input bg-white px-2 py-1 text-sm"><option value="">All report types</option><option value="player_assessment">Player assessment</option><option value="course_observation">Course / hole</option><option value="general_observation">General / multi-player</option></select><Button type="submit" size="sm" variant="outline">Filter</Button></form></div>
         {reports.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">No reports match this view yet.</p> : <div className="mt-3 space-y-4">{reports.map((report) => { const participant = participantByUser.get(report.reporter_user_id); const profile = profileById.get(report.reporter_user_id); const subjects = (report.subjects ?? []).map((subject) => subject.displayName).join(', '); return <article key={report.id} className="rounded-2xl border border-border bg-white/85 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="font-semibold">{profile?.display_name ?? participant?.reporter_player_ref?.displayName ?? participant?.email ?? report.reporter_user_id}</div><div className="text-xs text-muted-foreground">{report.contributor_role.replaceAll('_', ' ')} · {contextLine(report)}{subjects ? ` · ${subjects}` : ''}</div></div><div className="text-right text-xs text-muted-foreground"><div className={report.visibility === 'captain' ? 'font-semibold text-amber-700' : ''}>{report.visibility === 'captain' ? 'Captain only' : 'Team'}</div><time>{new Date(report.contributed_at).toLocaleString()}</time></div></div><div className="mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">{report.report_kind.replaceAll('_', ' ')} · questionnaire v{report.questionnaire_version}</div><div className="mt-2 space-y-2 text-sm leading-6">{reportSummary(report).map((line, index) => <p key={index} className="whitespace-pre-wrap">{line}</p>)}</div><details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Raw source evidence</summary><pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-2">{JSON.stringify({ subjects: report.subjects, context: report.context, questionnaire: report.questionnaire_snapshot, response: report.response_payload, provenance: report.provenance }, null, 2)}</pre></details></article> })}</div>}
       </section>
     </main>

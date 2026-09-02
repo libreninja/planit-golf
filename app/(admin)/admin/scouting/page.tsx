@@ -24,7 +24,7 @@ function fmtDate(v: string | null | undefined): string {
 }
 
 export default async function ScoutingAdminPage() {
-  const { user } = await requireAdmin()
+  await requireAdmin()
   const service = createServiceClient()
   const clubId = await getIgcClubId()
 
@@ -91,14 +91,12 @@ export default async function ScoutingAdminPage() {
   const entitlements = entitlementsRaw || []
   const captainEntitlements = captainEntitlementsRaw || []
   const pendingInvites = (invites || []).filter((i) => i.status === 'pending')
-  const canOpenHarvestReview = activeScoutingUserIds.has(user.id) || activeCaptainUserIds.has(user.id)
-
   return (
     <div>
       <div className="space-y-8 py-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Scouting Access</h1>
-          {canOpenHarvestReview ? <Button asChild variant="outline"><Link href="/igc/seattle-cup/harvest/2026/review">2026 Intel Harvest</Link></Button> : null}
+          <Button asChild variant="outline"><Link href="/igc/seattle-cup/harvest/2026/review">2026 contributor campaign</Link></Button>
         </div>
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Invite a new scouting reviewer */}

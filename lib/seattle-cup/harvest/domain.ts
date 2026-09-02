@@ -176,11 +176,11 @@ const puttingSpecifics = new Set<PuttingSpecific>(GUIDED_QUESTIONNAIRE_V1.sectio
 const temperamentLabels = new Set<TemperamentLabel>(GUIDED_QUESTIONNAIRE_V1.sections.temperament.labels.map((option) => option.key))
 
 function validOptionalText(value: unknown): value is string | undefined {
-  return value == null || typeof value === 'string'
+  return value === undefined || typeof value === 'string'
 }
 
 function validHoles(value: unknown): value is number[] | undefined {
-  return value == null || (Array.isArray(value) && value.every((hole) => Number.isInteger(hole) && hole >= 1 && hole <= 18))
+  return value === undefined || (Array.isArray(value) && value.every((hole) => Number.isInteger(hole) && hole >= 1 && hole <= 18))
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -192,9 +192,9 @@ function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[])
 }
 
 function validRating(section: unknown, allowedKeys: readonly string[]): boolean {
-  if (section == null) return true
+  if (section === undefined) return true
   if (!isObject(section) || !hasOnlyKeys(section, allowedKeys)) return false
-  return (section.overall == null || (typeof section.overall === 'string' && assessmentLevels.has(section.overall as AssessmentLevel)))
+  return (section.overall === undefined || (typeof section.overall === 'string' && assessmentLevels.has(section.overall as AssessmentLevel)))
     && validOptionalText(section.note)
 }
 
@@ -385,6 +385,21 @@ export function relationshipForPlayerSubjects(
 ): Extract<RelationshipContext, 'played_against' | 'played_with'> {
   const partnerIds = new Set(match.partners.map((partner) => partner.value))
   return subjects.some((subject) => partnerIds.has(subject.value)) ? 'played_with' : 'played_against'
+}
+
+export function reportVisibilityForSubmission(input: {
+  relationship: RelationshipContext
+  subjects: PlayerExternalRef[]
+  requestedVisibility: ReportVisibility
+}): ReportVisibility {
+  // A contributor may always narrow an answer to captains. They may never
+  // broaden teammate/pair evidence to TEAM, regardless of forged form input.
+  const hasInterbaySubject = input.subjects.some((subject) => subject.teamKey === HARVEST_TEAM_KEY)
+  return input.requestedVisibility === 'captain'
+    || input.relationship === 'played_with'
+    || hasInterbaySubject
+    ? 'captain'
+    : 'team'
 }
 
 export function canAccessHarvest(input: { contributor: boolean; scouting: boolean; captain: boolean }): boolean {

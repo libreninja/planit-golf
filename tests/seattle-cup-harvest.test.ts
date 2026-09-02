@@ -16,6 +16,7 @@ import {
   interbayArchivePlayerRefs,
   inviteAcceptanceMode,
   relationshipForPlayerSubjects,
+  reportVisibilityForSubmission,
   resolveReporterIdentity,
   subjectsAppearInArchivedMatch,
   validateContributorRoleContext,
@@ -102,6 +103,9 @@ test('guided payload rejects unknown sections and extra keys but permits empty o
   assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { bogus: { anything: 'x' } } }), false)
   assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: 'solid', extra: true } } }), false)
   assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: 'didnt_see_enough', note: '' } } }), true)
+  assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: null } } }), false)
+  assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'player_assessment', sections: { putting: { overall: null, note: 'Saw enough.' } } }), false)
+  assert.equal(validateGuidedResponse({ schemaVersion: 1, kind: 'general_observation', note: 'Saw it firsthand.', finalAdvice: null }), false)
 })
 
 test('questionnaire snapshot preserves ordered human labels and must match key/version exactly', () => {
@@ -148,6 +152,15 @@ test('any player report naming a partner uses captain-sensitive played-with cont
   assert.equal(relationshipForPlayerSubjects(match, [match.opponents[0]!]), 'played_against')
   assert.equal(relationshipForPlayerSubjects(match, [match.partners[0]!]), 'played_with')
   assert.equal(relationshipForPlayerSubjects(match, [match.opponents[0]!, match.partners[0]!]), 'played_with')
+})
+
+test('TEAM/CAPTAIN audience can only be narrowed and Interbay subjects are always captain-sensitive', () => {
+  const opponent = players.find((player) => player.teamKey !== 'interbay')!
+  const teammate = interbayPlayers[0]!
+  assert.equal(reportVisibilityForSubmission({ relationship: 'watched_player', subjects: [opponent], requestedVisibility: 'team' }), 'team')
+  assert.equal(reportVisibilityForSubmission({ relationship: 'watched_player', subjects: [opponent], requestedVisibility: 'captain' }), 'captain')
+  assert.equal(reportVisibilityForSubmission({ relationship: 'caddied', subjects: [teammate], requestedVisibility: 'team' }), 'captain')
+  assert.equal(reportVisibilityForSubmission({ relationship: 'played_with', subjects: [opponent], requestedVisibility: 'team' }), 'captain')
 })
 
 test('invited non-player can submit observer testimony without reporterPlayerRef or roster appearance', () => {
@@ -220,8 +233,21 @@ test('invite lifecycle actions scope resend/revoke to pending IGC campaign capab
 test('application harvest gates use Seattle Cup capabilities, never Planit admin status', () => {
   const access = readFileSync(new URL('../lib/seattle-cup/harvest/access.ts', import.meta.url), 'utf8')
   const shellUser = readFileSync(new URL('../lib/app-shell/user.ts', import.meta.url), 'utf8')
+  const reviewGate = access.match(/export async function requireHarvestReviewAccess[\s\S]*?\n}/)?.[0] ?? ''
   assert.match(access, /hasHarvestCaptainAccess/)
-  assert.doesNotMatch(access, /getProfileRoles|is_admin|is_system_admin/)
+  assert.match(reviewGate, /canReviewHarvest/)
+  assert.doesNotMatch(reviewGate, /getProfileRoles|is_admin|is_system_admin|isAdmin/)
+  assert.match(access, /if \(!access\.captain && !access\.isAdmin\) redirect/)
   assert.match(shellUser, /harvestReview: scouting \|\| harvestCaptain/)
   assert.doesNotMatch(shellUser, /harvestReview: scouting \|\| isAdmin/)
+})
+
+test('non-player archive identities stay in observer flow and ordinary reviewers cannot manage invites', () => {
+  const repository = readFileSync(new URL('../lib/seattle-cup/harvest/repository.ts', import.meta.url), 'utf8')
+  const campaignActions = readFileSync(new URL('../app/intel-harvest-admin-actions.ts', import.meta.url), 'utf8')
+  const reviewPage = readFileSync(new URL('../app/igc/seattle-cup/harvest/2026/review/page.tsx', import.meta.url), 'utf8')
+  assert.match(repository, /participant\.contributor_role === 'player' && identity\.reporterPlayerRef/)
+  assert.match(campaignActions, /requireHarvestCampaignManager/)
+  assert.doesNotMatch(campaignActions, /requireHarvestReviewAccess/)
+  assert.match(reviewPage, /access\.captain \|\| access\.isAdmin \? <section/)
 })

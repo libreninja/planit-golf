@@ -9,6 +9,7 @@ import {
   buildScoutingReportDraft,
   contextForArchivedMatch,
   relationshipForPlayerSubjects,
+  reportVisibilityForSubmission,
   subjectsAppearInArchivedMatch,
   validateContributorRoleContext,
   type AssessmentLevel,
@@ -18,6 +19,7 @@ import {
   type PuttingSpecific,
   type RelationshipContext,
   type ReportKind,
+  type ReportVisibility,
   type TemperamentLabel,
 } from '@/lib/seattle-cup/harvest/domain'
 import { confirmParticipantIdentity, loadContributorHarvestSession, markHarvestComplete } from '@/lib/seattle-cup/harvest/repository'
@@ -127,7 +129,9 @@ export async function submitGuidedScoutingReportAction(formData: FormData) {
     responsePayload = { schemaVersion: 1, kind: 'general_observation', note: str(formData, 'generalNote'), finalAdvice: optionalText(formData, 'finalAdvice') }
   }
 
-  const visibility = relationship === 'played_with' || relationship === 'captain_observation' ? 'captain' : 'team'
+  const requestedVisibility = str(formData, 'visibility') as ReportVisibility
+  if (requestedVisibility !== 'team' && requestedVisibility !== 'captain') throw new Error('Choose a valid report audience')
+  const visibility = reportVisibilityForSubmission({ relationship, subjects, requestedVisibility })
   const draft = buildScoutingReportDraft({
     reporterUserId: user.id,
     reporterPlayerRef: session.reporterPlayerRef,

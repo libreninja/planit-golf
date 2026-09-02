@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import { requireAuth } from '@/lib/auth'
+import { getProfileRoles, requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getIgcClubId, hasScoutingAccess } from '@/lib/scouting-access'
 import {
@@ -78,5 +78,24 @@ export async function requireHarvestReviewAccess(): Promise<HarvestAccess> {
   const user = await requireAuth()
   const access = await getHarvestAccess(user)
   if (!canReviewHarvest(access)) redirect('/')
+  return access
+}
+
+async function getHarvestAccessWithAdmin(user: User): Promise<HarvestAccess & { isAdmin: boolean }> {
+  const [access, roles] = await Promise.all([getHarvestAccess(user), getProfileRoles(user.id)])
+  return { ...access, isAdmin: roles.is_admin || roles.is_system_admin }
+}
+
+export async function requireHarvestReviewOrManagerAccess(): Promise<HarvestAccess & { isAdmin: boolean }> {
+  const user = await requireAuth()
+  const access = await getHarvestAccessWithAdmin(user)
+  if (!canReviewHarvest(access) && !access.isAdmin) redirect('/')
+  return access
+}
+
+export async function requireHarvestCampaignManager(): Promise<HarvestAccess & { isAdmin: boolean }> {
+  const user = await requireAuth()
+  const access = await getHarvestAccessWithAdmin(user)
+  if (!access.captain && !access.isAdmin) redirect('/')
   return access
 }
