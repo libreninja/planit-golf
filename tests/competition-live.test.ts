@@ -4,11 +4,20 @@ import { getLiveResults } from '../lib/competition/live.ts'
 import { makeLiveCacheStore } from '../lib/competition/cache.ts'
 
 // Fake GG serving parent event + round + tournaments + results.
-function fakeGg(opts: { tournaments: any[]; results: Record<string, any>; events?: any[]; rounds?: any[] }) {
+function fakeGg(opts: {
+  tournaments: any[]
+  results: Record<string, any>
+  events?: any[]
+  rounds?: any[]
+  teeSheet?: any
+  calls?: string[]
+}) {
   return async (endpoint: string) => {
+    opts.calls?.push(endpoint)
     if (endpoint.includes('/events?season=')) return opts.events ?? [{ id: 'E', name: 'Mens', category_id: 'C' }]
     if (endpoint.endsWith('/rounds')) return opts.rounds ?? [{ id: 'R1', is_points_round: true, position: 18 }]
     if (endpoint.endsWith('/tournaments') && !endpoint.includes('.json')) return opts.tournaments
+    if (endpoint.endsWith('/tee_sheet')) return opts.teeSheet ?? []
     const tId = endpoint.split('/').slice(-1)[0].replace('.json', '')
     return opts.results[tId] ?? { event: { scopes: [] } }
   }
@@ -37,6 +46,87 @@ test('live results appear WITHOUT a persisted row (discovery from config)', asyn
   assert.ok(r.leaderboard, 'leaderboard produced with no persisted row')
   assert.equal(r.leaderboard!.entries.length > 0, true)
   assert.equal(r.showingLastKnown, false)
+})
+
+test('unflighted live results receive deterministic projected membership from the current tee sheet', async () => {
+  const aggregate = (id: string, name: string, position: string) => ({
+    name, position, member_cards: [{ member_card_id_str: id }],
+    gross_scores: [5], net_scores: [4], to_par_net: [0], to_par_gross: [1],
+  })
+  const gg = fakeGg({
+    tournaments: [{ event: { id: 'n1', name: 'Net Regular Season' } }],
+    results: { n1: { event: { scopes: [{ name: 'Overall', aggregates: [
+      aggregate('a', 'A', '1'), aggregate('b', 'B', '2'),
+      aggregate('c', 'C', '3'), aggregate('missing', 'Missing', '4'),
+    ] }] } } },
+    teeSheet: [{ pairing_group: { players: [
+      { name: 'A', member_card_id: 'a', handicap_index: '1.0' },
+      { name: 'B', member_card_id: 'b', handicap_index: '2.0' },
+      { name: 'C', member_card_id: 'c', handicap_index: '3.0' },
+      { name: 'Missing', member_card_id: 'missing', handicap_index: '' },
+      // Participates in the partition without fabricating a leaderboard row.
+      { name: 'Tee only', member_card_id: 'tee-only', handicap_index: '4.0' },
+    ] } }],
+  })
+  const r = await getLiveResults({
+    competitionKey: 'mens-league', occurrenceId: '21', scoring: 'net',
+    nowIso: '2026-09-01T18:00:00-07:00',
+    deps: { adapterConfig, ggClient: gg, readEvent: fakeEventReader({ event_date: '2026-09-01', event_format: 'individual', discovery_state: 'discovered' }), cacheStore: makeLiveCacheStore(new Map()) },
+  })
+  assert.equal(r.flightMembership.status, 'projected')
+  assert.deepEqual(r.leaderboard!.entries.map((entry) => entry.flight), [
+    'Flight 1', 'Flight 1', 'Flight 2', null,
+  ])
+  assert.equal(r.leaderboard!.entries.some((entry) => entry.key === 'tee-only'), false)
+})
+
+test('named official membership wins while scoring is live and skips projection', async () => {
+  const calls: string[] = []
+  const gg = fakeGg({
+    calls,
+    tournaments: [{ event: { id: 'g1', name: 'Gross Regular Season' } }],
+    results: { g1: { event: { scopes: [{ name: 'Flight 2', aggregates: [{
+      name: 'Official Player', position: '1', member_cards: [{ member_card_id_str: 'official' }],
+      gross_scores: [5], net_scores: [4], to_par_net: [0], to_par_gross: [1],
+    }] }] } } },
+  })
+  const r = await getLiveResults({
+    competitionKey: 'mens-league', occurrenceId: '21', scoring: 'gross',
+    nowIso: '2026-09-01T18:00:00-07:00',
+    deps: { adapterConfig, ggClient: gg, readEvent: fakeEventReader({ event_date: '2026-09-01', event_format: 'individual', discovery_state: 'discovered' }), cacheStore: makeLiveCacheStore(new Map()) },
+  })
+  assert.equal(r.resultStatus, 'live')
+  assert.equal(r.flightMembership.status, 'official')
+  assert.equal(r.leaderboard!.entries[0].flight, 'Flight 2')
+  assert.equal(calls.some((endpoint) => endpoint.endsWith('/tee_sheet')), false)
+})
+
+test('Gross and Net share one occurrence-scoped projected membership snapshot', async () => {
+  const calls: string[] = []
+  const result = { event: { scopes: [{ name: 'Overall', aggregates: [
+    { name: 'A', position: '1', member_cards: [{ member_card_id_str: 'a' }], gross_scores: [5], net_scores: [4], to_par_net: [0], to_par_gross: [1] },
+    { name: 'B', position: '2', member_cards: [{ member_card_id_str: 'b' }], gross_scores: [6], net_scores: [5], to_par_net: [1], to_par_gross: [2] },
+    { name: 'C', position: '3', member_cards: [{ member_card_id_str: 'c' }], gross_scores: [7], net_scores: [6], to_par_net: [2], to_par_gross: [3] },
+  ] }] } }
+  const gg = fakeGg({
+    calls,
+    tournaments: [
+      { event: { id: 'g1', name: 'Gross Regular Season' } },
+      { event: { id: 'n1', name: 'Net Regular Season' } },
+    ],
+    results: { g1: result, n1: result },
+    teeSheet: [{ pairing_group: { players: [
+      { name: 'A', member_card_id: 'a', handicap_index: '1' },
+      { name: 'B', member_card_id: 'b', handicap_index: '2' },
+      { name: 'C', member_card_id: 'c', handicap_index: '3' },
+    ] } }],
+  })
+  const cache = makeLiveCacheStore(new Map())
+  const deps = { adapterConfig, ggClient: gg, readEvent: fakeEventReader({ event_date: '2026-09-01', event_format: 'individual', discovery_state: 'discovered' }), cacheStore: cache }
+  const gross = await getLiveResults({ competitionKey: 'mens-league', occurrenceId: '21', scoring: 'gross', nowIso: '2026-09-01T18:00:00-07:00', deps })
+  const net = await getLiveResults({ competitionKey: 'mens-league', occurrenceId: '21', scoring: 'net', nowIso: '2026-09-01T18:00:00-07:00', deps })
+  assert.deepEqual(gross.leaderboard!.entries.map((entry) => entry.flight), net.leaderboard!.entries.map((entry) => entry.flight))
+  assert.equal(calls.filter((endpoint) => endpoint.endsWith('/tee_sheet')).length, 1)
 })
 
 test('no persisted row + discovered round dated today + unknown lifecycle + live partial cards + configured window → live', async () => {

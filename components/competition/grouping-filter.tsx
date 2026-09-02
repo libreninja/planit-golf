@@ -17,7 +17,7 @@ export function GroupingFilter({
   groupings, selected, onSelect,
 }: { groupings: Extract<GroupingAvailability, { kind: 'multi' }>; selected: string; onSelect: (g: string) => void }) {
   if (groupings.kind !== 'multi') return null
-  const options = [{ key: 'all', label: 'All' }, ...groupings.groupings].map((g) => {
+  const options = [{ key: 'all', label: 'Overall' }, ...groupings.groupings].map((g) => {
     const color = g.key === 'all' ? null : flightColor(g.key)
     return {
       key: g.key,

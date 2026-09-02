@@ -49,6 +49,7 @@ export function ScorecardRow({
   showFlight = false,
   showPurse = false,
   colorizeFlights = false,
+  flightLabel,
 }: {
   entry: ResultEntry;
   card: ScorecardT | null;
@@ -59,6 +60,7 @@ export function ScorecardRow({
   showFlight?: boolean;
   showPurse?: boolean;
   colorizeFlights?: boolean;
+  flightLabel?: string | null;
 }) {
   const isGross = scoringMode === "gross";
   const hasHoles = !!card && card.holes.some((h) => h.gross !== null || h.net !== null);
@@ -102,11 +104,11 @@ export function ScorecardRow({
             {showFlight &&
               (color ? (
                 <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums", color.badge)}>
-                  {entry.flight ?? "—"}
+                  {flightLabel ?? entry.flight ?? "—"}
                 </span>
               ) : (
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {entry.flight ?? "—"}
+                  {flightLabel ?? entry.flight ?? "—"}
                 </span>
               ))}
           </div>
@@ -133,12 +135,12 @@ export function ScorecardRow({
             color ? (
               <span className="hidden justify-end sm:flex">
                 <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums", color.badge)}>
-                  {entry.flight ?? "—"}
+                  {flightLabel ?? entry.flight ?? "—"}
                 </span>
               </span>
             ) : (
               <span className="hidden truncate text-right text-xs tabular-nums text-muted-foreground sm:block">
-                {entry.flight ?? "—"}
+                {flightLabel ?? entry.flight ?? "—"}
               </span>
             )
           )}

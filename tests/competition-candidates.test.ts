@@ -35,6 +35,18 @@ test('upstream-finalized already durable: skipped (old-current)', () => {
   assert.equal(c[0].action, 'skip')
 })
 
+test('durable scoring without official flight membership remains discoverable', () => {
+  const c = selectReconciliationCandidates([ev({
+    event_format: 'individual',
+    discovery_state: 'discovered',
+    upstream_status: 'completed',
+    durable_imported_at: '2026-09-01T19:41:09Z',
+    awaiting_official_flights: true,
+  })], '2026-09-02T20:00:00Z')
+  assert.equal(c[0].kind, 'awaiting-official-flights')
+  assert.equal(c[0].action, 'discover')
+})
+
 test('unknown-unresolved: stale inconclusive → re-discover', () => {
   const c = selectReconciliationCandidates([ev({ event_format: 'unknown', discovery_state: 'inconclusive', upstream_status: null })], '2026-07-29T10:00:00Z')
   assert.equal(c[0].kind, 'unknown-unresolved')

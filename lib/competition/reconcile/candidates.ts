@@ -2,6 +2,7 @@
 //   active                       — in play window / upstream in_progress / unresolved → discover only
 //   played-awaiting-finalization — individual + discovered + in_progress → discover (check status)
 //   upstream-finalized           — upstream_status = completed + not yet durable → import + rebuild
+//   awaiting-official-flights    — durable scoring exists but Men's official flight membership does not → discover
 //   unknown-unresolved           — event_format unknown/inconclusive → re-discover
 //   old-current                  — already durably imported → skip
 //   stale                        — last GG discovery was < STALENESS_MS ago → skip
@@ -31,13 +32,18 @@ export interface CandidateEvent {
   discovery_state: 'pending' | 'discovered' | 'inconclusive' | 'failed' | null
   upstream_status: 'completed' | 'in_progress' | 'not_started' | null
   durable_imported_at: string | null
+  // Narrow Men’s League repair signal derived from stored canonical Flight
+  // 1/2/3 result membership. Scoring can already be durable while official
+  // flight membership is still unavailable. Optional so other competitions
+  // and legacy callers retain their existing behavior.
+  awaiting_official_flights?: boolean
   // Last time discovery read this occurrence from GG (igc_league_events
   // .discovered_at, refreshed on every discoverAndPersist). Optional: legacy
   // callers / tests that omit it are never gated (absent → always process).
   discovered_at?: string | null
 }
 
-export type CandidateKind = 'active' | 'played-awaiting-finalization' | 'upstream-finalized' | 'unknown-unresolved' | 'old-current' | 'stale'
+export type CandidateKind = 'active' | 'played-awaiting-finalization' | 'upstream-finalized' | 'awaiting-official-flights' | 'unknown-unresolved' | 'old-current' | 'stale'
 export type CandidateAction = 'discover' | 'import' | 'skip'
 
 export interface Candidate {
@@ -56,6 +62,9 @@ function classifyEvent(e: CandidateEvent): Candidate {
   const ds = e.discovery_state ?? 'pending'
   const ups = e.upstream_status
 
+  if (ups === 'completed' && e.durable_imported_at && e.awaiting_official_flights) {
+    return { week_number: e.week_number, kind: 'awaiting-official-flights', action: 'discover' as const }
+  }
   if (ups === 'completed' && e.durable_imported_at) {
     return { week_number: e.week_number, kind: 'old-current', action: 'skip' as const }
   }

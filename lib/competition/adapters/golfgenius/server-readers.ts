@@ -23,6 +23,7 @@ import { isDurableCurrent } from '@/lib/competition/durable-current'
 import { isOccurrenceActive } from '@/lib/competition/active-window'
 import {
   buildLeagueActiveWindow,
+  compareOccurrencesByDate,
   labelRuleSeparator,
   leagueOccurrenceLabel,
   mapLeagueEventToOccurrence,
@@ -35,6 +36,7 @@ import {
   positionOrder,
   trimScorecardsToRoundHoles,
 } from '@/lib/igc/weekly-results-helpers'
+import { canonicalFlight, FLIGHT_KEYS, officialFlightMembership, unavailableFlightMembership } from '@/lib/competition/projected-flights'
 import type {
   GroupingAvailability,
   LiveResponse,
@@ -185,12 +187,7 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
 
   // Date order so merged specials slot into the calendar (e.g. CC rounds fall
   // between Weeks 20 and 22), independent of DB/merge order. Nulls last.
-  occurrences.sort((a, b) => {
-    if (!a.date && !b.date) return 0
-    if (!a.date) return 1
-    if (!b.date) return -1
-    return a.date < b.date ? -1 : a.date > b.date ? 1 : 0
-  })
+  occurrences.sort(compareOccurrencesByDate)
   return occurrences
 }
 
@@ -309,6 +306,7 @@ export async function buildHistoricalLiveResponse(
     return {
       occurrence: selected,
       leaderboard: null,
+      flightMembership: unavailableFlightMembership(),
       resultStatus: selected.resultStatus === 'final' ? 'final' : 'unknown',
       eventFormat: selected.format,
       discoveryState: selected.discoveryState,
@@ -377,9 +375,11 @@ export async function buildHistoricalLiveResponse(
     durableCurrent: true,
   }
 
+  const flights = officialFlightMembership(leaderboard)
   return {
     occurrence: selected,
-    leaderboard,
+    leaderboard: flights.leaderboard,
+    flightMembership: flights.state,
     resultStatus: 'final',
     eventFormat: selected.format,
     discoveryState: selected.discoveryState,
@@ -406,24 +406,24 @@ export async function resolveAvailableGroupings(
   if (!Number.isFinite(weekNumber)) return { kind: 'none' }
 
   const supabase = await createClient()
-  // Distinct flight_name for the selected week. Live weeks have no flights
-  // assigned yet (flight_name null) → 'none'; finalized weeks with ≥1 flight
-  // → 'multi'. The PostgREST row cap doesn't bite here: we only need the
-  // distinct flight labels, and a league round has at most a handful of flights.
+  // Official membership is a per-scoring result fact. Read that authoritative
+  // table rather than the denormalized performance copy, and expose only
+  // canonical Flight 1/2/3 labels. An earlier Overall-only snapshot must never
+  // produce a misleading "Overall" flight filter.
   const { data, error } = await supabase
-    .from('igc_league_performances')
+    .from('igc_league_results')
     .select('flight_name')
     .eq('league_key', 'mens')
     .eq('week_number', weekNumber)
     .not('flight_name', 'is', null)
+    .limit(2000)
 
   if (error || !data) return { kind: 'none' }
-  const flights = Array.from(new Set(data.map((r: { flight_name: string | null }) => r.flight_name).filter((v): v is string => !!v)))
-  if (flights.length === 0) return { kind: 'none' }
-  flights.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  const hasOfficialMembership = data.some((row: { flight_name: string | null }) => canonicalFlight(row.flight_name) !== null)
+  if (!hasOfficialMembership) return { kind: 'none' }
   return {
     kind: 'multi',
-    groupings: flights.map((f) => ({ key: f, label: f })),
+    groupings: FLIGHT_KEYS.map((flight) => ({ key: flight, label: flight })),
     defaultAll: true,
   }
 }

@@ -21,12 +21,18 @@ export interface ImportDb {
   upsertEvent(row: Record<string, unknown>): Promise<{ ok: boolean; id?: string | null; event_name?: string | null; event_date?: string | null }>
   upsertPerformances(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
   upsertResults(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
+  // Optional snapshot pruning. Production supplies these so a later official
+  // snapshot removes players retained only by an earlier Overall import;
+  // existing lightweight test adapters remain source-compatible.
+  prunePerformances?(week: number, retainedPlayerNames: string[]): Promise<{ ok: boolean }>
+  pruneResults?(week: number, importedAtIso: string, competitions: Array<'gross' | 'net'>): Promise<{ ok: boolean }>
   setDurableImported(week: number, atIso: string, sourceVersion: string | null): Promise<{ ok: boolean }>
   // Optional: persist per-round authoritative event.season_points entries.
   // Production (reconcile.ts importDb) provides it; the 19B unit-test fake
   // omits it (optional chaining → no-op), so 19B's write-bucket count is
   // unchanged. See Task 19F.1.
   upsertSeasonPointEntries?(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
+  pruneSeasonPointEntries?(week: number, retainedMemberIds: string[]): Promise<{ ok: boolean }>
 }
 
 export interface ImportInput {
@@ -82,10 +88,12 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
   const perfByKey = new Map<string, Record<string, unknown>>()
   const resultRows: Record<string, unknown>[] = []
   const seasonPointsCum = new Map<string, number>()
+  const importedCompetitions: Array<'gross' | 'net'> = []
 
   for (const competition of ['gross', 'net'] as const) {
     const tId = competition === 'gross' ? grossTournamentId : netTournamentId
     if (!tId) continue
+    importedCompetitions.push(competition)
     const payload = await input.ggClient(`/events/${ggEventId}/rounds/${ggRoundId}/tournaments/${tId}.json`)
     const norm = normalizeTournament(payload, competition)
     for (const [flightName, entries] of norm.entriesByFlight) {
@@ -168,8 +176,14 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
   if (perfRows.length === 0 && input.resolved.upstreamStatus === 'completed') {
     throw new Error(`wk${weekNumber}: completed round produced 0 performance rows (gross=${grossTournamentId} net=${netTournamentId})`)
   }
-  if (perfRows.length) await input.db.upsertPerformances(perfRows)
-  if (resultRows.length) await input.db.upsertResults(resultRows)
+  if (perfRows.length) {
+    await input.db.upsertPerformances(perfRows)
+    await input.db.prunePerformances?.(weekNumber, perfRows.map((row) => String(row.player_name)))
+  }
+  if (resultRows.length) {
+    await input.db.upsertResults(resultRows)
+    await input.db.pruneResults?.(weekNumber, input.nowIso, importedCompetitions)
+  }
   // Per-round authoritative season-points entries (durable source for
   // rebuildSeasonPoints). Optional on the db — skipped (no-op) when the caller
   // doesn't provide it, e.g. the 19B unit test. (Task 19F.1.)
@@ -177,7 +191,13 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     league_key: leagueKey, week_number: weekNumber,
     member_card_id, total_points, player_name: null,
   }))
-  if (seasonPointRows.length) await input.db.upsertSeasonPointEntries?.(seasonPointRows)
+  if (seasonPointRows.length) {
+    await input.db.upsertSeasonPointEntries?.(seasonPointRows)
+    await input.db.pruneSeasonPointEntries?.(
+      weekNumber,
+      seasonPointRows.map((row) => String(row.member_card_id)),
+    )
+  }
   // Record both the import time AND the source version captured, so the
   // durable-current version-equality branch (Task 11) can compare
   // source_version vs durable_source_version.

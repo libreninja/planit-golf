@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { Info } from 'lucide-react'
 import type { LiveResponse, OccurrenceCapabilities, ScoringMode, View } from '@/lib/competition/types'
 import { OccurrenceNav } from './occurrence-nav'
 import { ScoringToggle } from './scoring-toggle'
@@ -36,7 +37,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const [grouping, setGrouping] = useState<string | null>(props.grouping)
+  const [grouping, setGrouping] = useState<string>(props.grouping ?? 'all')
 
   const { data, refreshing, showingLastKnown, refresh } = useLivePoll({
     initial: props.initial,
@@ -57,6 +58,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     next.set(props.queryParam, id)
     next.set('scoring', props.scoring)
     next.set('view', props.view)
+    next.set('grouping', grouping)
     return `${pathname}?${next.toString()}`
   }
   const onSelectWeek = (id: string) => {
@@ -64,28 +66,46 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
   }
 
   const lb = data?.leaderboard ?? null
-  // Apply the flight/grouping filter (P6). Only reached for finalized men's
-  // weeks (groupings.kind === 'multi'); live weeks and women's render no filter.
-  const filteredLb = filterLeaderboardByGrouping(lb, grouping)
-  // FIX 1 / P1-4: the "All" view sorts position-ascending then flight-DESCENDING
+  // Flight membership arrives with every live response so normal polling can
+  // replace projected membership with official membership independently from
+  // the LIVE/FINAL scoring state. Static capabilities remain the fallback for
+  // an old cached response during a rolling deployment.
+  const responseFlightMembership = data?.flightMembership ?? props.initial?.flightMembership
+  const fallbackGroupings = props.capabilities.groupings.kind === 'multi'
+    ? props.capabilities.groupings.groupings
+    : []
+  const flightMembership = responseFlightMembership ?? (
+    fallbackGroupings.length > 0
+      ? { status: 'official' as const, groupings: fallbackGroupings }
+      : { status: 'unavailable' as const, groupings: [] as [] }
+  )
+  const hasFlightFilter = flightMembership.status !== 'unavailable'
+  const effectiveGrouping = hasFlightFilter ? grouping : 'all'
+  const filteredLb = filterLeaderboardByGrouping(lb, effectiveGrouping, flightMembership.status)
+  // The Overall view sorts position-ascending then flight-DESCENDING
   // (1/F3, 1/F2, 1/F1, 2/F3, …; the server default is position-then-name). A
-  // specific flight keeps the server sort. 'all' is only ever the grouping for
-  // a finalized multi-flight week, so this never touches live (unflighted) or
-  // women's (single) leaderboards.
+  // specific flight keeps the source sort. Women's single-group leaderboards
+  // never reach this branch.
   const displayLb =
-    grouping === 'all' && filteredLb
+    effectiveGrouping === 'all' && filteredLb
       ? { ...filteredLb, entries: sortAllViewEntries(filteredLb.entries) }
       : filteredLb
-  // FIX 2: render the Flight column only for the finalized Men's "All" view —
-  // a specific flight makes the column redundant, live weeks are unflighted,
-  // and women's is single Overall. Driven by grouping + capability state.
-  const showFlight = grouping === 'all' && props.capabilities.groupings.kind === 'multi'
-  // P1-3: colorize rows/badges for any finalized Men's multi-flight week (All
-  // or a specific flight). Live (unflighted) and women's (single) stay neutral.
-  const colorizeFlights = props.capabilities.groupings.kind === 'multi'
+  // Render the flight column only for Men's Overall; a specific flight makes
+  // it redundant and women's is single Overall.
+  const showFlight = effectiveGrouping === 'all' && hasFlightFilter
+  // Keep the existing flight colors in projected and official states.
+  const colorizeFlights = hasFlightFilter
   const isInitialEmpty = !props.initial?.leaderboard && !props.initial
   const eventFormat = data?.eventFormat ?? props.initial?.eventFormat ?? 'unknown'
   const discoveryState = data?.discoveryState ?? props.initial?.discoveryState ?? 'pending'
+
+  const onSelectGrouping = (nextGrouping: string) => {
+    setGrouping(nextGrouping)
+    if (typeof window === 'undefined') return
+    const next = new URLSearchParams(window.location.search)
+    next.set('grouping', nextGrouping)
+    window.history.replaceState(null, '', `${pathname}?${next.toString()}`)
+  }
 
   return (
     <section className="space-y-4">
@@ -112,11 +132,30 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
         />
       </div>
 
-      {props.capabilities.groupings.kind === 'multi' && (
+      {flightMembership.status === 'projected' && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">Projected results</span>
+          <span>Flights based on the current tee sheet.</span>
+          <details className="basis-full sm:basis-auto">
+            <summary
+              aria-label="About projected flights"
+              className="inline-flex cursor-pointer list-none items-center gap-1 text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden"
+            >
+              <Info aria-hidden="true" className="h-3.5 w-3.5" />
+              <span className="sr-only">About projected flights</span>
+            </summary>
+            <p className="mt-1 max-w-xl leading-relaxed">
+              Projected flights are approximate and may change as the field changes. They are replaced once official flights are available.
+            </p>
+          </details>
+        </div>
+      )}
+
+      {hasFlightFilter && (
         <GroupingFilter
-          groupings={props.capabilities.groupings}
-          selected={grouping ?? 'all'}
-          onSelect={setGrouping}
+          groupings={{ kind: 'multi', groupings: flightMembership.groupings, defaultAll: true }}
+          selected={effectiveGrouping}
+          onSelect={onSelectGrouping}
         />
       )}
 
@@ -125,7 +164,12 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
       ) : eventFormat === 'team' && discoveryState === 'discovered' ? (
         <TeamEventState label={props.occurrences.find((o) => o.id === props.selectedOccurrenceId)?.label ?? ''} />
       ) : displayLb ? (
-        <Leaderboard leaderboard={displayLb} showFlight={showFlight} colorizeFlights={colorizeFlights} />
+        <Leaderboard
+          leaderboard={displayLb}
+          showFlight={showFlight}
+          colorizeFlights={colorizeFlights}
+          projectedFlights={flightMembership.status === 'projected'}
+        />
       ) : showingLastKnown ? (
         <UnavailableState message="Live results are temporarily unavailable. Showing the last known standings." onRetry={() => void refresh()} retrying={refreshing} />
       ) : (

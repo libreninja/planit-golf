@@ -9,6 +9,7 @@
 
 import { allCompetitionConfigs } from '../registry.ts'
 import { selectReconciliationCandidates, type CandidateEvent } from './candidates.ts'
+import { canonicalFlight } from '../projected-flights.ts'
 import type { ResolvedOccurrence } from '../types.ts'
 
 export interface ReconcileSummary {
@@ -31,7 +32,10 @@ export interface ReconcileSummary {
 // never placeholders (Corrections 4 & 6).
 export interface ReconcileOps {
   listEvents(competitionKey: string): Promise<CandidateEvent[]>
-  discoverAndPersist(competitionKey: string, week: number, nowIso: string): Promise<{ resolved: ResolvedOccurrence }>
+  discoverAndPersist(competitionKey: string, week: number, nowIso: string): Promise<{
+    resolved: ResolvedOccurrence
+    officialFlightMembershipAvailable?: boolean
+  }>
   importOccurrence(competitionKey: string, week: number, nowIso: string, resolved: ResolvedOccurrence): Promise<void>
   rebuildSeasonPoints(competitionKey: string): Promise<void>
   // Idempotently precreate configured special-occurrence rows (Club Championship
@@ -103,7 +107,8 @@ export async function reconcileCompetition(input: ReconcileCompetitionInput): Pr
       // same run (Correction 6). No placeholders: `resolved` flows discovery→import.
       const r = await ops.discoverAndPersist(input.competitionKey, c.week_number, input.nowIso)
       summary.discovered++
-      if (r.resolved.upstreamStatus === 'completed') {
+      const officialFlightsReady = c.kind !== 'awaiting-official-flights' || r.officialFlightMembershipAvailable === true
+      if (r.resolved.upstreamStatus === 'completed' && officialFlightsReady) {
         await ops.importOccurrence(input.competitionKey, c.week_number, input.nowIso, r.resolved)
         summary.imported++
         await ops.rebuildSeasonPoints(input.competitionKey)
@@ -212,11 +217,41 @@ async function defaultOps(): Promise<ReconcileOps> {
       const { data } = await supabase.from('igc_league_events')
         .select('week_number, event_date, event_format, discovery_state, source_finalized_at, durable_imported_at, discovered_at')
         .eq('league_key', leagueKey).order('week_number', { ascending: false }).limit(200)
+      // A position-1 result is a compact existence marker for stored named
+      // flight membership: at most a few rows per finalized occurrence rather
+      // than every player result. Canonicalization remains Planit-domain logic;
+      // the legacy flights_finalized column is intentionally not consulted.
+      const officialFlightWeeks = new Set<number>()
+      let officialFlightEvidenceLoaded = competitionKey !== 'mens-league'
+      if (competitionKey === 'mens-league') {
+        const pageSize = 1000
+        for (let from = 0; ; from += pageSize) {
+          const { data: placed, error } = await supabase.from('igc_league_results')
+            .select('week_number, flight_name')
+            .eq('league_key', leagueKey)
+            .eq('flight_position', 1)
+            .range(from, from + pageSize - 1)
+          if (error) break
+          for (const row of placed ?? []) {
+            if (canonicalFlight(row.flight_name) !== null) officialFlightWeeks.add(Number(row.week_number))
+          }
+          if ((placed ?? []).length < pageSize) {
+            officialFlightEvidenceLoaded = true
+            break
+          }
+        }
+      }
       return (data ?? []).map((e: any) => ({
         week_number: e.week_number, event_date: e.event_date,
         event_format: e.event_format, discovery_state: e.discovery_state,
         upstream_status: e.source_finalized_at ? 'completed' : null,
         durable_imported_at: e.durable_imported_at,
+        awaiting_official_flights: competitionKey === 'mens-league'
+          && e.event_format === 'individual'
+          && !!e.source_finalized_at
+          && !!e.durable_imported_at
+          && officialFlightEvidenceLoaded
+          && !officialFlightWeeks.has(Number(e.week_number)),
         // Feeds the staleness gate in selectReconciliationCandidates so frequent
         // runs don't re-read GG for an occurrence discovered within STALENESS_MS.
         discovered_at: e.discovered_at ?? null,
@@ -241,7 +276,10 @@ async function defaultOps(): Promise<ReconcileOps> {
       } : null
       // Returns the DiscoverResult (carrying `resolved`); orchestration reads
       // resolved.upstreamStatus and passes `resolved` into importOccurrence.
-      return await discoverAndPersistEventClassification({ competitionKey, weekNumber: week, adapterConfig: config.adapterConfig, ggClient, db: classifyDb(supabase, competitionKey), nowIso, persistedHints })
+      const discovered = await discoverAndPersistEventClassification({ competitionKey, weekNumber: week, adapterConfig: config.adapterConfig, ggClient, db: classifyDb(supabase, competitionKey), nowIso, persistedHints })
+      const officialFlightMembershipAvailable = competitionKey === 'mens-league'
+        && !!discovered.leaderboard?.entries.some((entry) => canonicalFlight(entry.flight) !== null)
+      return { ...discovered, officialFlightMembershipAvailable }
     },
     async importOccurrence(competitionKey, week, nowIso, resolved) {
       const config = (await import('../registry.ts')).getCompetitionConfig(competitionKey)!
@@ -329,10 +367,36 @@ function importDb(supabase: any, competitionKey: string) {
       }
       return { ok: true }
     },
+    async prunePerformances(week: number, retainedPlayerNames: string[]) {
+      const { data: existing, error: readError } = await supabase.from('igc_league_performances')
+        .select('player_name').eq('league_key', leagueKey).eq('week_number', week).limit(1000)
+      if (readError) throw new Error(`igc_league_performances prune read wk${week}: ${readError.message}`)
+      const retained = new Set(retainedPlayerNames)
+      const staleNames = (existing ?? [])
+        .map((row: any) => String(row.player_name))
+        .filter((name: string) => !retained.has(name))
+      if (staleNames.length) {
+        const { error } = await supabase.from('igc_league_performances').delete()
+          .eq('league_key', leagueKey).eq('week_number', week).in('player_name', staleNames)
+        if (error) throw new Error(`igc_league_performances prune wk${week}: ${error.message}`)
+      }
+      return { ok: true }
+    },
     async upsertResults(rows: any[]) {
       const { error } = await supabase.from('igc_league_results')
         .upsert(rows, { onConflict: 'league_key,week_number,member_card_id,competition' })
       if (error) throw new Error(`igc_league_results upsert wk${rows[0]?.week_number}: ${error.message}`)
+      return { ok: true }
+    },
+    async pruneResults(week: number, importedAtIso: string, competitions: Array<'gross' | 'net'>) {
+      if (!competitions.length) return { ok: true }
+      // Every row in the just-imported authoritative snapshot receives the
+      // same synced_at. Anything older for those scoring modes is absent from
+      // the new snapshot and must not survive as an Overall-only ghost row.
+      const { error } = await supabase.from('igc_league_results').delete()
+        .eq('league_key', leagueKey).eq('week_number', week)
+        .in('competition', competitions).lt('synced_at', importedAtIso)
+      if (error) throw new Error(`igc_league_results prune wk${week}: ${error.message}`)
       return { ok: true }
     },
     async upsertSeasonPointEntries(rows: any[]) {
@@ -346,6 +410,21 @@ function importDb(supabase: any, competitionKey: string) {
         { onConflict: 'league_key,week_number,member_card_id' }
       )
       if (error) throw new Error(`igc_league_season_point_entries upsert wk${rows[0]?.week_number}: ${error.message}`)
+      return { ok: true }
+    },
+    async pruneSeasonPointEntries(week: number, retainedMemberIds: string[]) {
+      const { data: existing, error: readError } = await supabase.from('igc_league_season_point_entries')
+        .select('member_card_id').eq('league_key', leagueKey).eq('week_number', week).limit(1000)
+      if (readError) throw new Error(`igc_league_season_point_entries prune read wk${week}: ${readError.message}`)
+      const retained = new Set(retainedMemberIds)
+      const staleIds = (existing ?? [])
+        .map((row: any) => String(row.member_card_id))
+        .filter((id: string) => !retained.has(id))
+      if (staleIds.length) {
+        const { error } = await supabase.from('igc_league_season_point_entries').delete()
+          .eq('league_key', leagueKey).eq('week_number', week).in('member_card_id', staleIds)
+        if (error) throw new Error(`igc_league_season_point_entries prune wk${week}: ${error.message}`)
+      }
       return { ok: true }
     },
     async setDurableImported(week: number, atIso: string, sourceVersion: string | null) {

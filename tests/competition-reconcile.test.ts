@@ -5,7 +5,7 @@ import { reconcileCompetition, reconcileOccurrenceOnDemand } from '../lib/compet
 // Fake ops: track discover/import calls. discoverAndPersist returns a
 // ResolvedOccurrence (carried on `resolved`) whose upstreamStatus drives the
 // import decision — mirroring the real discovery→import handoff (Correction 6).
-function makeOps(opts: { events: any[]; completedWeeks: number[] }) {
+function makeOps(opts: { events: any[]; completedWeeks: number[]; officialFlightWeeks?: number[] }) {
   const calls: string[] = []
   const imported: any[] = []
   return {
@@ -20,7 +20,7 @@ function makeOps(opts: { events: any[]; completedWeeks: number[] }) {
         roundDate: '2026-07-28', eventName: 'Mens League',
         sourceFinalizedAt: opts.completedWeeks.includes(week) ? '2026-07-28T22:00:00Z' : null,
         sourceVersion: opts.completedWeeks.includes(week) ? 'v9' : null,
-      } }
+      }, officialFlightMembershipAvailable: opts.officialFlightWeeks?.includes(week) ?? false }
     },
     async importOccurrence(_competitionKey: string, week: number, _nowIso: string, resolved: any) {
       calls.push(`import:${week}`); imported.push(resolved)
@@ -80,6 +80,40 @@ test('played-awaiting-finalization (in_progress) → discover only, no import', 
   assert.ok(!ops.calls.includes('import:18'), 'not completed → no import')
   assert.equal(summary.imported, 0)
   assert.equal(summary.discovered, 1)
+})
+
+test('awaiting official flights re-discovers but does not re-import an Overall snapshot', async () => {
+  const ops = makeOps({ events: baseEvents([{
+    week_number: 21, event_format: 'individual', discovery_state: 'discovered',
+    upstream_status: 'completed', durable_imported_at: '2026-09-01T19:41:09Z',
+    awaiting_official_flights: true,
+  }]), completedWeeks: [21] })
+  const summary = await reconcileCompetition({
+    competitionKey: 'mens-league', deadlineMs: Date.now() + 60_000,
+    nowIso: '2026-09-02T20:00:00Z', ops: ops as any,
+  })
+  assert.ok(ops.calls.includes('discover:21'))
+  assert.ok(!ops.calls.includes('import:21'))
+  assert.equal(summary.discovered, 1)
+  assert.equal(summary.imported, 0)
+  assert.equal(summary.seasonPointsRebuilds, 0)
+})
+
+test('awaiting official flights re-imports once canonical membership appears', async () => {
+  const ops = makeOps({ events: baseEvents([{
+    week_number: 21, event_format: 'individual', discovery_state: 'discovered',
+    upstream_status: 'completed', durable_imported_at: '2026-09-01T19:41:09Z',
+    awaiting_official_flights: true,
+  }]), completedWeeks: [21], officialFlightWeeks: [21] })
+  const summary = await reconcileCompetition({
+    competitionKey: 'mens-league', deadlineMs: Date.now() + 60_000,
+    nowIso: '2026-09-02T20:00:00Z', ops: ops as any,
+  })
+  assert.ok(ops.calls.includes('discover:21'))
+  assert.ok(ops.calls.includes('import:21'))
+  assert.ok(ops.calls.includes('points'))
+  assert.equal(summary.imported, 1)
+  assert.equal(summary.seasonPointsRebuilds, 1)
 })
 
 test('stops before the shared deadline and marks stoppedForBudget', async () => {

@@ -41,6 +41,14 @@ export interface Grouping {
   label: string
 }
 
+// Flight membership is independent from scoring status. A live or final round
+// may have official flights, while a current Men's League round without them
+// may expose an ephemeral projection. This is presentation/scoping state only;
+// durable result and season-point writers never consume it.
+export type FlightMembershipState =
+  | { status: 'unavailable'; groupings: [] }
+  | { status: 'projected' | 'official'; groupings: Grouping[] }
+
 export type GroupingAvailability =
   | { kind: 'none' }
   | { kind: 'single'; grouping: Grouping }
@@ -227,6 +235,7 @@ export interface Leaderboard {
 export interface LiveResponse {
   occurrence: Occurrence
   leaderboard: Leaderboard | null
+  flightMembership: FlightMembershipState
   resultStatus: ResultStatus
   eventFormat: EventFormat
   discoveryState: DiscoveryState

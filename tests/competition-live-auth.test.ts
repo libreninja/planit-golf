@@ -81,7 +81,7 @@ test('4c: unknown competition is still 404 even when authenticated (no privilege
 // an email, or any private row. This is a structural guard: if a private field
 // ever leaks into the serialized response, this fails.
 const PUBLIC_RESPONSE_KEYS = new Set([
-  'occurrence', 'leaderboard', 'resultStatus', 'eventFormat', 'discoveryState',
+  'occurrence', 'leaderboard', 'flightMembership', 'resultStatus', 'eventFormat', 'discoveryState',
   'durableCurrent', 'showingLastKnown',
   // ChampionshipAggregate additions (Club Championship endpoint):
   'championshipKey', 'roundCount', 'roundsComplete', 'roundsLive',
@@ -99,6 +99,7 @@ test('5: a representative anonymous live response carries only public fields', (
   const sampleResponse = {
     occurrence: { id: 'club-championship', number: null, label: 'Club Championship', date: null, activeWindow: { start: '', end: null }, format: 'individual', discoveryState: 'discovered', resultStatus: 'not_started' },
     leaderboard: { occurrenceId: 'club-championship', scoringMode: 'gross', grouping: null, entries: [], scorecards: [], resultStatus: 'not_started', durableCurrent: false },
+    flightMembership: { status: 'unavailable', groupings: [] },
     resultStatus: 'not_started',
     eventFormat: 'individual',
     discoveryState: 'discovered',

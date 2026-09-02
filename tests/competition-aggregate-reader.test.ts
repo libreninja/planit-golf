@@ -33,6 +33,7 @@ function occ(id: string, status: 'live' | 'final' | 'not_started', scorecards: S
       occurrenceId: id, scoringMode: 'gross', grouping: null,
       entries, scorecards, resultStatus: status, durableCurrent: status === 'final',
     },
+    flightMembership: { status: 'unavailable', groupings: [] },
     resultStatus: status, eventFormat: 'individual', discoveryState: 'discovered',
     durableCurrent: status === 'final', showingLastKnown: false,
   }
