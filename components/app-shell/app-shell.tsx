@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/session-actions'
 import { ActivityInbox } from '@/components/app-shell/activity-inbox'
 import type { AppShellUser } from '@/lib/app-shell/user'
+import { buildBreadcrumb, buildNav, type Crumb, type NavItem } from '@/lib/app-shell/navigation'
 
 // Routes that do NOT get the shell. Matched by exact path or path-prefix.
 const HIDDEN_PREFIXES = [
@@ -40,6 +41,7 @@ const HIDDEN_PREFIXES = [
   '/reset-password',
   '/invite/',
   '/scouting-invite/',
+  '/intel-harvest-invite/',
   '/stay-tuned',
   '/auth/',
   '/scan/',
@@ -53,12 +55,11 @@ const HIDDEN_PREFIXES = [
 // the same auth/hidden routes the shell hides itself on, without duplicating
 // the prefix list.
 export function isShellVisible(pathname: string): boolean {
-  return !HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') ? false : pathname.startsWith(p)))
+  return !HIDDEN_PREFIXES.some((prefix) => {
+    const base = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix
+    return pathname === base || pathname.startsWith(`${base}/`)
+  })
 }
-
-type NavLink = { type: 'link'; label: string; href: string; level: number }
-type NavLabel = { type: 'label'; label: string; level: number }
-type NavItem = NavLink | NavLabel
 
 // Navigation mirrors the actual domain model, in user/domain language:
 //
@@ -82,32 +83,6 @@ type NavItem = NavLink | NavLabel
 // Times shows the registration admin controls for admins; Scouting shows a
 // "Manage access" action for admins). The /admin and /admin/scouting routes
 // remain reachable directly and keep their own authorization boundaries.
-function buildNav(user: AppShellUser): NavItem[] {
-  const items: NavItem[] = [
-    { type: 'link', label: 'Home', href: '/', level: 0 },
-    { type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 0 },
-    { type: 'label', label: "Men's League", level: 1 },
-    { type: 'link', label: 'Standings', href: '/igc/mens-league', level: 2 },
-    { type: 'link', label: 'Club Championship', href: '/igc/club-championship', level: 2 },
-  ]
-  // Tee Times is currently a Men's League capability only. Gated by the same
-  // gtgAccess flag the Tee Times page enforces, so it only appears for users
-  // who can actually use the workflow. The architecture allows a future
-  // Women's League tee-times capability to appear under Women's League without
-  // restructuring — it is not hardcoded as Men's-only at the framework level.
-  if (user.gtgAccess) {
-    items.push({ type: 'link', label: 'Tee Times', href: '/igc/mens-league/tee-times', level: 2 })
-  }
-  items.push({ type: 'label', label: "Women's League", level: 1 })
-  items.push({ type: 'link', label: 'Standings', href: '/igc/womens-league', level: 2 })
-  if (user.scouting) {
-    items.push({ type: 'label', label: 'Seattle Cup', level: 1 })
-    items.push({ type: 'link', label: 'Scouting', href: '/igc/seattle-cup/scouting', level: 2 })
-    items.push({ type: 'link', label: 'Opposition Intel', href: '/igc/seattle-cup/intel', level: 2 })
-  }
-  return items
-}
-
 // Exactly ONE destination may be active at a time. Parents are never given the
 // active style — hierarchy is conveyed only by indentation/typography. The
 // active item is the single link whose href is the longest prefix of the
@@ -213,38 +188,6 @@ function NavList({ user, pathname, onNavigate }: { user: AppShellUser; pathname:
       })}
     </nav>
   )
-}
-
-type Crumb = { label: string; href?: string }
-
-function buildBreadcrumb(pathname: string): Crumb[] {
-  if (pathname === '/') return [{ label: 'Home' }]
-  if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
-  if (pathname === '/igc/league')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Leagues' }]
-  if (pathname === '/igc/mens-league')
-    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }, { label: 'Standings' }]
-  if (pathname === '/igc/mens-league/tee-times')
-    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Times' }]
-  if (pathname === '/igc/club-championship')
-    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Club Championship' }]
-  if (pathname === '/igc/womens-league')
-    return [{ label: 'Interbay', href: '/igc' }, { label: "Women's League" }, { label: 'Standings' }]
-  if (pathname === '/igc/seattle-cup/scouting')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Scouting' }]
-  if (pathname === '/igc/seattle-cup/intel')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Opposition Intel' }]
-  if (pathname.startsWith('/igc/seattle-cup/scouting/players'))
-    return [
-      { label: 'Interbay', href: '/igc' },
-      { label: 'Seattle Cup', href: '/igc/seattle-cup/scouting' },
-      { label: 'Scouting' },
-    ]
-  if (pathname === '/admin')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Registration admin' }]
-  if (pathname === '/admin/scouting')
-    return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Manage access' }]
-  return []
 }
 
 function Breadcrumb({ pathname }: { pathname: string }) {

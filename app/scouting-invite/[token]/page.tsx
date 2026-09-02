@@ -9,7 +9,7 @@ import { ScoutingSignUpForm } from '@/components/scouting/scouting-signup-form'
 export const dynamic = 'force-dynamic'
 
 // Dedicated accept route for Seattle Cup capability invites. Kept separate from
-// the GTG /invite/[token] flow (which is members-anchored) so a scouting captain
+// the GTG /invite/[token] flow (which is members-anchored) so a scouting reviewer
 // with no GG roster row can still accept. The route never reveals whether an
 // account exists for an email to an unauthenticated viewer; the signup form
 // handles existing-account detection only after the invite token+email validate.

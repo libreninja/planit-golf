@@ -3,13 +3,17 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getIgcClubId, SCOUTING_FEATURE_KEY } from '@/lib/scouting-access'
 import {
   createScoutingInvite,
+  grantIntelCaptainByEmail,
   grantScoutingByEmail,
+  revokeIntelCaptain,
   revokeScouting,
   revokeScoutingInvite,
   resendScoutingInvite,
 } from '@/app/scouting-admin-actions'
+import { HARVEST_CAPTAIN_FEATURE_KEY } from '@/lib/seattle-cup/harvest/domain'
 import { Button } from '@/components/ui/button'
 import { CupResolutionSection } from './cup-resolution'
+import Link from 'next/link'
 
 // Seattle Cup scouting access admin. Invite (email), grant to an existing
 // account, revoke access, and manage pending invites (resend/revoke). All
@@ -31,7 +35,14 @@ export default async function ScoutingAdminPage() {
     .eq('feature_key', SCOUTING_FEATURE_KEY)
     .order('updated_at', { ascending: false })
 
-  const userIds = (entitlementsRaw || []).map((e) => e.user_id as string)
+  const { data: captainEntitlementsRaw } = await service
+    .from('feature_entitlements')
+    .select('user_id, status, source, granted_at, revoked_at, updated_at')
+    .eq('club_id', clubId)
+    .eq('feature_key', HARVEST_CAPTAIN_FEATURE_KEY)
+    .order('updated_at', { ascending: false })
+
+  const userIds = [...new Set([...(entitlementsRaw || []), ...(captainEntitlementsRaw || [])].map((e) => e.user_id as string))]
   const { data: profiles } =
     userIds.length > 0
       ? await service
@@ -59,6 +70,16 @@ export default async function ScoutingAdminPage() {
     email: string | null
     display_name: string | null
   }[]).filter((p) => p.email && !activeScoutingUserIds.has(p.id))
+  const activeCaptainUserIds = new Set(
+    (captainEntitlementsRaw || [])
+      .filter((e) => e.status === 'active')
+      .map((e) => e.user_id as string),
+  )
+  const grantableCaptainProfiles = ((allProfilesRaw || []) as {
+    id: string
+    email: string | null
+    display_name: string | null
+  }[]).filter((p) => p.email && !activeCaptainUserIds.has(p.id))
 
   const { data: invites } = await service
     .from('capability_invites')
@@ -68,16 +89,19 @@ export default async function ScoutingAdminPage() {
     .order('created_at', { ascending: false })
 
   const entitlements = entitlementsRaw || []
+  const captainEntitlements = captainEntitlementsRaw || []
   const pendingInvites = (invites || []).filter((i) => i.status === 'pending')
-
   return (
     <div>
       <div className="space-y-8 py-2">
-        <h1 className="text-xl font-semibold">Scouting Access</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Scouting Access</h1>
+          <Button asChild variant="outline"><Link href="/igc/seattle-cup/harvest/2026/review">2026 contributor campaign</Link></Button>
+        </div>
         <div className="grid gap-6 sm:grid-cols-2">
-          {/* Invite a new captain */}
+          {/* Invite a new scouting reviewer */}
           <section className="rounded-md border border-border bg-white/80 p-4">
-            <h2 className="mb-1 text-lg font-semibold">Invite a captain</h2>
+            <h2 className="mb-1 text-lg font-semibold">Invite a scouting reviewer</h2>
             <p className="mb-3 text-sm text-muted-foreground">
               Sends an email with a secure link. Works for someone without a PlanIt account yet —
               they create one from the link. No IGC membership is created.
@@ -87,7 +111,7 @@ export default async function ScoutingAdminPage() {
                 name="email"
                 type="email"
                 required
-                placeholder="captain@example.com"
+                placeholder="reviewer@example.com"
                 className="w-full rounded-md border border-border px-3 py-2"
               />
               <input
@@ -112,7 +136,7 @@ export default async function ScoutingAdminPage() {
               <p className="text-sm text-muted-foreground">
                 No existing accounts are available to grant to. Everyone with an
                 account already has active scouting access, or no accounts exist
-                yet — use “Invite a captain” for someone new.
+                yet — use “Invite a scouting reviewer” for someone new.
               </p>
             ) : (
               <form action={grantScoutingByEmail} className="space-y-2">
@@ -136,6 +160,23 @@ export default async function ScoutingAdminPage() {
             )}
           </section>
         </div>
+
+        <section className="rounded-md border border-border bg-white/80 p-4">
+          <h2 className="text-lg font-semibold">Seattle Cup captain intelligence access</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Narrow access to TEAM and CAPTAIN Harvest reports. It does not grant the scouting board, club membership, or Planit administration.</p>
+          {grantableCaptainProfiles.length > 0 ? (
+            <form action={grantIntelCaptainByEmail} className="mt-3 flex flex-wrap gap-2">
+              <select name="email" required defaultValue="" className="min-w-72 rounded-md border border-border px-3 py-2">
+                <option value="" disabled>Select an existing account…</option>
+                {grantableCaptainProfiles.map((p) => <option key={p.id} value={p.email ?? ''}>{p.display_name ?? '(no name)'} — {p.email}</option>)}
+              </select>
+              <Button type="submit" size="sm">Grant captain intel access</Button>
+            </form>
+          ) : <p className="mt-3 text-sm text-muted-foreground">No existing accounts are available to grant.</p>}
+          {captainEntitlements.length > 0 ? (
+            <div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead className="text-left"><tr><th className="px-3 py-2">Name / email</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Granted</th><th /></tr></thead><tbody>{captainEntitlements.map((e) => { const p = profileById.get(e.user_id as string); return <tr key={e.user_id as string} className="border-t border-border"><td className="px-3 py-2"><div className="font-medium">{p?.display_name ?? '—'}</div><div className="text-xs text-muted-foreground">{p?.email ?? e.user_id}</div></td><td className="px-3 py-2">{e.status}</td><td className="px-3 py-2">{fmtDate(e.granted_at as string | null)}</td><td className="px-3 py-2 text-right">{e.status === 'active' ? <form action={revokeIntelCaptain}><input type="hidden" name="userId" value={e.user_id as string} /><Button type="submit" variant="outline" size="sm">Revoke</Button></form> : null}</td></tr> })}</tbody></table></div>
+          ) : null}
+        </section>
 
         {/* Cup resolution / tiebreak — compact; derived state + out-of-band
             playoff recording. See cup-resolution.tsx. */}

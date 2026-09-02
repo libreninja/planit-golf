@@ -101,3 +101,42 @@ export async function sendScoutingInviteEmail(
     text: `${greeting}\n\nYou've been invited to help scout and prepare Interbay Golf Club's 2026 Seattle Cup roster. Use this secure link to create your account or sign in: ${inviteUrl}\n\nIf you don't see this email, check your spam or junk folder.\n\nThis email was sent by planit.golf because a Seattle Cup captain invited you to the scouting workspace.`,
   })
 }
+
+export async function sendIntelHarvestInviteEmail(
+  inviteToken: string,
+  email: string,
+  displayName?: string | null
+) {
+  if (!transport) {
+    console.warn('SMTP email is not configured - skipping email send')
+    return { skipped: true }
+  }
+
+  const appUrl = process.env.APP_URL || 'http://localhost:3000'
+  const inviteUrl = `${appUrl}/intel-harvest-invite/${inviteToken}`
+  const greeting = displayName ? `Hi ${displayName},` : 'Hi,'
+
+  await transport.sendMail({
+    from: fromEmail,
+    replyTo: replyToEmail,
+    to: email,
+    subject: 'Help save what Interbay learned at Seattle Cup 2026',
+    html: `
+      <div style="font-family: Georgia, serif; line-height: 1.6; color: #14281d;">
+        <h2 style="margin: 0 0 16px;">Save what this team learned.</h2>
+        <p>${greeting}</p>
+        <p>Interbay&apos;s 2026 Seattle Cup win is still fresh. Help us save what this team learned for next year.</p>
+        <p>If you played, Planit already knows your matches, partners, opponents, formats, and courses. If you caddied or watched, you can choose the match or people you saw. Just tell us what stood out.</p>
+        <p style="margin: 24px 0;">
+          <a href="${inviteUrl}" style="background-color: #0f5132; color: white; padding: 12px 24px; text-decoration: none; border-radius: 9999px; display: inline-block; font-weight: 600;">Share what you remember</a>
+        </p>
+        <p style="font-size: 14px; color: #4b6358;">It takes about five minutes. Every question is optional, and nothing you submit is public.</p>
+        <p style="font-size: 14px; color: #4b6358;">If the button misbehaves, paste this into your browser:</p>
+        <p style="font-size: 14px;"><a href="${inviteUrl}">${inviteUrl}</a></p>
+        <hr style="border: 0; border-top: 1px solid #d6ddd8; margin: 24px 0;" />
+        <p style="font-size: 13px; color: #4b6358;">This private, email-bound invitation grants contribution access only. It does not grant access to Interbay&apos;s scouting board.</p>
+      </div>
+    `,
+    text: `${greeting}\n\nInterbay's 2026 Seattle Cup win is still fresh. Help us save what this team learned for next year. Planit already knows the match context for players; caddies and watchers can choose what they saw. Just tell us what stood out.\n\nShare what you remember (about five minutes): ${inviteUrl}\n\nEvery question is optional. Nothing you submit is public. This invitation grants contribution access only, not access to Interbay's scouting board.`,
+  })
+}
