@@ -6,17 +6,20 @@ import { nextPollDecision } from './next-poll-decision'
 import { applyResponse } from './request-generation'
 
 const LIVE_POLL_MS = 60_000
+// Also serves as the low-frequency membership check after scoring is final.
+// FINAL + PROJECTED remains on this cadence until official membership arrives.
 const FINAL_POLL_MS = 5 * 60_000
 const FINAL_POLL_BOUND_MS = 90 * 60_000
 
 export function useLivePoll({
-  initial, pollUrl, scoring, supportsLive, initialIsHistoricalFinal,
+  initial, pollUrl, scoring, supportsLive, initialIsHistoricalFinal, awaitingOfficialFlights = false,
 }: {
   initial: LiveResponse | null
   pollUrl: string | null
   scoring: ScoringMode
   supportsLive: boolean
   initialIsHistoricalFinal: boolean
+  awaitingOfficialFlights?: boolean
 }) {
   const [data, setData] = useState<LiveResponse | null>(initial)
   const [refreshing, setRefreshing] = useState(false)
@@ -70,7 +73,7 @@ export function useLivePoll({
   }, [urlWithScoring])
 
   useEffect(() => {
-    if (!supportsLive || !urlWithScoring || initialIsHistoricalFinal) return
+    if (!supportsLive || !urlWithScoring || initialIsHistoricalFinal && !awaitingOfficialFlights) return
 
     let timer: ReturnType<typeof setTimeout> | null = null
     let cancelled = false
@@ -102,6 +105,8 @@ export function useLivePoll({
           supportsLive,
           visible: !document.hidden,
           initialIsHistoricalFinal,
+          flightMembershipStatus: d?.flightMembership?.status ?? 'unavailable',
+          awaitingOfficialFlights,
         },
         { livePollMs: LIVE_POLL_MS, finalPollMs: FINAL_POLL_MS, finalPollBoundMs: FINAL_POLL_BOUND_MS },
       )
@@ -116,7 +121,11 @@ export function useLivePoll({
       }
     }
 
-    schedule()
+    // A live Gross/Net toggle remounts with a null initial for the newly
+    // selected mode. Fetch immediately (the shell has already warmed the URL)
+    // instead of showing an empty state until the first 60-second tick.
+    if (!initial) void refresh().then((fresh) => { if (!cancelled) schedule(fresh) }).catch(() => {})
+    else schedule()
     document.addEventListener('visibilitychange', onVis)
     return () => {
       cancelled = true
@@ -126,7 +135,7 @@ export function useLivePoll({
     // Re-schedule when scoring or occurrence changes (pollUrl). `data` is read
     // via dataRef so it doesn't need to be a dep. The generation bump effect
     // invalidates any in-flight previous-mode response.
-  }, [supportsLive, urlWithScoring, refresh, initialIsHistoricalFinal, scoring, pollUrl])
+  }, [supportsLive, urlWithScoring, refresh, initialIsHistoricalFinal, awaitingOfficialFlights, scoring, pollUrl, initial])
 
   return { data, refreshing, showingLastKnown, refresh }
 }

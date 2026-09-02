@@ -17,6 +17,7 @@
 import { aggregateLeaderboard, type OccurrenceLeaderboard } from './aggregate.ts'
 import { getCompetitionConfig } from './registry.ts'
 import type { Leaderboard, LiveResponse, ScoringMode, EventFormat, DiscoveryState, ResultStatus } from './types.ts'
+import { unavailableFlightMembership } from './projected-flights.ts'
 
 export interface ReadOccurrenceFn {
   (input: { competitionKey: string; occurrenceId: string; scoring: ScoringMode; nowIso: string }): Promise<LiveResponse | null>
@@ -93,7 +94,7 @@ export async function getChampionshipAggregate(
   if (specs.length === 0) {
     return {
       championshipKey, roundCount: 0, roundsComplete: 0, roundsLive: 0,
-      occurrence, leaderboard: null, resultStatus: 'unknown',
+      occurrence, leaderboard: null, flightMembership: unavailableFlightMembership(), resultStatus: 'unknown',
       eventFormat: 'unknown', discoveryState: 'pending',
       durableCurrent: false, showingLastKnown: false,
     }
@@ -136,7 +137,7 @@ export async function getChampionshipAggregate(
   if (!anyData) {
     return {
       championshipKey, roundCount: specs.length, roundsComplete: 0, roundsLive: 0,
-      occurrence, leaderboard: null, resultStatus: 'not_started',
+      occurrence, leaderboard: null, flightMembership: unavailableFlightMembership(), resultStatus: 'not_started',
       eventFormat, discoveryState, durableCurrent: false, showingLastKnown: false,
     }
   }
@@ -155,7 +156,7 @@ export async function getChampionshipAggregate(
   return {
     championshipKey, roundCount: specs.length, roundsComplete, roundsLive,
     occurrence: { ...occurrence, resultStatus },
-    leaderboard, resultStatus, eventFormat, discoveryState,
+    leaderboard, flightMembership: unavailableFlightMembership(), resultStatus, eventFormat, discoveryState,
     durableCurrent: !anyLive && allFinal, showingLastKnown: false,
   }
 }

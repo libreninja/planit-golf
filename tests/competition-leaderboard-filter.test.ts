@@ -59,3 +59,22 @@ test('filtering does not mutate the original leaderboard entries', () => {
   assert.equal(f.entries.length, 1)
   assert.equal(l.entries.length, 2, 'original entries unchanged')
 })
+
+test('projected flight filter compresses positions and keeps ties within the subset', () => {
+  const l = lb([
+    { key: 'first', flight: 'Flight 2' },
+    { key: 'outside', flight: 'Flight 1' },
+    { key: 'tie-a', flight: 'Flight 2' },
+    { key: 'tie-b', flight: 'Flight 2' },
+  ])
+  l.entries[0].positionOrder = 1
+  l.entries[0].positionLabel = '1'
+  l.entries[1].positionOrder = 2
+  l.entries[1].positionLabel = '2'
+  l.entries[2].positionOrder = 3
+  l.entries[2].positionLabel = 'T3'
+  l.entries[3].positionOrder = 3
+  l.entries[3].positionLabel = 'T3'
+  const projected = filterLeaderboardByGrouping(l, 'Flight 2', 'projected')!
+  assert.deepEqual(projected.entries.map((entry) => entry.positionLabel), ['1', 'T2', 'T2'])
+})

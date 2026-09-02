@@ -157,10 +157,27 @@ export async function StandingsWorkspaceServer({
     todayLiveHasGolf,
     todayLiveInProgress,
   })
+  // A finalized Men’s round can have durable scores before official flight
+  // membership exists. Re-enter the existing live response path only for that
+  // narrow state so a reload receives a projection and keeps checking at the
+  // low-frequency membership cadence. This does not change LIVE score polling
+  // or correctly official historical rounds.
+  const awaitingOfficialFlights = competitionKey === 'mens-league'
+    && selected?.format === 'individual'
+    && historical?.resultStatus === 'final'
+    && historical.flightMembership?.status !== 'official'
+    && ggConfigured
+    && config.capabilities.supportsLiveResults
+  const membershipLive = awaitingOfficialFlights && selected
+    ? (selected.id === todayId && todayLive
+      ? todayLive
+      : await getLiveResults({ competitionKey, occurrenceId: selected.id, scoring, nowIso }))
+    : null
+  const useLivePath = dec.useLivePath || awaitingOfficialFlights
   const initial = dec.useLivePath
     ? (selected?.id === todayId && todayLive ? todayLive : historical)
-    : historical
-  const pollUrl = dec.useLivePath && selected
+    : (membershipLive ?? historical)
+  const pollUrl = useLivePath && selected
     ? `/api/competition/live?competition=${encodeURIComponent(competitionKey)}&occurrence=${encodeURIComponent(selected.id)}`
     : null
 
@@ -172,7 +189,7 @@ export async function StandingsWorkspaceServer({
   // first toggle is warm and repeated toggles hit the server cache).
   const initialByScoring: Record<string, LiveResponse | null> = {}
   initialByScoring[scoring] = initial
-  if (!dec.useLivePath) {
+  if (!useLivePath) {
     for (const m of scoringModes) {
       if (m === scoring) continue
       initialByScoring[m] = selected ? await buildHistoricalLiveResponse(competitionKey, selected, m) : null
@@ -225,7 +242,8 @@ export async function StandingsWorkspaceServer({
         initialByScoring,
         pollUrl,
         initialIsHistoricalFinal: dec.initialIsHistoricalFinal,
-        useLivePath: dec.useLivePath,
+        awaitingOfficialFlights,
+        useLivePath,
       }}
     />
   )

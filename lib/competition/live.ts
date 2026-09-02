@@ -11,11 +11,76 @@ import { buildLeagueActiveWindow, labelRuleSeparator, leagueOccurrenceLabel, map
 import { deriveResultStatus, type UpstreamStatus } from './result-status.ts'
 import { isDurableCurrent } from './durable-current.ts'
 import { isOccurrenceActive } from './active-window.ts'
-import { readCachedResult, readStaleResult, writeCachedResult, makeSingleFlight, type LiveCacheStore } from './cache.ts'
+import {
+  readCachedDiscovery,
+  readCachedResult,
+  readStaleResult,
+  writeCachedDiscovery,
+  writeCachedResult,
+  makeSingleFlight,
+  type LiveCacheStore,
+} from './cache.ts'
 import { getCompetitionConfig, getSpecialOccurrence } from './registry.ts'
+import {
+  applyProjectedFlights,
+  officialFlightMembership,
+  projectFlightAssignments,
+  unavailableFlightMembership,
+  type ProjectedFlightSnapshot,
+} from './projected-flights.ts'
+import { teeSheetProjectionParticipants } from './adapters/golfgenius/tee-sheet-flights.ts'
 import type { GolfGeniusAdapterConfig, LiveResponse, Occurrence, ScoringMode, DurableCurrentSource } from './types.ts'
 
 const sf = makeSingleFlight<LiveResponse>()
+const projectionSf = makeSingleFlight<ProjectedFlightSnapshot | null>()
+
+function withFlightMembership(response: LiveResponse): LiveResponse {
+  if (response.flightMembership) return response
+  const official = officialFlightMembership(response.leaderboard)
+  return { ...response, leaderboard: official.leaderboard, flightMembership: official.state }
+}
+
+function isProjectedFlightSnapshot(value: unknown, roundKey: string): value is ProjectedFlightSnapshot {
+  const snapshot = value as ProjectedFlightSnapshot | null
+  return !!snapshot && snapshot.roundKey === roundKey && Number.isFinite(snapshot.participantCount) && Array.isArray(snapshot.assignments)
+}
+
+async function projectedFlightSnapshot(input: {
+  tenantKey: string
+  competitionKey: string
+  occurrenceId: string
+  roundKey: string
+  ggEventId: string
+  ggRoundId: string
+  ggClient: GGClient
+  cacheStore?: LiveCacheStore
+}): Promise<ProjectedFlightSnapshot | null> {
+  const cacheArgs = {
+    tenantKey: input.tenantKey,
+    competitionKey: input.competitionKey,
+    occurrenceId: input.occurrenceId,
+  }
+  const cached = await readCachedDiscovery(cacheArgs, input.cacheStore)
+  if (isProjectedFlightSnapshot(cached, input.roundKey)) return cached
+
+  return projectionSf.run(`${input.tenantKey}:${input.competitionKey}:${input.occurrenceId}:${input.roundKey}`, async () => {
+    // A concurrent Gross/Net request may have filled the shared occurrence
+    // snapshot while this request was waiting for the in-process single-flight.
+    const secondRead = await readCachedDiscovery(cacheArgs, input.cacheStore)
+    if (isProjectedFlightSnapshot(secondRead, input.roundKey)) return secondRead
+
+    const raw = await input.ggClient(`/events/${input.ggEventId}/rounds/${input.ggRoundId}/tee_sheet`)
+    const participants = teeSheetProjectionParticipants(raw)
+    if (participants.length === 0) return null
+    const snapshot: ProjectedFlightSnapshot = {
+      roundKey: input.roundKey,
+      participantCount: participants.length,
+      assignments: [...projectFlightAssignments(participants).entries()],
+    }
+    try { await writeCachedDiscovery(cacheArgs, snapshot, input.cacheStore) } catch { /* best-effort */ }
+    return snapshot
+  })
+}
 
 export interface EventRow {
   week_number: number
@@ -77,7 +142,7 @@ export async function getLiveResults(input: GetLiveResultsInput): Promise<LiveRe
   // 1. Fresh cache hit.
   const cacheStore = input.deps?.cacheStore
   const cached = cacheStore ? await readCachedResult(cacheArgs, cacheStore) : await readCachedResult(cacheArgs)
-  if (cached) return { ...cached, showingLastKnown: false }
+  if (cached) return { ...withFlightMembership(cached), showingLastKnown: false }
 
   // 2. Single-flight the fresh fetch+discover.
   const fresh = await sf.run(`${input.competitionKey}:${input.occurrenceId}:${input.scoring}`, () =>
@@ -87,7 +152,7 @@ export async function getLiveResults(input: GetLiveResultsInput): Promise<LiveRe
   if (fresh && !fresh.showingLastKnown) {
     try { await writeCachedResult(cacheArgs, fresh, cacheStore) } catch { /* best-effort */ }
   }
-  return fresh
+  return withFlightMembership(fresh)
 }
 
 async function fetchFresh(
@@ -174,10 +239,42 @@ async function fetchFresh(
       { week_number: occurrenceNumber, event_name: ev?.event_name ?? r.resolved.eventName ?? null, event_date: effectiveDate, event_format: r.eventFormat, discovery_state: r.discoveryState },
       label, window, resultStatus,
     )
-    const leaderboard = r.leaderboard ? { ...r.leaderboard, occurrenceId: input.occurrenceId, resultStatus, durableCurrent } : null
+    let leaderboard = r.leaderboard ? { ...r.leaderboard, occurrenceId: input.occurrenceId, resultStatus, durableCurrent } : null
+    let flights = officialFlightMembership(leaderboard)
+
+    // Projection is a Men's League presentation concern for regular individual
+    // occurrences only. It is never handed to reconciliation/import code. A
+    // tee-sheet failure degrades to the existing Overall leaderboard rather
+    // than hiding otherwise usable scoring data.
+    if (
+      flights.state.status === 'unavailable' &&
+      input.competitionKey === 'mens-league' &&
+      r.eventFormat === 'individual' &&
+      !spec &&
+      r.resolved.ggEventId &&
+      r.resolved.ggRoundId
+    ) {
+      try {
+        const snapshot = await projectedFlightSnapshot({
+          tenantKey: adapterConfig.tenantKey,
+          competitionKey: input.competitionKey,
+          occurrenceId: input.occurrenceId,
+          roundKey: `${r.resolved.ggEventId}:${r.resolved.ggRoundId}`,
+          ggEventId: r.resolved.ggEventId,
+          ggRoundId: r.resolved.ggRoundId,
+          ggClient,
+          cacheStore,
+        })
+        if (snapshot) flights = applyProjectedFlights(leaderboard, new Map(snapshot.assignments))
+      } catch (err) {
+        console.error(`[getLiveResults] projected flights unavailable for ${input.competitionKey}/${input.occurrenceId}:`, err)
+      }
+    }
+    leaderboard = flights.leaderboard
 
     return {
-      occurrence, leaderboard, resultStatus, eventFormat: r.eventFormat, discoveryState: r.discoveryState,
+      occurrence, leaderboard, flightMembership: flights.state,
+      resultStatus, eventFormat: r.eventFormat, discoveryState: r.discoveryState,
       durableCurrent, showingLastKnown: false,
     }
   } catch (err) {
@@ -188,7 +285,7 @@ async function fetchFresh(
     console.error(`[getLiveResults] ${input.competitionKey}/${input.occurrenceId}:`, err)
     const stale = cacheStore ? await readStaleResult({ tenantKey: adapterConfig.tenantKey, competitionKey: input.competitionKey, occurrenceId: input.occurrenceId, scoring: input.scoring }, cacheStore)
       : await readStaleResult({ tenantKey: adapterConfig.tenantKey, competitionKey: input.competitionKey, occurrenceId: input.occurrenceId, scoring: input.scoring })
-    if (stale) return { ...stale, showingLastKnown: true }
+    if (stale) return { ...withFlightMembership(stale), showingLastKnown: true }
     // No stale row: honest unknown state (NOT a team verdict).
     const fallbackWindow = buildLeagueActiveWindow({
       date: occurrenceDate, tz: schedule?.timezone ?? 'America/Los_Angeles',
@@ -202,7 +299,8 @@ async function fetchFresh(
         { week_number: occurrenceNumber, event_name: ev?.event_name ?? null, event_date: occurrenceDate, event_format: 'unknown', discovery_state: 'pending' },
         label, fallbackWindow, 'unknown',
       ),
-      leaderboard: null, resultStatus: 'unknown', eventFormat: 'unknown', discoveryState: 'pending',
+      leaderboard: null, flightMembership: unavailableFlightMembership(),
+      resultStatus: 'unknown', eventFormat: 'unknown', discoveryState: 'pending',
       durableCurrent, showingLastKnown: false,
     }
   }

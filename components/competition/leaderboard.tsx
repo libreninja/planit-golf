@@ -7,22 +7,20 @@ import { shouldShowPurse } from "./leaderboard-purse";
 import { pickLeaderboardCols } from "./leaderboard-cols";
 import { cn } from "@/lib/utils/cn";
 
-// showFlight renders a Flight column (POS / PLAYER / FLIGHT / …) — only for
-// the finalized Men's "All" view. Driven by the workspace from grouping +
-// capability state (grouping === 'all' && groupings.kind === 'multi'), never a
-// route-name check. A specific flight makes the column redundant, live weeks
-// are unflighted, and women's is single Overall. See FIX 2.
-// colorizeFlights (P1-3) tints each row + its flight badge with the flight's
-// color — true for any finalized Men's multi-flight week (All AND a specific
-// flight). Live/women's stay neutral (the flag is false there).
+// showFlight renders a Flight column (POS / PLAYER / FLIGHT / …) for the Men's
+// Overall view. A specific flight makes the column redundant; women's is single
+// Overall. colorizeFlights keeps the existing row/badge colors in projected and
+// official flight views.
 export function Leaderboard({
   leaderboard,
   showFlight = false,
   colorizeFlights = false,
+  projectedFlights = false,
 }: {
   leaderboard: Leaderboard;
   showFlight?: boolean;
   colorizeFlights?: boolean;
+  projectedFlights?: boolean;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   if (leaderboard.entries.length === 0) {
@@ -52,7 +50,7 @@ export function Leaderboard({
       >
         <span>Pos</span>
         <span>Player</span>
-        {showFlight && <span className="text-right">Flight</span>}
+        {showFlight && <span className="text-right">{projectedFlights ? "Projected flight" : "Flight"}</span>}
         <span className="text-right">{isGross ? "Gross par" : "Net par"}</span>
         <span className="text-right">Thru</span>
         <span className="text-right">{isGross ? "Gross" : "Net"}</span>
@@ -75,6 +73,7 @@ export function Leaderboard({
               showFlight={showFlight}
               showPurse={showPurse}
               colorizeFlights={colorizeFlights}
+              flightLabel={e.flight && projectedFlights ? `Projected ${e.flight}` : e.flight}
             />
           );
         })}

@@ -1,11 +1,17 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { reconcileCompetition, reconcileOccurrenceOnDemand } from '../lib/competition/reconcile/reconcile.ts'
+import {
+  officialFlightSnapshotsMatch,
+  reconcileCompetition,
+  reconcileOccurrenceOnDemand,
+  storedOfficialFlightSnapshotIsCurrent,
+} from '../lib/competition/reconcile/reconcile.ts'
+import type { ResultEntry } from '../lib/competition/types.ts'
 
 // Fake ops: track discover/import calls. discoverAndPersist returns a
 // ResolvedOccurrence (carried on `resolved`) whose upstreamStatus drives the
 // import decision — mirroring the real discovery→import handoff (Correction 6).
-function makeOps(opts: { events: any[]; completedWeeks: number[] }) {
+function makeOps(opts: { events: any[]; completedWeeks: number[]; officialFlightWeeks?: number[] }) {
   const calls: string[] = []
   const imported: any[] = []
   return {
@@ -20,7 +26,7 @@ function makeOps(opts: { events: any[]; completedWeeks: number[] }) {
         roundDate: '2026-07-28', eventName: 'Mens League',
         sourceFinalizedAt: opts.completedWeeks.includes(week) ? '2026-07-28T22:00:00Z' : null,
         sourceVersion: opts.completedWeeks.includes(week) ? 'v9' : null,
-      } }
+      }, officialFlightMembershipAvailable: opts.officialFlightWeeks?.includes(week) ?? false }
     },
     async importOccurrence(_competitionKey: string, week: number, _nowIso: string, resolved: any) {
       calls.push(`import:${week}`); imported.push(resolved)
@@ -80,6 +86,86 @@ test('played-awaiting-finalization (in_progress) → discover only, no import', 
   assert.ok(!ops.calls.includes('import:18'), 'not completed → no import')
   assert.equal(summary.imported, 0)
   assert.equal(summary.discovered, 1)
+})
+
+test('awaiting official flights re-discovers but does not re-import an Overall snapshot', async () => {
+  const ops = makeOps({ events: baseEvents([{
+    week_number: 21, event_format: 'individual', discovery_state: 'discovered',
+    upstream_status: 'completed', durable_imported_at: '2026-09-01T19:41:09Z',
+    awaiting_official_flights: true,
+  }]), completedWeeks: [21] })
+  const summary = await reconcileCompetition({
+    competitionKey: 'mens-league', deadlineMs: Date.now() + 60_000,
+    nowIso: '2026-09-02T20:00:00Z', ops: ops as any,
+  })
+  assert.ok(ops.calls.includes('discover:21'))
+  assert.ok(!ops.calls.includes('import:21'))
+  assert.equal(summary.discovered, 1)
+  assert.equal(summary.imported, 0)
+  assert.equal(summary.seasonPointsRebuilds, 0)
+})
+
+test('awaiting official flights re-imports once canonical membership appears', async () => {
+  const ops = makeOps({ events: baseEvents([{
+    week_number: 21, event_format: 'individual', discovery_state: 'discovered',
+    upstream_status: 'completed', durable_imported_at: '2026-09-01T19:41:09Z',
+    awaiting_official_flights: true,
+  }]), completedWeeks: [21], officialFlightWeeks: [21] })
+  const summary = await reconcileCompetition({
+    competitionKey: 'mens-league', deadlineMs: Date.now() + 60_000,
+    nowIso: '2026-09-02T20:00:00Z', ops: ops as any,
+  })
+  assert.ok(ops.calls.includes('discover:21'))
+  assert.ok(ops.calls.includes('import:21'))
+  assert.ok(ops.calls.includes('points'))
+  assert.equal(summary.imported, 1)
+  assert.equal(summary.seasonPointsRebuilds, 1)
+})
+
+test('on-demand awaiting official flights does not import until authoritative membership appears', async () => {
+  const event = {
+    week_number: 21, event_format: 'individual', discovery_state: 'discovered',
+    upstream_status: 'completed', durable_imported_at: '2026-09-01T19:41:09Z',
+    awaiting_official_flights: true,
+  }
+  const waiting = makeOps({ events: baseEvents([event]), completedWeeks: [21] })
+  const waitingResult = await reconcileOccurrenceOnDemand('mens-league', 21, '2026-09-02T20:00:00Z', waiting as any)
+  assert.equal(waitingResult.action, 'discovered')
+  assert.ok(!waiting.calls.includes('import:21'))
+
+  const ready = makeOps({ events: baseEvents([event]), completedWeeks: [21], officialFlightWeeks: [21] })
+  const readyResult = await reconcileOccurrenceOnDemand('mens-league', 21, '2026-09-02T20:00:00Z', ready as any)
+  assert.equal(readyResult.action, 'imported')
+  assert.ok(ready.calls.includes('import:21'))
+})
+
+test('stored official snapshot requires Gross and Net Flight 1/2/3 at the durable import time', () => {
+  const durable = '2026-09-02T20:00:00Z'
+  const markers = ['gross', 'net'].flatMap((competition) => ['Flight 1', 'Flight 2', 'Flight 3'].map((flight_name) => ({
+    competition, flight_name, synced_at: durable,
+  })))
+  assert.equal(storedOfficialFlightSnapshotIsCurrent(markers, durable), true)
+  assert.equal(storedOfficialFlightSnapshotIsCurrent(markers.slice(0, -1), durable), false, 'missing one Net flight remains repairable')
+  assert.equal(storedOfficialFlightSnapshotIsCurrent(markers, '2026-09-01T19:41:09Z'), false, 'writes newer than the durable marker retry after a partial repair')
+  assert.equal(storedOfficialFlightSnapshotIsCurrent([
+    ...markers.slice(0, -1),
+    { competition: 'net', flight_name: 'Overall', synced_at: durable },
+  ], durable), false, 'Overall is never official evidence')
+})
+
+function flightEntry(key: string, flight: string): ResultEntry {
+  return { key, name: key, flight, positionLabel: '1', positionOrder: 1, points: null, purse: null }
+}
+
+test('repair readiness requires matching authoritative membership in Gross and Net', () => {
+  const net = [flightEntry('a', 'Flight 1'), flightEntry('b', 'Flight 2'), flightEntry('c', 'Flight 3')]
+  assert.equal(officialFlightSnapshotsMatch(net, net), true)
+  assert.equal(officialFlightSnapshotsMatch(net, [
+    flightEntry('a', 'Flight 1'), flightEntry('b', 'Flight 2'), flightEntry('c', 'Overall'),
+  ]), false, 'an Overall bucket in Gross is not ready')
+  assert.equal(officialFlightSnapshotsMatch(net, [
+    flightEntry('a', 'Flight 1'), flightEntry('b', 'Flight 3'), flightEntry('c', 'Flight 2'),
+  ]), false, 'mode membership disagreement is not ready')
 })
 
 test('stops before the shared deadline and marks stoppedForBudget', async () => {

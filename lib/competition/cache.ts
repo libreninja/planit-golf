@@ -87,7 +87,9 @@ export function makeLiveCacheStore(rows: Map<string, CacheRow>): LiveCacheStore 
     },
     async readCachedDiscovery(args) {
       const k = discoveryCacheKey(args)
-      return rows.has(k) ? rows.get(k)!.payload : null
+      const r = rows.get(k)
+      if (!r || Date.parse(r.expires_at) <= Date.now()) return null
+      return r.payload
     },
     async writeCachedDiscovery(args, payload) {
       rows.set(discoveryCacheKey(args), {
@@ -162,6 +164,12 @@ export async function readStaleResult(args: ResultCacheKeyArgs, store?: LiveCach
 }
 export async function writeCachedResult(args: ResultCacheKeyArgs, payload: LiveResponse, store?: LiveCacheStore): Promise<void> {
   await (store ?? await dbStore()).writeCachedResult(args, payload)
+}
+export async function readCachedDiscovery(args: CacheKeyArgs, store?: LiveCacheStore): Promise<unknown | null> {
+  return (store ?? await dbStore()).readCachedDiscovery(args)
+}
+export async function writeCachedDiscovery(args: CacheKeyArgs, payload: unknown, store?: LiveCacheStore): Promise<void> {
+  await (store ?? await dbStore()).writeCachedDiscovery(args, payload)
 }
 export async function cleanExpiredCache(store?: LiveCacheStore): Promise<void> {
   await (store ?? await dbStore()).cleanExpired()

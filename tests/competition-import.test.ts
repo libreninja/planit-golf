@@ -57,3 +57,48 @@ test('importOccurrence writes both gross+net results and is idempotent on re-run
   const durable = writes.find((w) => w.kind === 'durable')!
   assert.equal(durable.sourceVersion, 'v9')
 })
+
+test('a refreshed authoritative snapshot prunes stale performance, result, and season-point rows', async () => {
+  const results = {
+    g1: { event: { season_points: [{ member_card_id: 'current', total_points: 1 }], scopes: [{ name: 'Flight 1', aggregates: [{ name: 'Current Player', position: '1', member_cards: [{ member_card_id_str: 'current' }], gross_scores: [5], net_scores: [4], to_par_net: [0], to_par_gross: [1] }] }] } },
+    n1: { event: { season_points: [{ member_card_id: 'current', total_points: 2 }], scopes: [{ name: 'Flight 1', aggregates: [{ name: 'Current Player', position: '1', member_cards: [{ member_card_id_str: 'current' }], gross_scores: [5], net_scores: [4], to_par_net: [0], to_par_gross: [1] }] }] } },
+  }
+  const prunes: any[] = []
+  const db = {
+    upsertEvent: async () => ({ ok: true }),
+    upsertPerformances: async () => ({ ok: true }),
+    upsertResults: async () => ({ ok: true }),
+    prunePerformances: async (week: number, names: string[]) => { prunes.push({ kind: 'perf', week, names }); return { ok: true } },
+    pruneResults: async (week: number, importedAtIso: string, competitions: string[]) => { prunes.push({ kind: 'results', week, importedAtIso, competitions }); return { ok: true } },
+    upsertSeasonPointEntries: async () => ({ ok: true }),
+    pruneSeasonPointEntries: async (week: number, memberIds: string[]) => { prunes.push({ kind: 'points', week, memberIds }); return { ok: true } },
+    setDurableImported: async () => ({ ok: true }),
+  }
+  const nowIso = '2026-09-02T20:00:00Z'
+  await importOccurrence({ competitionKey: 'mens-league', resolved, adapterConfig, ggClient: fakeGg({ results }), db, nowIso })
+  assert.deepEqual(prunes, [
+    { kind: 'perf', week: 18, names: ['Current Player'] },
+    { kind: 'results', week: 18, importedAtIso: nowIso, competitions: ['gross', 'net'] },
+    { kind: 'points', week: 18, memberIds: ['current'] },
+  ])
+})
+
+test('an empty authoritative season-point snapshot still prunes prior round entries', async () => {
+  const results = {
+    g1: { event: { scopes: [{ name: 'Flight 1', aggregates: [{ name: 'Current Player', position: '1', member_cards: [{ member_card_id_str: 'current' }] }] }] } },
+    n1: { event: { scopes: [{ name: 'Flight 1', aggregates: [{ name: 'Current Player', position: '1', member_cards: [{ member_card_id_str: 'current' }] }] }] } },
+  }
+  const calls: any[] = []
+  const db = {
+    upsertEvent: async () => ({ ok: true }),
+    upsertPerformances: async () => ({ ok: true }),
+    upsertResults: async () => ({ ok: true }),
+    pruneSeasonPointEntries: async (week: number, memberIds: string[]) => {
+      calls.push({ week, memberIds })
+      return { ok: true }
+    },
+    setDurableImported: async () => ({ ok: true }),
+  }
+  await importOccurrence({ competitionKey: 'mens-league', resolved, adapterConfig, ggClient: fakeGg({ results }), db, nowIso: '2026-09-02T20:00:00Z' })
+  assert.deepEqual(calls, [{ week: 18, memberIds: [] }])
+})
