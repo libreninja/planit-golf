@@ -55,6 +55,12 @@ test('archive provides all 25 immediately inviteable Interbay players', () => {
   assert.equal(interbayPlayers.length, 25)
 })
 
+test('production archive loader uses a bundled static import instead of runtime filesystem URL resolution', () => {
+  const source = readFileSync(new URL('../lib/seattle-cup/harvest/archive-context.ts', import.meta.url), 'utf8')
+  assert.match(source, /import seattleCup2026Archive from '@\/data\/seattle-cup\/archive\/2026\.json'/)
+  assert.doesNotMatch(source, /from 'node:fs'|readFileSync|import\.meta\.url/)
+})
+
 test('archive appearances prefill factual match context without reconstruction', () => {
   const reporter = interbayPlayers.find((player) => buildPersonalizedMatches(archive, player.value).length > 0)!
   const match = buildPersonalizedMatches(archive, reporter.value)[0]!
