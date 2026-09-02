@@ -191,13 +191,14 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     league_key: leagueKey, week_number: weekNumber,
     member_card_id, total_points, player_name: null,
   }))
-  if (seasonPointRows.length) {
-    await input.db.upsertSeasonPointEntries?.(seasonPointRows)
-    await input.db.pruneSeasonPointEntries?.(
-      weekNumber,
-      seasonPointRows.map((row) => String(row.member_card_id)),
-    )
-  }
+  if (seasonPointRows.length) await input.db.upsertSeasonPointEntries?.(seasonPointRows)
+  // This is snapshot replacement, including the legitimate empty-snapshot
+  // case. Pruning only when rows exist would retain stale points after an
+  // authoritative correction removes every entry for the round.
+  await input.db.pruneSeasonPointEntries?.(
+    weekNumber,
+    seasonPointRows.map((row) => String(row.member_card_id)),
+  )
   // Record both the import time AND the source version captured, so the
   // durable-current version-equality branch (Task 11) can compare
   // source_version vs durable_source_version.

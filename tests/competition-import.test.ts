@@ -82,3 +82,23 @@ test('a refreshed authoritative snapshot prunes stale performance, result, and s
     { kind: 'points', week: 18, memberIds: ['current'] },
   ])
 })
+
+test('an empty authoritative season-point snapshot still prunes prior round entries', async () => {
+  const results = {
+    g1: { event: { scopes: [{ name: 'Flight 1', aggregates: [{ name: 'Current Player', position: '1', member_cards: [{ member_card_id_str: 'current' }] }] }] } },
+    n1: { event: { scopes: [{ name: 'Flight 1', aggregates: [{ name: 'Current Player', position: '1', member_cards: [{ member_card_id_str: 'current' }] }] }] } },
+  }
+  const calls: any[] = []
+  const db = {
+    upsertEvent: async () => ({ ok: true }),
+    upsertPerformances: async () => ({ ok: true }),
+    upsertResults: async () => ({ ok: true }),
+    pruneSeasonPointEntries: async (week: number, memberIds: string[]) => {
+      calls.push({ week, memberIds })
+      return { ok: true }
+    },
+    setDurableImported: async () => ({ ok: true }),
+  }
+  await importOccurrence({ competitionKey: 'mens-league', resolved, adapterConfig, ggClient: fakeGg({ results }), db, nowIso: '2026-09-02T20:00:00Z' })
+  assert.deepEqual(calls, [{ week: 18, memberIds: [] }])
+})

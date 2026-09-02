@@ -66,6 +66,30 @@ test('historical final → stop (never poll)', () => {
   assert.equal(d.action, 'stop')
 })
 
+test('historical FINAL awaiting flights keeps low-frequency checking after reload', () => {
+  const d = nextPollDecision(st({
+    initialIsHistoricalFinal: true,
+    awaitingOfficialFlights: true,
+    resultStatus: 'final',
+    durableCurrent: true,
+    flightMembershipStatus: 'projected',
+    finalSinceMs: 0,
+    nowMs: FINAL_POLL_BOUND_MS + 24 * 60 * 60_000,
+  }), { livePollMs: LIVE_POLL_MS, finalPollMs: FINAL_POLL_MS, finalPollBoundMs: FINAL_POLL_BOUND_MS })
+  assert.deepEqual(d, { action: 'poll', delayMs: FINAL_POLL_MS })
+})
+
+test('historical FINAL awaiting flights also retries a temporarily unavailable projection', () => {
+  const d = nextPollDecision(st({
+    initialIsHistoricalFinal: true,
+    awaitingOfficialFlights: true,
+    resultStatus: 'final',
+    durableCurrent: true,
+    flightMembershipStatus: 'unavailable',
+  }), { livePollMs: LIVE_POLL_MS, finalPollMs: FINAL_POLL_MS, finalPollBoundMs: FINAL_POLL_BOUND_MS })
+  assert.deepEqual(d, { action: 'poll', delayMs: FINAL_POLL_MS })
+})
+
 test('hidden tab → stop (no polling while hidden)', () => {
   const d = nextPollDecision(st({ visible: false, resultStatus: 'live' }), { livePollMs: LIVE_POLL_MS, finalPollMs: FINAL_POLL_MS, finalPollBoundMs: FINAL_POLL_BOUND_MS })
   assert.equal(d.action, 'stop')

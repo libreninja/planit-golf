@@ -46,6 +46,7 @@ export interface StandingsShellProps {
     initialByScoring: Record<string, LiveResponse | null>
     pollUrl: string | null
     initialIsHistoricalFinal: boolean
+    awaitingOfficialFlights?: boolean
     // true when the selected occurrence renders via the live path — the shell
     // prefetches the non-selected scoring's live URL in that case only.
     useLivePath: boolean
@@ -126,6 +127,7 @@ export function StandingsShell(props: StandingsShellProps) {
           initial={weeklyInitial}
           pollUrl={props.weekly.pollUrl}
           initialIsHistoricalFinal={props.weekly.initialIsHistoricalFinal}
+          awaitingOfficialFlights={props.weekly.awaitingOfficialFlights}
           onSelectScoring={onSelectScoring}
         />
       )}

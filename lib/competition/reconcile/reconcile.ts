@@ -7,10 +7,11 @@
 // are isolated per competition. Time is reserved before the deadline to
 // serialize the summary + clean the cache. See design spec §5/§7.
 
-import { allCompetitionConfigs } from '../registry.ts'
+import { allCompetitionConfigs, getCompetitionConfig } from '../registry.ts'
 import { selectReconciliationCandidates, type CandidateEvent } from './candidates.ts'
-import { canonicalFlight } from '../projected-flights.ts'
-import type { ResolvedOccurrence } from '../types.ts'
+import { canonicalFlight, FLIGHT_KEYS } from '../projected-flights.ts'
+import { normalizeTournament } from '../adapters/golfgenius/normalize.ts'
+import type { ResolvedOccurrence, ResultEntry } from '../types.ts'
 
 export interface ReconcileSummary {
   competition: string
@@ -43,6 +44,66 @@ export interface ReconcileOps {
   // logged but does not abort the run (next run retries). Optional so injected
   // test ops without it are unaffected.
   precreateSpecialOccurrences?(competitionKey: string): Promise<number>
+}
+
+export interface OfficialFlightMarker {
+  competition: string
+  flight_name: string | null
+  synced_at: string | null
+}
+
+// A stored official snapshot is complete only when both scoring modes carry
+// all three named flights and every marker belongs to the durable import that
+// completed the snapshot. The synced-at comparison is the retry guard: if a
+// repair fails after result upserts but before the final durable stamp, the new
+// marker is newer than durable_imported_at and the next pass retries it.
+export function storedOfficialFlightSnapshotIsCurrent(
+  markers: OfficialFlightMarker[],
+  durableImportedAt: string | null,
+): boolean {
+  if (!durableImportedAt) return false
+  const expected = new Set(
+    ['gross', 'net'].flatMap((competition) => FLIGHT_KEYS.map((flight) => `${competition}:${flight}`)),
+  )
+  let newestMarkerMs = Number.NEGATIVE_INFINITY
+  for (const marker of markers) {
+    const flight = canonicalFlight(marker.flight_name)
+    if (flight) expected.delete(`${marker.competition}:${flight}`)
+    if (marker.synced_at) {
+      const syncedMs = Date.parse(marker.synced_at)
+      if (Number.isFinite(syncedMs)) newestMarkerMs = Math.max(newestMarkerMs, syncedMs)
+    }
+  }
+  const durableMs = Date.parse(durableImportedAt)
+  return expected.size === 0
+    && Number.isFinite(durableMs)
+    && newestMarkerMs <= durableMs
+}
+
+function completeOfficialAssignments(entries: ResultEntry[]): Map<string, string> | null {
+  const flights = new Set<string>()
+  const assignments = new Map<string, string>()
+  for (const entry of entries) {
+    const flight = canonicalFlight(entry.flight)
+    if (!flight) return null
+    flights.add(flight)
+    assignments.set(entry.key, flight)
+  }
+  if (!FLIGHT_KEYS.every((flight) => flights.has(flight))) return null
+  return assignments
+}
+
+function matchingOfficialAssignments(a: Map<string, string>, b: Map<string, string>): boolean {
+  if (a.size !== b.size) return false
+  for (const [key, flight] of a) if (b.get(key) !== flight) return false
+  return true
+}
+
+export function officialFlightSnapshotsMatch(netEntries: ResultEntry[], grossEntries: ResultEntry[]): boolean {
+  const netAssignments = completeOfficialAssignments(netEntries)
+  const grossAssignments = completeOfficialAssignments(grossEntries)
+  return !!netAssignments && !!grossAssignments
+    && matchingOfficialAssignments(netAssignments, grossAssignments)
 }
 
 const RESERVE_MS = 5_000   // leave time to serialize/log + clean cache
@@ -165,7 +226,8 @@ export async function reconcileOccurrenceOnDemand(
       return { action: c.kind === 'stale' ? 'skipped-stale' : 'skipped-durable' }
     }
     const r = await o.discoverAndPersist(competitionKey, weekNumber, nowIso)
-    if (r.resolved.upstreamStatus === 'completed') {
+    const officialFlightsReady = c.kind !== 'awaiting-official-flights' || r.officialFlightMembershipAvailable === true
+    if (r.resolved.upstreamStatus === 'completed' && officialFlightsReady) {
       await o.importOccurrence(competitionKey, weekNumber, nowIso, r.resolved)
       await o.rebuildSeasonPoints(competitionKey)
       return { action: 'imported', discovered: true, imported: true, upstreamStatus: 'completed' }
@@ -214,33 +276,39 @@ async function defaultOps(): Promise<ReconcileOps> {
     },
     async listEvents(competitionKey) {
       const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
-      const { data } = await supabase.from('igc_league_events')
+      const { data, error: eventsError } = await supabase.from('igc_league_events')
         .select('week_number, event_date, event_format, discovery_state, source_finalized_at, durable_imported_at, discovered_at')
         .eq('league_key', leagueKey).order('week_number', { ascending: false }).limit(200)
+      if (eventsError) throw new Error(`igc_league_events candidate read: ${eventsError.message}`)
       // A position-1 result is a compact existence marker for stored named
       // flight membership: at most a few rows per finalized occurrence rather
       // than every player result. Canonicalization remains Planit-domain logic;
       // the legacy flights_finalized column is intentionally not consulted.
-      const officialFlightWeeks = new Set<number>()
-      let officialFlightEvidenceLoaded = competitionKey !== 'mens-league'
+      const officialMarkersByWeek = new Map<number, OfficialFlightMarker[]>()
       if (competitionKey === 'mens-league') {
         const pageSize = 1000
         for (let from = 0; ; from += pageSize) {
           const { data: placed, error } = await supabase.from('igc_league_results')
-            .select('week_number, flight_name')
+            .select('week_number, competition, flight_name, synced_at, member_card_id')
             .eq('league_key', leagueKey)
             .eq('flight_position', 1)
+            .order('week_number', { ascending: true })
+            .order('competition', { ascending: true })
+            .order('member_card_id', { ascending: true })
             .range(from, from + pageSize - 1)
-          if (error) break
+          if (error) throw new Error(`igc_league_results official-flight evidence read: ${error.message}`)
           for (const row of placed ?? []) {
-            if (canonicalFlight(row.flight_name) !== null) officialFlightWeeks.add(Number(row.week_number))
+            const week = Number(row.week_number)
+            const markers = officialMarkersByWeek.get(week) ?? []
+            markers.push({ competition: row.competition, flight_name: row.flight_name, synced_at: row.synced_at })
+            officialMarkersByWeek.set(week, markers)
           }
-          if ((placed ?? []).length < pageSize) {
-            officialFlightEvidenceLoaded = true
-            break
-          }
+          if ((placed ?? []).length < pageSize) break
         }
       }
+      const specialWeeks = new Set(
+        (getCompetitionConfig(competitionKey)?.adapterConfig.specialOccurrences ?? []).map((spec) => spec.weekNumber),
+      )
       return (data ?? []).map((e: any) => ({
         week_number: e.week_number, event_date: e.event_date,
         event_format: e.event_format, discovery_state: e.discovery_state,
@@ -250,8 +318,11 @@ async function defaultOps(): Promise<ReconcileOps> {
           && e.event_format === 'individual'
           && !!e.source_finalized_at
           && !!e.durable_imported_at
-          && officialFlightEvidenceLoaded
-          && !officialFlightWeeks.has(Number(e.week_number)),
+          && !specialWeeks.has(Number(e.week_number))
+          && !storedOfficialFlightSnapshotIsCurrent(
+            officialMarkersByWeek.get(Number(e.week_number)) ?? [],
+            e.durable_imported_at,
+          ),
         // Feeds the staleness gate in selectReconciliationCandidates so frequent
         // runs don't re-read GG for an occurrence discovered within STALENESS_MS.
         discovered_at: e.discovered_at ?? null,
@@ -277,8 +348,23 @@ async function defaultOps(): Promise<ReconcileOps> {
       // Returns the DiscoverResult (carrying `resolved`); orchestration reads
       // resolved.upstreamStatus and passes `resolved` into importOccurrence.
       const discovered = await discoverAndPersistEventClassification({ competitionKey, weekNumber: week, adapterConfig: config.adapterConfig, ggClient, db: classifyDb(supabase, competitionKey), nowIso, persistedHints })
-      const officialFlightMembershipAvailable = competitionKey === 'mens-league'
-        && !!discovered.leaderboard?.entries.some((entry) => canonicalFlight(entry.flight) !== null)
+      let officialFlightMembershipAvailable = false
+      if (
+        competitionKey === 'mens-league'
+        && discovered.resolved.upstreamStatus === 'completed'
+        && discovered.resolved.ggEventId
+        && discovered.resolved.ggRoundId
+        && discovered.resolved.grossTournamentId
+      ) {
+        const netEntries = discovered.leaderboard?.entries ?? []
+        if (completeOfficialAssignments(netEntries)) {
+          const grossPayload = await ggClient(
+            `/events/${discovered.resolved.ggEventId}/rounds/${discovered.resolved.ggRoundId}/tournaments/${discovered.resolved.grossTournamentId}.json`,
+          )
+          const grossEntries = [...normalizeTournament(grossPayload, 'gross').entriesByFlight.values()].flat()
+          officialFlightMembershipAvailable = officialFlightSnapshotsMatch(netEntries, grossEntries)
+        }
+      }
       return { ...discovered, officialFlightMembershipAvailable }
     },
     async importOccurrence(competitionKey, week, nowIso, resolved) {

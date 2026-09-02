@@ -15,6 +15,7 @@ export interface PollState {
   visible: boolean
   initialIsHistoricalFinal: boolean
   flightMembershipStatus?: 'unavailable' | 'projected' | 'official'
+  awaitingOfficialFlights?: boolean
 }
 
 export interface PollConfig {
@@ -26,7 +27,7 @@ export interface PollConfig {
 export type PollAction = { action: 'poll'; delayMs: number } | { action: 'stop' }
 
 export function nextPollDecision(s: PollState, cfg: PollConfig): PollAction {
-  if (!s.supportsLive || s.initialIsHistoricalFinal || !s.visible) return { action: 'stop' }
+  if (!s.supportsLive || (s.initialIsHistoricalFinal && !s.awaitingOfficialFlights) || !s.visible) return { action: 'stop' }
   if (s.resultStatus === 'live') return { action: 'poll', delayMs: cfg.livePollMs }
   if (s.resultStatus === 'final') {
     // Scoring durability and flight-membership finality are independent. A
@@ -34,7 +35,9 @@ export function nextPollDecision(s: PollState, cfg: PollConfig): PollAction {
     // low-frequency FINAL cadence until named official flights replace it.
     // Unlike ordinary finalization polling, this is not duration-bounded: a
     // fixed cutoff would leave an open page permanently stale.
-    if (s.flightMembershipStatus === 'projected') return { action: 'poll', delayMs: cfg.finalPollMs }
+    if (s.flightMembershipStatus === 'projected' || (s.awaitingOfficialFlights && s.flightMembershipStatus !== 'official')) {
+      return { action: 'poll', delayMs: cfg.finalPollMs }
+    }
     if (s.durableCurrent) return { action: 'stop' }
     const since = s.finalSinceMs ?? s.nowMs
     if (s.nowMs - since > cfg.finalPollBoundMs) return { action: 'stop' }

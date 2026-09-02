@@ -23,7 +23,6 @@ import { isDurableCurrent } from '@/lib/competition/durable-current'
 import { isOccurrenceActive } from '@/lib/competition/active-window'
 import {
   buildLeagueActiveWindow,
-  compareOccurrencesByDate,
   labelRuleSeparator,
   leagueOccurrenceLabel,
   mapLeagueEventToOccurrence,
@@ -187,7 +186,12 @@ export async function resolveOccurrences(competitionKey: string): Promise<Occurr
 
   // Date order so merged specials slot into the calendar (e.g. CC rounds fall
   // between Weeks 20 and 22), independent of DB/merge order. Nulls last.
-  occurrences.sort(compareOccurrencesByDate)
+  occurrences.sort((a, b) => {
+    if (!a.date && !b.date) return 0
+    if (!a.date) return 1
+    if (!b.date) return -1
+    return a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+  })
   return occurrences
 }
 

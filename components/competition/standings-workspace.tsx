@@ -26,6 +26,7 @@ export interface StandingsWorkspaceProps {
   initial: LiveResponse | null
   pollUrl: string | null
   initialIsHistoricalFinal: boolean
+  awaitingOfficialFlights?: boolean
   // P1-2: scoring is controlled by the shell (instant client toggle, no server
   // navigation). The workspace reports a scoring click up to the shell, which
   // updates state + history.replaceState and remounts this component (keyed by
@@ -45,6 +46,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     scoring: props.scoring,
     supportsLive: props.capabilities.supportsLiveResults,
     initialIsHistoricalFinal: props.initialIsHistoricalFinal,
+    awaitingOfficialFlights: props.awaitingOfficialFlights,
   })
 
   // Week navigation is a REAL server navigation (a different occurrence needs
