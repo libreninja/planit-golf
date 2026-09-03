@@ -26,6 +26,7 @@ import {
 } from '@/lib/competition/adapters/golfgenius/server-readers'
 import { defaultOccurrenceId, latestNonFutureWeeks } from '@/lib/competition/adapters/golfgenius/mapping'
 import type { LiveResponse, ResultStatus, ScoringMode } from '@/lib/competition/types'
+import { availableLeaderboardOccurrences, latestResultsOccurrenceId } from './occurrence-availability'
 
 // Today's calendar date (YYYY-MM-DD) in the league timezone — used to identify
 // the play-day occurrence ("Tuesday's event") for the initial-selection rule.
@@ -55,7 +56,7 @@ export async function StandingsWorkspaceServer({
   const nowIso = new Date().toISOString()
   const tz = config.schedule?.timezone ?? 'America/Los_Angeles'
 
-  let occurrences = await resolveOccurrences(competitionKey)
+  let allOccurrences = await resolveOccurrences(competitionKey)
 
   const todayDate = todayDateInTz(nowIso, tz)
 
@@ -76,7 +77,7 @@ export async function StandingsWorkspaceServer({
     // not weekly reconcile candidates and are kept current by their own path.
     const specialWeeks = new Set((config.adapterConfig.specialOccurrences ?? []).map((s) => s.weekNumber))
     let didImport = false
-    for (const week of latestNonFutureWeeks(occurrences, todayDate, 4, specialWeeks)) {
+    for (const week of latestNonFutureWeeks(allOccurrences, todayDate, 4, specialWeeks)) {
       const res = await reconcileOccurrenceOnDemand(competitionKey, week, nowIso)
       if (res.action === 'imported') { didImport = true; break }
       if (res.action === 'skipped-durable' || res.action === 'skipped-absent' || res.action === 'error') break
@@ -84,7 +85,7 @@ export async function StandingsWorkspaceServer({
       // 'skipped-stale' (re-read <60s ago): walk back to the next older week.
     }
     if (didImport) {
-      occurrences = await resolveOccurrences(competitionKey)
+      allOccurrences = await resolveOccurrences(competitionKey)
     }
   }
 
@@ -107,9 +108,9 @@ export async function StandingsWorkspaceServer({
   // legacy imports). `hasResults` = occurrence ids with stored result rows;
   // `todayId` = the occurrence dated today (the play-day event); `postedGolf`
   // = today's event has any completed scorecard in the DB.
-  const weekNumbers = occurrences.map((o) => Number(o.id)).filter((n) => Number.isFinite(n))
+  const weekNumbers = allOccurrences.map((o) => Number(o.id)).filter((n) => Number.isFinite(n))
   const hasResults = await resolveWeeksWithResults(competitionKey, weekNumbers)
-  const todayOccurrence = occurrences.find((o) => o.date === todayDate) ?? null
+  const todayOccurrence = allOccurrences.find((o) => o.date === todayDate) ?? null
   const todayId = todayOccurrence?.id ?? null
   const todayHasPostedGolf = todayId ? await resolveHasPostedGolf(competitionKey, Number(todayId)) : false
 
@@ -133,12 +134,29 @@ export async function StandingsWorkspaceServer({
   // 2026-08-25 regression (live scores arrived at 15:59, before the 16:00 window).
   const todayLiveInProgress = !!todayLive?.leaderboard?.scorecards.some((c) => c.isLive)
 
-  const selectedId = urlState.occurrenceId ?? defaultOccurrenceId(occurrences, {
+  const liveScoredOccurrenceIds = new Set(
+    todayId && (todayHasPostedGolf || todayLiveHasGolf) ? [todayId] : [],
+  )
+  const occurrences = availableLeaderboardOccurrences(allOccurrences, {
+    hasResults,
+    liveScoredOccurrenceIds,
+  })
+
+  const requestedOccurrenceId = urlState.occurrenceId
+  const requestedIsAvailable = !!requestedOccurrenceId
+    && occurrences.some((occurrence) => occurrence.id === requestedOccurrenceId)
+
+  const selectedId = (requestedIsAvailable ? requestedOccurrenceId : null) ?? defaultOccurrenceId(occurrences, {
     todayId,
     todayHasPostedGolf: todayHasPostedGolf || todayLiveHasGolf,
     hasResults,
   })
   const selected = occurrences.find((o) => o.id === selectedId) ?? null
+  const latestResultsId = latestResultsOccurrenceId(
+    occurrences,
+    hasResults,
+    liveScoredOccurrenceIds,
+  )
 
   // ---- Historical-vs-live render decision (P0) ----
   // Always read the STORED results first; route to live ONLY for today's
@@ -231,11 +249,14 @@ export async function StandingsWorkspaceServer({
       configViews={config.capabilities.views}
       initialView={vm.view}
       initialScoring={vm.scoring}
+      defaultScoring={defaultScoring}
+      initialPlacedOnly={urlState.placedOnly}
       scoringModes={scoringModes}
       seasonRows={seasonRows}
       weekly={{
         occurrences: vm.occurrences,
         selectedOccurrenceId: vm.selectedOccurrenceId,
+        latestResultsOccurrenceId: latestResultsId,
         queryParam: config.navigation.queryParam,
         grouping: vm.grouping,
         capabilities: vm.capabilities,

@@ -4,7 +4,6 @@ import {
   applyProjectedFlights,
   officialFlightMembership,
   projectFlightAssignments,
-  rankProjectedEntries,
 } from '../lib/competition/projected-flights.ts'
 import type { Leaderboard, ResultEntry } from '../lib/competition/types.ts'
 
@@ -84,15 +83,4 @@ test('official flight canonicalization accepts historical casing but rejects Ove
   ]))
   assert.equal(result.state.status, 'official')
   assert.deepEqual(result.leaderboard!.entries.map((row) => row.flight), ['Flight 1', null])
-})
-
-test('projected subgroup positions compress while preserving source ties', () => {
-  const ranked = rankProjectedEntries([
-    entry('leader', 1, 'Flight 2'),
-    entry('tie-a', 3, 'Flight 2'),
-    entry('tie-b', 3, 'Flight 2'),
-    entry('unplaced', Number.MAX_SAFE_INTEGER, 'Flight 2'),
-  ])
-  assert.deepEqual(ranked.map((row) => row.positionLabel), ['1', 'T2', 'T2', null])
-  assert.deepEqual(ranked.map((row) => row.positionOrder), [1, 2, 2, Number.MAX_SAFE_INTEGER])
 })

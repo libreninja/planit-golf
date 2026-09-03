@@ -5,12 +5,11 @@
 // Relative import (no @/ alias) so node --test can load it.
 
 import type { Leaderboard } from '../../lib/competition/types.ts'
-import { rankProjectedEntries } from '../../lib/competition/projected-flights.ts'
 
 export function filterLeaderboardByGrouping(
   leaderboard: Leaderboard | null,
   grouping: string | null,
-  membershipStatus: 'unavailable' | 'projected' | 'official' = 'official',
+  _membershipStatus: 'unavailable' | 'projected' | 'official' = 'official',
 ): Leaderboard | null {
   if (!leaderboard) return null
   // 'all' / null / unknown grouping → show every entry. Only narrow to a
@@ -19,6 +18,21 @@ export function filterLeaderboardByGrouping(
   const entries = leaderboard.entries.filter((e) => e.flight === grouping)
   return {
     ...leaderboard,
-    entries: membershipStatus === 'projected' ? rankProjectedEntries(entries) : entries,
+    // Flight membership scopes the rows only. It never manufactures a new
+    // placement from the subset, whether membership is projected or official.
+    entries,
+  }
+}
+
+// Presentation-only. An authoritative position is the membership signal; no
+// placement is inferred from score order, points, or purse values.
+export function filterLeaderboardByPlacement(
+  leaderboard: Leaderboard | null,
+  placedOnly: boolean,
+): Leaderboard | null {
+  if (!leaderboard || !placedOnly) return leaderboard
+  return {
+    ...leaderboard,
+    entries: leaderboard.entries.filter((entry) => entry.positionLabel !== null),
   }
 }

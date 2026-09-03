@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { shouldShowPurse } from '../components/competition/leaderboard-purse.ts'
+import { hasPurseAward, shouldShowPurse } from '../components/competition/leaderboard-purse.ts'
 import type { ResultEntry } from '../lib/competition/types.ts'
 
 function entry(purse: string | null): ResultEntry {
@@ -32,6 +32,18 @@ test('all entries with purses → shown (finalized money round)', () => {
 
 test('empty leaderboard → hidden (no column to render)', () => {
   assert.equal(shouldShowPurse([]), false)
+})
+
+test('zero purse values are not awards and render no purse treatment', () => {
+  assert.equal(hasPurseAward('$0'), false)
+  assert.equal(hasPurseAward('$0.00'), false)
+  assert.equal(hasPurseAward('0'), false)
+  assert.equal(shouldShowPurse([entry('$0.00'), entry(null)]), false)
+})
+
+test('actual purse winners retain their authoritative treatment', () => {
+  assert.equal(hasPurseAward('$25.00'), true)
+  assert.equal(hasPurseAward('$1,250.50'), true)
 })
 
 // Club Championship invariant: Monday (points, no purse) and Tuesday (points +

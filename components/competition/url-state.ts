@@ -15,6 +15,7 @@ export interface NormalizedUrlState {
   occurrenceId: string | null
   scoring: ScoringMode | null
   grouping: string | null
+  placedOnly: boolean
 }
 
 export function normalizeUrlState(params: URLSearchParams, opts: NormalizeUrlStateOptions): NormalizedUrlState {
@@ -24,5 +25,6 @@ export function normalizeUrlState(params: URLSearchParams, opts: NormalizeUrlSta
   const rawScoring = params.get('scoring')
   const scoring: ScoringMode | null = rawScoring && opts.allowedScoring.includes(rawScoring as ScoringMode) ? (rawScoring as ScoringMode) : null
   const grouping = params.get('grouping')
-  return { view, occurrenceId, scoring, grouping }
+  const placedOnly = params.get('placed') === 'only'
+  return { view, occurrenceId, scoring, grouping, placedOnly }
 }

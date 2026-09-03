@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { filterLeaderboardByGrouping } from '../components/competition/leaderboard-filter.ts'
+import { filterLeaderboardByGrouping, filterLeaderboardByPlacement } from '../components/competition/leaderboard-filter.ts'
 import type { Leaderboard, ResultEntry } from '../lib/competition/types.ts'
 
 function lb(entries: { key: string; flight: string | null }[]): Leaderboard {
@@ -60,7 +60,7 @@ test('filtering does not mutate the original leaderboard entries', () => {
   assert.equal(l.entries.length, 2, 'original entries unchanged')
 })
 
-test('projected flight filter compresses positions and keeps ties within the subset', () => {
+test('projected flight filter scopes membership without fabricating placements', () => {
   const l = lb([
     { key: 'first', flight: 'Flight 2' },
     { key: 'outside', flight: 'Flight 1' },
@@ -76,5 +76,40 @@ test('projected flight filter compresses positions and keeps ties within the sub
   l.entries[3].positionOrder = 3
   l.entries[3].positionLabel = 'T3'
   const projected = filterLeaderboardByGrouping(l, 'Flight 2', 'projected')!
-  assert.deepEqual(projected.entries.map((entry) => entry.positionLabel), ['1', 'T2', 'T2'])
+  assert.deepEqual(projected.entries.map((entry) => entry.positionLabel), ['1', 'T3', 'T3'])
+})
+
+test('Hide unranked hides non-awarded scored entries in Gross without fabricating positions', () => {
+  const l = lb([{ key: 'placed', flight: 'Flight 1' }, { key: 'phantom', flight: 'Flight 1' }])
+  l.scoringMode = 'gross'
+  l.entries[0].positionLabel = '2'
+  const filtered = filterLeaderboardByPlacement(l, true)!
+  assert.deepEqual(filtered.entries.map((entry) => entry.key), ['placed'])
+  assert.equal(l.entries[1].positionLabel, null)
+})
+
+test('Hide unranked hides non-awarded scored entries in Net', () => {
+  const l = lb([{ key: 'placed', flight: 'Flight 2' }, { key: 'phantom', flight: 'Flight 2' }])
+  l.entries[0].positionLabel = 'T3'
+  assert.deepEqual(filterLeaderboardByPlacement(l, true)!.entries.map((entry) => entry.key), ['placed'])
+})
+
+test('Hide unranked composes with official and projected Flight N scopes', () => {
+  const l = lb([
+    { key: 'flight-placed', flight: 'Flight 2' },
+    { key: 'flight-unplaced', flight: 'Flight 2' },
+    { key: 'other-placed', flight: 'Flight 1' },
+  ])
+  l.entries[0].positionLabel = '1'
+  l.entries[2].positionLabel = '2'
+  for (const status of ['official', 'projected'] as const) {
+    const grouped = filterLeaderboardByGrouping(l, 'Flight 2', status)
+    assert.deepEqual(filterLeaderboardByPlacement(grouped, true)!.entries.map((entry) => entry.key), ['flight-placed'])
+  }
+})
+
+test('full-score view retains every entry when Hide unranked is off', () => {
+  const l = lb([{ key: 'placed', flight: null }, { key: 'phantom', flight: null }])
+  l.entries[0].positionLabel = '1'
+  assert.equal(filterLeaderboardByPlacement(l, false)!.entries.length, 2)
 })

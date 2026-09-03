@@ -35,7 +35,7 @@ export interface StandingsViewModel {
   view: View
   scoring: ScoringMode
   grouping: string | null
-  occurrences: { id: string; label: string }[]
+  occurrences: { id: string; label: string; resultStatus: ResultStatus }[]
   capabilities: ReturnType<typeof deriveOccurrenceCapabilities>
 }
 
@@ -77,7 +77,7 @@ export function buildStandingsViewModel(input: ViewModelInput): StandingsViewMod
     view,
     scoring,
     grouping,
-    occurrences: input.occurrences.map((o) => ({ id: o.id, label: o.label })),
+    occurrences: input.occurrences.map((o) => ({ id: o.id, label: o.label, resultStatus: o.resultStatus })),
     capabilities,
   }
 }

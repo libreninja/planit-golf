@@ -16,7 +16,7 @@
 // different data; the workspace builds those URLs preserving the current
 // scoring/view (see standings-workspace.tsx).
 
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import type {
   LiveResponse,
   OccurrenceCapabilities,
@@ -28,18 +28,24 @@ import { writeScoringPref } from '@/lib/competition/scoring-prefs'
 import { ViewTabs } from './view-tabs'
 import { SeasonPointsView } from './season-points-view'
 import { StandingsWorkspace } from './standings-workspace'
+import { LeaderboardControlPanel } from './leaderboard-control-panel'
+import { hasActiveLeaderboardFilters, leaderboardControlReducer } from './leaderboard-control-state'
+import { LeaderboardClearFilters } from './leaderboard-clear-filters'
 
 export interface StandingsShellProps {
   competitionKey: string
   configViews: View[]
   initialView: View
   initialScoring: ScoringMode
+  defaultScoring: ScoringMode
+  initialPlacedOnly: boolean
   scoringModes: ScoringMode[]
   // null when the competition has no 'season' view (e.g. women's).
   seasonRows: SeasonPointsRow[] | null
   weekly: {
-    occurrences: { id: string; label: string }[]
+    occurrences: { id: string; label: string; resultStatus: LiveResponse['resultStatus'] }[]
     selectedOccurrenceId: string | null
+    latestResultsOccurrenceId: string | null
     queryParam: string
     grouping: string | null
     capabilities: OccurrenceCapabilities
@@ -54,30 +60,50 @@ export interface StandingsShellProps {
 }
 
 export function StandingsShell(props: StandingsShellProps) {
-  const [view, setView] = useState<View>(props.initialView)
-  const [scoring, setScoring] = useState<ScoringMode>(props.initialScoring)
+  const [controls, dispatch] = useReducer(leaderboardControlReducer, {
+    view: props.initialView,
+    scoring: props.initialScoring,
+    grouping: props.weekly.grouping ?? 'all',
+    placedOnly: props.initialPlacedOnly,
+  })
+  const { view, scoring, grouping, placedOnly } = controls
 
   // Update the URL without navigating — keeps refresh/bookmark correct while
   // the toggle itself is an instant client state change.
-  const updateUrl = (next: { view?: View; scoring?: ScoringMode }) => {
+  const updateUrl = (next: { view?: View; scoring?: ScoringMode; grouping?: string; placedOnly?: boolean }) => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     if (next.view) url.searchParams.set('view', next.view)
     if (next.scoring) url.searchParams.set('scoring', next.scoring)
+    if (next.grouping) url.searchParams.set('grouping', next.grouping)
+    if (next.placedOnly === true) url.searchParams.set('placed', 'only')
+    if (next.placedOnly === false) url.searchParams.delete('placed')
     window.history.replaceState(null, '', `${url.pathname}${url.search}`)
   }
 
   const onSelectView = (v: string) => {
     if (v === view) return
-    setView(v as View)
+    dispatch({ type: 'select-view', view: v as View })
     updateUrl({ view: v as View })
   }
 
   const onSelectScoring = (m: ScoringMode) => {
     if (m === scoring) return
-    setScoring(m)
+    dispatch({ type: 'select-scoring', scoring: m })
     writeScoringPref(props.competitionKey, m, window.localStorage)
     updateUrl({ scoring: m })
+  }
+
+  const onSelectPlacedOnly = (nextPlacedOnly: boolean) => {
+    if (nextPlacedOnly === placedOnly) return
+    dispatch({ type: 'select-placed-only', placedOnly: nextPlacedOnly })
+    updateUrl({ placedOnly: nextPlacedOnly })
+  }
+
+  const onClearFilters = () => {
+    dispatch({ type: 'clear-filters', defaultScoring: props.defaultScoring })
+    writeScoringPref(props.competitionKey, props.defaultScoring, window.localStorage)
+    updateUrl({ scoring: props.defaultScoring, grouping: 'all', placedOnly: false })
   }
 
   // P1-2 (live): prefetch the OTHER scoring's live URL so the first Gross/Net
@@ -100,35 +126,53 @@ export function StandingsShell(props: StandingsShellProps) {
   const seasonAvailable = props.configViews.includes('season') && props.seasonRows !== null
   const showSeason = view === 'season' && seasonAvailable
   const weeklyInitial = props.weekly.initialByScoring[scoring] ?? null
+  const filtersActive = hasActiveLeaderboardFilters({ scoring, grouping, placedOnly }, props.defaultScoring)
 
   return (
     <section className="space-y-4">
-      <ViewTabs
-        views={props.configViews}
-        selectedView={view}
-        onSelectView={onSelectView}
-      />
       {showSeason ? (
-        <SeasonPointsView rows={props.seasonRows!} />
+        <>
+          <LeaderboardControlPanel summary="Season Points">
+            <div className="flex flex-nowrap items-center justify-between gap-2">
+              <ViewTabs
+                views={props.configViews}
+                selectedView={view}
+                onSelectView={onSelectView}
+              />
+              <LeaderboardClearFilters active={filtersActive} onClear={onClearFilters} />
+            </div>
+          </LeaderboardControlPanel>
+          <SeasonPointsView rows={props.seasonRows!} />
+        </>
       ) : (
-        // Keyed by occurrence + scoring so a scoring toggle (or a week
-        // navigation) remounts the workspace with the new initial data —
-        // useLivePoll's useState(initial) only seeds on mount.
         <StandingsWorkspace
-          key={`${props.weekly.selectedOccurrenceId ?? 'none'}-${scoring}`}
+          key={props.weekly.selectedOccurrenceId ?? 'none'}
           competitionKey={props.competitionKey}
           occurrences={props.weekly.occurrences}
           selectedOccurrenceId={props.weekly.selectedOccurrenceId}
+          latestResultsOccurrenceId={props.weekly.latestResultsOccurrenceId}
           queryParam={props.weekly.queryParam}
           scoring={scoring}
           view={view}
-          grouping={props.weekly.grouping}
+          grouping={grouping}
+          placedOnly={placedOnly}
+          defaultScoring={props.defaultScoring}
           capabilities={props.weekly.capabilities}
           initial={weeklyInitial}
           pollUrl={props.weekly.pollUrl}
           initialIsHistoricalFinal={props.weekly.initialIsHistoricalFinal}
           awaitingOfficialFlights={props.weekly.awaitingOfficialFlights}
           onSelectScoring={onSelectScoring}
+          onSelectGrouping={(nextGrouping) => dispatch({ type: 'select-grouping', grouping: nextGrouping })}
+          onSelectPlacedOnly={onSelectPlacedOnly}
+          onClearFilters={onClearFilters}
+          viewControl={(
+            <ViewTabs
+              views={props.configViews}
+              selectedView={view}
+              onSelectView={onSelectView}
+            />
+          )}
         />
       )}
     </section>
