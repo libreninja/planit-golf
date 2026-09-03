@@ -3,7 +3,7 @@
 // Shared segmented control: ONE pill-shaped container whose segment
 // backgrounds change as the selection moves. Used by ViewTabs (Season Points
 // ↔ Weekly/Live), ScoringToggle (Gross ↔ Net), and GroupingFilter
-// (All | Flight 1 | Flight 2 | Flight 3) so every segmented control in the
+// (All Flights | Flight 1 | Flight 2 | Flight 3) so every segmented control in the
 // standings shell shares IDENTICAL geometry (FIX 3 / acceptance gate).
 //
 // Geometry rules (the visual contract):
@@ -33,24 +33,31 @@ import { cn } from '@/lib/utils/cn'
 export interface SegmentedOption {
   key: string
   label: string
+  /** Optional narrow-screen copy; the full label remains the accessible name. */
+  compactLabel?: string
   /** Colored idle/active classes (bg+text only, no border/radius). Null = neutral. */
   tint?: { idle: string; active: string }
 }
 
 export function SegmentedControl({
-  options, selected, onSelect, ariaLabel,
+  options, selected, onSelect, ariaLabel, fill = false,
 }: {
   options: SegmentedOption[]
   selected: string
   onSelect: (key: string) => void
   ariaLabel?: string
+  /** Distribute options across the available row width. */
+  fill?: boolean
 }) {
   if (options.length <= 1) return null
   return (
     <div
       role="group"
       aria-label={ariaLabel}
-      className="inline-flex overflow-hidden rounded-md border border-border"
+      className={cn(
+        'inline-flex max-w-full overflow-hidden rounded-md border border-border',
+        fill ? 'w-full min-w-0 flex-1' : 'w-fit shrink-0 self-start',
+      )}
     >
       {options.map((o, i) => {
         const active = selected === o.key
@@ -61,8 +68,10 @@ export function SegmentedControl({
             type="button"
             onClick={() => onSelect(o.key)}
             aria-pressed={active}
+            aria-label={o.label}
             className={cn(
-              'px-3 py-1 text-sm whitespace-nowrap transition-colors',
+              'whitespace-nowrap px-1.5 py-1 text-xs transition-colors sm:px-3 sm:text-sm',
+              fill && 'min-w-0 flex-1',
               // Single hairline seam between segments (part of the pill, not a
               // second border). First segment has no left divider.
               !isFirst && 'border-l border-border/70',
@@ -73,7 +82,12 @@ export function SegmentedControl({
                     : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'),
             )}
           >
-            {o.label}
+            {o.compactLabel ? (
+              <>
+                <span className="sm:hidden">{o.compactLabel}</span>
+                <span className="hidden sm:inline">{o.label}</span>
+              </>
+            ) : o.label}
           </button>
         )
       })}

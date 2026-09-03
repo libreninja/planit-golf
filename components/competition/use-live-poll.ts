@@ -37,12 +37,17 @@ export function useLivePoll({
     ? `${pollUrl}${pollUrl.includes('?') ? '&' : '?'}scoring=${encodeURIComponent(scoring)}`
     : null
 
-  // Bump the generation + reset the final-since clock whenever the occurrence
-  // or scoring changes — invalidating any in-flight previous-mode response.
+  // Bump the generation, adopt the newly preloaded data, and reset polling
+  // state whenever occurrence/scoring changes. The workspace no longer needs
+  // a scoring-key remount, so its control surface and flight selection survive
+  // an orthogonal Gross/Net toggle.
   useEffect(() => {
     genRef.current += 1
     finalSinceRef.current = null
-  }, [pollUrl, scoring])
+    setData(initial)
+    setRefreshing(false)
+    setShowingLastKnown(false)
+  }, [pollUrl, scoring, initial])
 
   // refresh returns the fresh LiveResponse (or null) so the scheduler can
   // decide the next poll from post-refresh state. It applies its result only
@@ -137,5 +142,12 @@ export function useLivePoll({
     // invalidates any in-flight previous-mode response.
   }, [supportsLive, urlWithScoring, refresh, initialIsHistoricalFinal, awaitingOfficialFlights, scoring, pollUrl, initial])
 
-  return { data, refreshing, showingLastKnown, refresh }
+  // Effects adopt a new preloaded scoring dataset immediately after render.
+  // During that one render, never pair the newly selected toggle with rows
+  // from the previous scoring mode.
+  const visibleData = data?.leaderboard && data.leaderboard.scoringMode !== scoring
+    ? initial
+    : data
+
+  return { data: visibleData, refreshing, showingLastKnown, refresh }
 }

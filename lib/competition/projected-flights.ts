@@ -113,26 +113,3 @@ export function applyProjectedFlights(
     },
   }
 }
-
-// A projected-flight view keeps the trusted Overall ordering, then compresses
-// positions within the selected subset. Equal source positions stay tied;
-// score math and tie-breaking rules are not re-derived in Planit.
-export function rankProjectedEntries(entries: ResultEntry[]): ResultEntry[] {
-  const placed = entries.filter((entry) => Number.isFinite(entry.positionOrder) && entry.positionOrder < Number.MAX_SAFE_INTEGER)
-  const counts = new Map<number, number>()
-  for (const entry of placed) counts.set(entry.positionOrder, (counts.get(entry.positionOrder) ?? 0) + 1)
-
-  const rankBySourcePosition = new Map<number, number>()
-  let placedBefore = 0
-  for (const sourcePosition of [...counts.keys()].sort((a, b) => a - b)) {
-    rankBySourcePosition.set(sourcePosition, placedBefore + 1)
-    placedBefore += counts.get(sourcePosition) ?? 0
-  }
-
-  return entries.map((entry) => {
-    const rank = rankBySourcePosition.get(entry.positionOrder)
-    if (rank === undefined) return { ...entry, positionLabel: null, positionOrder: Number.MAX_SAFE_INTEGER }
-    const tied = (counts.get(entry.positionOrder) ?? 0) > 1
-    return { ...entry, positionLabel: `${tied ? 'T' : ''}${rank}`, positionOrder: rank }
-  })
-}

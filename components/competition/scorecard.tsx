@@ -8,6 +8,7 @@ import type {
 } from "@/lib/competition/types";
 import { flightColor } from "./flight-color";
 import { pickLeaderboardCols } from "./leaderboard-cols";
+import { hasPurseAward } from "./leaderboard-purse";
 import {
   buildMobileStats,
   formatToPar,
@@ -75,6 +76,7 @@ export function ScorecardRow({
   // Literal class strings from pickLeaderboardCols so Tailwind sees each
   // variant (dynamically built class names are silently dropped by the JIT).
   const cols = pickLeaderboardCols(showFlight, showPurse);
+  const showPlayerPurse = showPurse && hasPurseAward(entry.purse);
 
   return (
     <div>
@@ -117,9 +119,9 @@ export function ScorecardRow({
               <MobileStat key={s.label} label={s.label} value={s.value} valueClass={s.valueClass} />
             ))}
           </div>
-          {showPurse && (
+          {showPlayerPurse && (
             <div className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">
-              Purse {entry.purse ?? "—"}
+              Purse {entry.purse}
             </div>
           )}
         </div>
@@ -154,8 +156,8 @@ export function ScorecardRow({
             {total ?? "—"}
           </span>
           <span className="text-right tabular-nums">{formatPoints(entry.points)}</span>
-          {showPurse && (
-            <span className="text-right tabular-nums text-muted-foreground">{entry.purse ?? "—"}</span>
+          {showPlayerPurse && (
+            <span className="text-right tabular-nums text-muted-foreground">{entry.purse}</span>
           )}
         </div>
       </button>
@@ -192,26 +194,6 @@ function Scorecard({ card }: { card: ScorecardT }) {
           );
         })}
       </div>
-      {card.holes.length > 1 && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          {toParNarration(card)}
-        </p>
-      )}
     </div>
   );
-}
-
-// A short, human-readable summary of how the round unfolded (e.g. "Through 4:
-// -2 · now +1 through 7"). Derived from the running to-par.
-function toParNarration(card: ScorecardT): string {
-  const played = card.holes.filter((h) => h.cumulativeToPar !== null);
-  if (played.length < 2) return "";
-  const first = played[0];
-  const last = played[played.length - 1];
-  const fmt = (n: number) => (n === 0 ? "E" : n > 0 ? `+${n}` : `${n}`);
-  const allPlayed = card.holes.filter((h) => h.gross !== null || h.net !== null).length;
-  if (first.cumulativeToPar === last.cumulativeToPar && played.length === allPlayed) {
-    return `Through ${first.hole}: ${fmt(first.cumulativeToPar!)} · finished ${fmt(last.cumulativeToPar!)} through ${last.hole}`;
-  }
-  return `Through ${first.hole}: ${fmt(first.cumulativeToPar!)} · now ${fmt(last.cumulativeToPar!)} through ${last.hole}`;
 }

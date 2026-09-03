@@ -12,7 +12,15 @@
 
 import type { ResultEntry } from '../../lib/competition/types.ts'
 
+export function hasPurseAward(purse: string | null): boolean {
+  if (!purse || purse.trim() === '') return false
+  const amount = Number(purse.replace(/[$,\s]/g, ''))
+  // Preserve non-numeric authoritative treatments, but suppress numeric zero
+  // values because zero is not a purse award.
+  return Number.isFinite(amount) ? amount > 0 : true
+}
+
 export function shouldShowPurse(entries: ResultEntry[]): boolean {
   if (entries.length === 0) return false
-  return entries.some((e) => e.purse !== null && e.purse !== '')
+  return entries.some((e) => hasPurseAward(e.purse))
 }
