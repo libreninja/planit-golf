@@ -34,14 +34,6 @@ export interface PlayerSeasonFact {
   points: number | null
 }
 
-export interface ScoringDistribution {
-  birdieOrBetter: number
-  par: number
-  bogey: number
-  doubleOrWorse: number
-  totalHoles: number
-}
-
 export interface PlayerRound {
   week: number
   eventName: string
@@ -80,7 +72,6 @@ export interface PlayerDetailModel {
     seasonLowGross: number | null
     seasonLowRound: { week: number; eventDate: string | null; gross: number } | null
   }
-  scoringDistribution: ScoringDistribution | null
 }
 
 function stateOf(performance: PlayerPerformanceFact | undefined, event: PlayerEventFact): PlayerRound['state'] {
@@ -90,15 +81,6 @@ function stateOf(performance: PlayerPerformanceFact | undefined, event: PlayerEv
   if (status === 'in_progress' || status === 'live' || status === 'started') return 'live'
   if (status === 'completed' && performance?.holesCompleted === 9) return 'final'
   return performance && performance.holesCompleted > 0 ? 'incomplete' : 'participation'
-}
-
-function completeGrossHoleFacts(performance: PlayerPerformanceFact): boolean {
-  const gross = performance.grossScores.slice(0, 9)
-  const toPar = performance.toParGross.slice(0, 9)
-  return gross.length === 9
-    && toPar.length === 9
-    && gross.every((score) => score !== null)
-    && toPar.every((delta) => delta !== null)
 }
 
 export function isCompletedComparableNine(performance: PlayerPerformanceFact, event: PlayerEventFact): boolean {
@@ -178,32 +160,6 @@ export function derivePlayerDetail(input: {
       .map((performance) => performance.week),
   ).size
 
-  const scoringDistribution: ScoringDistribution = {
-    birdieOrBetter: 0,
-    par: 0,
-    bogey: 0,
-    doubleOrWorse: 0,
-    totalHoles: 0,
-  }
-  for (const round of completedComparableRounds) {
-    const performance = input.performances.find((item) => item.week === round.week)
-    if (!performance || !completeGrossHoleFacts(performance)) continue
-    for (let hole = 0; hole < 9; hole += 1) {
-      const gross = performance.grossScores[hole]
-      const delta = performance.toParGross[hole]
-      // Both persisted gross and gross-to-par must exist. This lets us derive
-      // the exact par (gross - delta) and avoids the legacy net birdie fields.
-      if (gross === null || delta === null) continue
-      const par = gross - delta
-      if (![3, 4, 5].includes(par)) continue
-      scoringDistribution.totalHoles += 1
-      if (delta <= -1) scoringDistribution.birdieOrBetter += 1
-      else if (delta === 0) scoringDistribution.par += 1
-      else if (delta === 1) scoringDistribution.bogey += 1
-      else scoringDistribution.doubleOrWorse += 1
-    }
-  }
-
   const requestedRound = input.selectedWeek == null
     ? null
     : rounds.find((round) => round.week === input.selectedWeek) ?? null
@@ -248,6 +204,5 @@ export function derivePlayerDetail(input: {
         gross: seasonLowRound.grossTotal!,
       } : null,
     },
-    scoringDistribution: scoringDistribution.totalHoles > 0 ? scoringDistribution : null,
   }
 }

@@ -31,13 +31,50 @@ unresolved live name.
 
 `/players/[golferId]/performance` is the stable destination for deeper player
 analysis. The landing page stays limited to selected-round and recent-form
-questions; distributions and future comparison analysis belong here.
+questions plus a compact Interbay preview. The deeper page answers how the
+golfer plays each Interbay hole relative to the field. Generic scoring-outcome
+distribution is not part of the current product surface.
 
-Hole-relative league comparison is intentionally deferred. The current
-performance rows persist hole array positions and derivable par, but not a
-stable course, tee, and hole identity for every occurrence. Before comparing a
-golfer to the league, Planit must establish that comparison key and define the
-eligible cohort as completed 2026 Men's League individual rounds played from
-the same course/tee setup. The first metric should be the transparent
-player-average minus league-average score for each comparable hole, labeled
-“vs league”; it must not be called Strokes Gained.
+This is not a generic course analytics contract. The code-owned
+`igc-mens-2026-interbay-back-2023-front-nine` manifest contains only occurrences
+individually audited against Golf Genius. For every included occurrence:
+
+1. The event is the 2026 IGC event `12263651301715371717`, whose course list
+   contains The Links at Interbay (`10275121452864792250`).
+2. Every tee-sheet player is assigned the same tee-sheet tee identity
+   `10275121691537466950` (`Back 2023 - Men`).
+3. Every group starts on Hole 1 and carries the same first-nine par sequence
+   (`4,3,3,3,3,3,3,3,3`) and yardages
+   (`288,153,95,102,130,186,164,124,130`).
+4. The persisted occurrence must still match the exact audited GG event ID,
+   round ID, date, individual format, finalized status, and Points Season name.
+5. Each included scorecard must be completed over nine holes and its persisted
+   gross plus gross-to-par facts must re-derive the audited par for every hole.
+
+The audited set currently covers the 21 completed Points Season occurrences
+from March 31 through September 1, 2026. Club Championship, incomplete cards,
+team formats, upcoming rounds, and unaudited new occurrences fail closed. A new
+week must be checked against the same source evidence and explicitly added to
+the manifest; matching hole ordinals alone is never sufficient.
+
+At the September 4 audit, authoritative tee-sheet counts and persisted
+performance counts agreed for all 21 occurrences. There were 3,039 persisted
+cards; 3,024 were completed nine-hole cards with nine finite gross facts and an
+identical independently derived par sequence. The other 15 are excluded as
+incomplete. GG exposes a separate course-catalog Back Men tee ID
+(`10275121691336140357`) from the assigned nine-hole tee-sheet ID above. Planit
+records both and keys this contract to the assigned tee evidence rather than
+assuming those identifiers are interchangeable.
+
+For each completed golfer start and hole, Planit compares the player's gross
+score with the average of the *other* completed field cards from that exact
+occurrence. The displayed league average gives each of the golfer's matched
+starts one field-benchmark observation. `vs league` is player average minus
+that matched league average, and cumulative differential is the sum of those
+per-start differences. Negative is better and positive is worse. This metric
+must not be called Strokes Gained.
+
+One scoped Golf Genius card is known to contain two distinct names and scores
+in the same occurrence. It remains unresolved as a canonical golfer. Its two
+submitted cards remain separate field observations; performance analysis does
+not merge or deduplicate people by display name or shared external card.

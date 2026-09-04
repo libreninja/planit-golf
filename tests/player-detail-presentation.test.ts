@@ -10,20 +10,30 @@ test('landing page focuses on result and form comparisons, not interpretive anal
   assert.match(landing, /grossVsSeasonAverage/)
   assert.match(landing, /recentVsSeasonAverage/)
   assert.match(landing, /Season best/)
-  assert.match(landing, /See performance/)
+  assert.match(landing, /At Interbay/)
+  assert.match(landing, /Best vs field/)
+  assert.match(landing, /Gives back most/)
+  assert.match(landing, /See all nine holes/)
   assert.doesNotMatch(landing, /Gap to leader/)
   assert.doesNotMatch(landing, /Gross hole results/)
   assert.doesNotMatch(landing, /scoringDistribution/)
 })
 
-test('interpretive distribution lives on the deeper Performance route', () => {
-  assert.match(performance, /Scoring outcomes/)
-  assert.match(performance, /Gross hole results/)
+test('Performance focuses on occurrence-matched Interbay hole comparisons', () => {
+  assert.match(performance, /Performance vs league/)
+  assert.match(performance, /Best vs field/)
+  assert.match(performance, /Gives back most/)
+  assert.match(performance, /All 9 holes/)
+  assert.match(performance, /cumulative vs field/)
+  assert.match(performance, /other completed cards in that same audited 2026 Points Season occurrence/)
+  assert.doesNotMatch(performance, /Gross hole results/)
+  assert.doesNotMatch(performance, /Birdie or better/)
   assert.doesNotMatch(performance, /Strokes Gained/)
 })
 
-test('future hole-relative analysis records a comparable-course contract and transparent terminology', () => {
-  assert.match(identityBoundary, /stable course, tee, and hole identity/)
-  assert.match(identityBoundary, /player-average minus league-average/)
+test('implemented hole-relative analysis records a fail-closed comparable-course contract', () => {
+  assert.match(identityBoundary, /must be checked against the same source evidence and explicitly added/)
+  assert.match(identityBoundary, /matching hole ordinals alone is never sufficient/)
+  assert.match(identityBoundary, /player's gross\s+score/)
   assert.match(identityBoundary, /must not be called Strokes Gained/)
 })

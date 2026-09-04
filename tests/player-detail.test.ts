@@ -114,14 +114,3 @@ test('gross and net facts and finishes remain distinct', () => {
   assert.equal(model.selectedRound?.grossResult?.points, 40)
   assert.equal(model.selectedRound?.netResult?.points, 12.5)
 })
-
-test('scoring distribution uses completed persisted gross and gross-to-par hole facts', () => {
-  const model = derivePlayerDetail({ events, performances: [completed(1, 42, 18, [-2, -1, 0, 1, 2, 3, 0, 1, 2])], results: [], season: null })
-  assert.deepEqual(model.scoringDistribution, {
-    birdieOrBetter: 2,
-    par: 2,
-    bogey: 2,
-    doubleOrWorse: 3,
-    totalHoles: 9,
-  })
-})

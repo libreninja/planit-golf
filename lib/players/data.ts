@@ -8,6 +8,13 @@ import {
   type PlayerPerformanceFact,
   type PlayerResultFact,
 } from './player-detail'
+import {
+  deriveIgcMens2026HolePerformance,
+  isAuditedIgcMens2026InterbayOccurrence,
+  type GrossHoleCardFact,
+  type HoleComparisonEventFact,
+  type PlayerHolePerformance,
+} from './igc-mens-2026-hole-performance'
 
 export interface MensPlayerDetailData {
   golferId: string
@@ -15,11 +22,53 @@ export interface MensPlayerDetailData {
   memberCardId: string
   handicapSnapshot: { value: string; asOf: string | null } | null
   model: PlayerDetailModel
+  holePerformance: PlayerHolePerformance | null
   viewer: {
     signedIn: boolean
     isFollowing: boolean
     isSelf: boolean
   }
+}
+
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+async function loadComparableGrossCards(
+  supabase: ServerSupabaseClient,
+  weeks: number[],
+): Promise<GrossHoleCardFact[] | null> {
+  if (weeks.length === 0) return []
+  const pageSize = 1000
+  const rows: GrossHoleCardFact[] = []
+
+  // PostgREST caps a response page at 1,000 rows. The audited 2026 cohort is
+  // currently just over 3,000 rows, so page with a stable primary-key order.
+  // Ten pages is a defensive ceiling for this deliberately narrow season.
+  for (let page = 0; page < 10; page += 1) {
+    const from = page * pageSize
+    const { data, error } = await supabase
+      .from('igc_league_performances')
+      .select('id, week_number, member_card_id, gross_scores, to_par_gross, holes_completed, scorecard_status')
+      .eq('league_key', 'mens')
+      .in('week_number', weeks)
+      .eq('holes_completed', 9)
+      .eq('scorecard_status', 'completed')
+      .order('week_number', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1)
+
+    if (error || !data) return null
+    rows.push(...data.map((row) => ({
+      week: row.week_number as number,
+      memberCardId: row.member_card_id as string | null,
+      grossScores: (row.gross_scores ?? []) as (number | null)[],
+      toParGross: (row.to_par_gross ?? []) as (number | null)[],
+      holesCompleted: (row.holes_completed ?? 0) as number,
+      scorecardStatus: row.scorecard_status as string | null,
+    })))
+    if (data.length < pageSize) return rows
+  }
+
+  return null
 }
 
 export async function getResolvedGolferIdsForMens2026(): Promise<Record<string, string>> {
@@ -65,7 +114,7 @@ export async function getMensPlayerDetail(
   const [eventsRes, performancesRes, resultsRes, seasonRes, memberRes, authRes] = await Promise.all([
     supabase
       .from('igc_league_events')
-      .select('week_number, event_name, event_date, event_format')
+      .select('week_number, event_name, event_date, event_format, status, gg_event_id, gg_round_id')
       .eq('league_key', 'mens')
       .gte('event_date', '2026-01-01')
       .lt('event_date', '2027-01-01')
@@ -106,6 +155,15 @@ export async function getMensPlayerDetail(
     eventName: event.event_name as string,
     eventDate: event.event_date as string | null,
     format: (event.event_format ?? 'unknown') as PlayerEventFact['format'],
+  }))
+  const comparisonEvents: HoleComparisonEventFact[] = (eventsRes.data ?? []).map((event) => ({
+    week: event.week_number as number,
+    eventName: event.event_name as string,
+    eventDate: event.event_date as string | null,
+    format: (event.event_format ?? 'unknown') as HoleComparisonEventFact['format'],
+    status: event.status as string | null,
+    ggEventId: event.gg_event_id as string | null,
+    ggRoundId: event.gg_round_id as string | null,
   }))
   const eventWeeks = new Set(events.map((event) => event.week))
   const performances: PlayerPerformanceFact[] = (performancesRes.data ?? []).map((performance) => ({
@@ -213,6 +271,21 @@ export async function getMensPlayerDetail(
     } : null,
     selectedWeek,
   })
+  const targetCompletedWeeks = new Set(
+    model.completedComparableRounds.map((round) => round.week),
+  )
+  const comparisonWeeks = comparisonEvents
+    .filter(isAuditedIgcMens2026InterbayOccurrence)
+    .filter((event) => targetCompletedWeeks.has(event.week))
+    .map((event) => event.week)
+  const comparableCards = await loadComparableGrossCards(supabase, comparisonWeeks)
+  const holePerformance = comparableCards === null
+    ? null
+    : deriveIgcMens2026HolePerformance({
+      memberCardId,
+      events: comparisonEvents,
+      cards: comparableCards,
+    })
 
   const user = authRes.data.user
   let isFollowing = false
@@ -245,6 +318,7 @@ export async function getMensPlayerDetail(
       ? { value: String(handicap), asOf: (memberRes.data?.synced_at as string | null) ?? null }
       : null,
     model,
+    holePerformance,
     viewer: {
       signedIn: !!user,
       isFollowing,
