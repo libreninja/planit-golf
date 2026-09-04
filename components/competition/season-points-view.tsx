@@ -8,11 +8,15 @@
 // accessible while the standings scroll within a fixed-height region (P2).
 
 import type { SeasonPointsRow } from '@/lib/competition/reconcile/season-points'
+import Link from 'next/link'
+import { playerDetailHref } from '@/lib/players/links'
 
 export function SeasonPointsView({
   rows,
+  golferIdsByMemberCard,
 }: {
   rows: SeasonPointsRow[]
+  golferIdsByMemberCard: Record<string, string>
 }) {
   return (
     <section className="space-y-4">
@@ -29,15 +33,27 @@ export function SeasonPointsView({
             <div className="text-right">Played</div>
           </div>
           <div className="divide-y divide-border">
-            {rows.map((r) => (
-              <div key={r.member_card_id} className="grid grid-cols-[3rem_1fr_6rem_5rem_5rem] gap-2 px-3 py-1.5 text-sm">
-                <div className="font-medium tabular-nums">{r.position}</div>
-                <div className="truncate">{r.player_name ?? r.member_card_id}</div>
-                <div className="text-right tabular-nums">{r.total_points.toFixed(2)}</div>
-                <div className="text-right tabular-nums text-muted-foreground">{r.previous_position ?? '—'}</div>
-                <div className="text-right tabular-nums text-muted-foreground">{r.events_played}</div>
-              </div>
-            ))}
+            {rows.map((r) => {
+              const golferId = golferIdsByMemberCard[r.member_card_id]
+              return (
+                <div key={r.member_card_id} className="grid grid-cols-[3rem_1fr_6rem_5rem_5rem] gap-2 px-3 py-1.5 text-sm">
+                  <div className="font-medium tabular-nums">{r.position}</div>
+                  <div className="truncate">
+                    {golferId ? (
+                      <Link
+                        className="font-medium underline-offset-4 hover:text-primary hover:underline"
+                        href={playerDetailHref({ golferId, returnTo: '/igc/mens-league?view=season' })}
+                      >
+                        {r.player_name ?? r.member_card_id}
+                      </Link>
+                    ) : (r.player_name ?? r.member_card_id)}
+                  </div>
+                  <div className="text-right tabular-nums">{r.total_points.toFixed(2)}</div>
+                  <div className="text-right tabular-nums text-muted-foreground">{r.previous_position ?? '—'}</div>
+                  <div className="text-right tabular-nums text-muted-foreground">{r.events_played}</div>
+                </div>
+              )
+            })}
             {rows.length === 0 && (
               <div className="px-3 py-4 text-sm text-muted-foreground">No season standings yet.</div>
             )}

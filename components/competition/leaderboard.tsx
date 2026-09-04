@@ -6,6 +6,7 @@ import { ScorecardRow } from "./scorecard";
 import { shouldShowPurse } from "./leaderboard-purse";
 import { pickLeaderboardCols } from "./leaderboard-cols";
 import { cn } from "@/lib/utils/cn";
+import { playerDetailHrefForMemberCard } from "@/lib/players/links";
 
 // showFlight renders a Flight column (POS / PLAYER / FLIGHT / …) for the Men's
 // Overall view. A specific flight makes the column redundant; women's is single
@@ -16,11 +17,15 @@ export function Leaderboard({
   showFlight = false,
   colorizeFlights = false,
   projectedFlights = false,
+  golferIdsByMemberCard = {},
+  playerReturnTo,
 }: {
   leaderboard: Leaderboard;
   showFlight?: boolean;
   colorizeFlights?: boolean;
   projectedFlights?: boolean;
+  golferIdsByMemberCard?: Record<string, string>;
+  playerReturnTo?: string;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   if (leaderboard.entries.length === 0) {
@@ -61,6 +66,12 @@ export function Leaderboard({
         {leaderboard.entries.map((e) => {
           const card = leaderboard.scorecards.find((c) => c.key === e.key) ?? null;
           const key = `${leaderboard.scoringMode}|${e.key}`;
+          const playerHref = playerDetailHrefForMemberCard({
+            memberCardId: card?.memberCardId ?? null,
+            golferIdsByMemberCard,
+            week: leaderboard.occurrenceId,
+            returnTo: playerReturnTo,
+          });
           return (
             <ScorecardRow
               key={key}
@@ -74,6 +85,7 @@ export function Leaderboard({
               showPurse={showPurse}
               colorizeFlights={colorizeFlights}
               flightLabel={e.flight && projectedFlights ? `Projected ${e.flight}` : e.flight}
+              playerHref={playerHref}
             />
           );
         })}

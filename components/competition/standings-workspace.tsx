@@ -29,6 +29,7 @@ export interface StandingsWorkspaceProps {
   grouping: string | null
   placedOnly: boolean
   defaultScoring: ScoringMode
+  golferIdsByMemberCard: Record<string, string>
   capabilities: OccurrenceCapabilities
   initial: LiveResponse | null
   pollUrl: string | null
@@ -232,6 +233,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
           showFlight={showFlight}
           colorizeFlights={colorizeFlights}
           projectedFlights={flightMembership.status === 'projected'}
+          golferIdsByMemberCard={props.golferIdsByMemberCard}
+          playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
         />
       ) : showingLastKnown ? (
         <UnavailableState message="Live results are temporarily unavailable. Showing the last known standings." onRetry={() => void refresh()} retrying={refreshing} />

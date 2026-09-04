@@ -513,6 +513,14 @@ function importDb(supabase: any, competitionKey: string) {
       }
       return { ok: true }
     },
+    async refreshGolferIdentities(memberCardIds: string[]) {
+      if (leagueKey !== 'mens' || memberCardIds.length === 0) return { ok: true }
+      const { error } = await supabase.rpc('refresh_igc_2026_mens_golfer_identities', {
+        p_external_ids: memberCardIds,
+      })
+      if (error) throw new Error(`golfer identity refresh: ${error.message}`)
+      return { ok: true }
+    },
     async setDurableImported(week: number, atIso: string, sourceVersion: string | null) {
       const { error } = await supabase.from('igc_league_events').update({ durable_imported_at: atIso, durable_source_version: sourceVersion })
         .eq('league_key', leagueKey).eq('week_number', week)
