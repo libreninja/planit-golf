@@ -25,7 +25,15 @@ test('return path rejects external and protocol-relative destinations', () => {
 
 test('performance route preserves its exact player-detail return context', () => {
   assert.equal(
-    playerPerformanceHref({ golferId: 'golfer-steven', returnTo: '/players/golfer-steven?week=19&from=%2Figc%2Fmens-league' }),
-    '/players/golfer-steven/performance?from=%2Fplayers%2Fgolfer-steven%3Fweek%3D19%26from%3D%252Figc%252Fmens-league',
+    playerPerformanceHref({ golferId: 'golfer-steven', compare: 'flight', returnTo: '/players/golfer-steven?week=19&from=%2Figc%2Fmens-league' }),
+    '/players/golfer-steven/performance?compare=flight&from=%2Fplayers%2Fgolfer-steven%3Fweek%3D19%26from%3D%252Figc%252Fmens-league',
   )
+})
+
+test('performance comparator URL state round-trips without losing return context', () => {
+  const returnTo = '/players/golfer-steven?week=20&from=%2Figc%2Fmens-league%3Fview%3Dweekly%26week%3D20'
+  const href = playerPerformanceHref({ golferId: 'golfer-steven', compare: 'field', returnTo })
+  const parsed = new URL(href, 'https://planit.test')
+  assert.equal(parsed.searchParams.get('compare'), 'field')
+  assert.equal(parsed.searchParams.get('from'), returnTo)
 })

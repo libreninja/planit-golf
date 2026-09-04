@@ -53,33 +53,58 @@ export interface HoleComparisonEventFact {
 export interface GrossHoleCardFact {
   week: number
   memberCardId: string | null
+  playerName: string
   grossScores: (number | null)[]
   toParGross: (number | null)[]
   holesCompleted: number
   scorecardStatus: string | null
 }
 
+export interface OfficialFlightResultFact {
+  week: number
+  memberCardId: string
+  playerName: string
+  competition: 'gross' | 'net'
+  flightName: string | null
+}
+
+export type PlayerPerformanceComparator = 'flight' | 'field'
+
 export interface PlayerHoleComparison {
   hole: number
   par: number
   yardage: number
   playerAverage: number
-  leagueAverage: number
+  comparatorAverage: number
   differentialPerPlay: number
   cumulativeDifferential: number
   timesPlayed: number
   comparisonCards: number
 }
 
+export interface PlayerHoleComparisonLens {
+  comparator: PlayerPerformanceComparator
+  roundsCompared: number
+  comparisonCards: number
+  holes: PlayerHoleComparison[]
+  relativeStrengths: PlayerHoleComparison[]
+  largestGaps: PlayerHoleComparison[]
+}
+
 export interface PlayerHolePerformance {
   contractKey: string
   courseName: string
   teeName: string
-  roundsCompared: number
-  comparisonCards: number
-  holes: PlayerHoleComparison[]
-  bestRelativeHoles: PlayerHoleComparison[]
-  givesBackMostHoles: PlayerHoleComparison[]
+  comparableRounds: number
+  flight: PlayerHoleComparisonLens | null
+  field: PlayerHoleComparisonLens | null
+  preferredComparator: PlayerPerformanceComparator | null
+}
+
+export interface ResolvedPlayerPerformanceComparator {
+  comparator: PlayerPerformanceComparator
+  lens: PlayerHoleComparisonLens
+  fellBackFromFlight: boolean
 }
 
 const occurrenceByWeek = new Map<number, (typeof IGC_MENS_2026_INTERBAY_CONTRACT.occurrences)[number]>(
@@ -114,10 +139,119 @@ function isComparableCompletedCard(card: GrossHoleCardFact): boolean {
 
 const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
 
+function canonicalOfficialFlight(value: string | null): string | null {
+  const match = value?.trim().match(/^flight\s*([123])$/i)
+  return match ? `Flight ${match[1]}` : null
+}
+
+function cardKey(card: Pick<GrossHoleCardFact, 'week' | 'memberCardId' | 'playerName'>): string | null {
+  return card.memberCardId ? `${card.week}\u0000${card.memberCardId}\u0000${card.playerName}` : null
+}
+
+function resolveOfficialFlights(results: OfficialFlightResultFact[]): Map<string, string> {
+  const evidence = new Map<string, { gross: string[]; net: string[] }>()
+  for (const result of results) {
+    const key = cardKey(result)
+    if (!key) continue
+    const flight = canonicalOfficialFlight(result.flightName)
+    if (!flight) continue
+    const item = evidence.get(key) ?? { gross: [], net: [] }
+    item[result.competition].push(flight)
+    evidence.set(key, item)
+  }
+
+  const resolved = new Map<string, string>()
+  for (const [key, item] of evidence) {
+    const gross = [...new Set(item.gross)]
+    const net = [...new Set(item.net)]
+    if (gross.length === 1 && net.length === 1 && gross[0] === net[0]) resolved.set(key, gross[0])
+  }
+  return resolved
+}
+
+function deriveLens(input: {
+  comparator: PlayerPerformanceComparator
+  memberCardId: string
+  eligibleWeeks: Set<number>
+  cardsByWeek: Map<number, GrossHoleCardFact[]>
+  officialFlights: Map<string, string>
+}): PlayerHoleComparisonLens | null {
+  const observations = Array.from({ length: 9 }, () => [] as Array<{
+    playerScore: number
+    comparatorAverage: number
+    peerCount: number
+  }>)
+
+  for (const week of input.eligibleWeeks) {
+    const weekCards = input.cardsByWeek.get(week) ?? []
+    const targetCards = weekCards.filter((card) => card.memberCardId === input.memberCardId)
+    // A shared identifier or duplicate target card is ambiguous within the
+    // occurrence. Never choose a card by display name or row order.
+    if (targetCards.length !== 1) continue
+    const target = targetCards[0]
+    const targetKey = cardKey(target)
+    const targetFlight = targetKey ? input.officialFlights.get(targetKey) : null
+    if (input.comparator === 'flight' && !targetFlight) continue
+
+    const peers = weekCards.filter((card) => {
+      if (card === target) return false
+      if (input.comparator === 'field') return true
+      const key = cardKey(card)
+      return !!key && input.officialFlights.get(key) === targetFlight
+    })
+    if (peers.length === 0) continue
+
+    for (let index = 0; index < 9; index += 1) {
+      observations[index].push({
+        playerScore: target.grossScores[index] as number,
+        comparatorAverage: mean(peers.map((card) => card.grossScores[index] as number)),
+        peerCount: peers.length,
+      })
+    }
+  }
+
+  const holes = observations.flatMap((holeObservations, index): PlayerHoleComparison[] => {
+    if (holeObservations.length === 0) return []
+    const playerAverage = mean(holeObservations.map((observation) => observation.playerScore))
+    // Each target start contributes one benchmark observation, preventing a
+    // large weekly cohort from silently outweighing a smaller one.
+    const comparatorAverage = mean(holeObservations.map((observation) => observation.comparatorAverage))
+    const differentials = holeObservations.map((observation) => observation.playerScore - observation.comparatorAverage)
+    return [{
+      hole: index + 1,
+      par: IGC_MENS_2026_INTERBAY_CONTRACT.pars[index],
+      yardage: IGC_MENS_2026_INTERBAY_CONTRACT.yardages[index],
+      playerAverage,
+      comparatorAverage,
+      differentialPerPlay: mean(differentials),
+      cumulativeDifferential: differentials.reduce((sum, value) => sum + value, 0),
+      timesPlayed: holeObservations.length,
+      comparisonCards: holeObservations.reduce((sum, observation) => sum + observation.peerCount, 0),
+    }]
+  })
+
+  if (holes.length !== 9) return null
+  return {
+    comparator: input.comparator,
+    roundsCompared: holes[0].timesPlayed,
+    comparisonCards: holes[0].comparisonCards,
+    holes,
+    // "Relative strengths" is deliberately relative: these are the two best
+    // differentials even when neither beats the selected comparator.
+    relativeStrengths: [...holes]
+      .sort((a, b) => a.differentialPerPlay - b.differentialPerPlay)
+      .slice(0, 2),
+    largestGaps: [...holes]
+      .sort((a, b) => b.differentialPerPlay - a.differentialPerPlay)
+      .slice(0, 2),
+  }
+}
+
 export function deriveIgcMens2026HolePerformance(input: {
   memberCardId: string
   events: HoleComparisonEventFact[]
   cards: GrossHoleCardFact[]
+  officialFlightResults?: OfficialFlightResultFact[]
 }): PlayerHolePerformance | null {
   const eligibleWeeks = new Set(
     input.events.filter(isAuditedIgcMens2026InterbayOccurrence).map((event) => event.week),
@@ -130,70 +264,36 @@ export function deriveIgcMens2026HolePerformance(input: {
     cardsByWeek.set(card.week, weekCards)
   }
 
-  const observations = Array.from({ length: 9 }, () => [] as Array<{
-    playerScore: number
-    leagueAverage: number
-    peerCount: number
-  }>)
-
-  for (const week of eligibleWeeks) {
-    const weekCards = cardsByWeek.get(week) ?? []
-    const targetCards = weekCards.filter((card) => card.memberCardId === input.memberCardId)
-    // Multiple cards for the target identifier in one occurrence are
-    // ambiguous. Exclude that occurrence instead of choosing by name/order.
-    if (targetCards.length !== 1) continue
-    const target = targetCards[0]
-    const peers = weekCards.filter((card) => card !== target)
-    if (peers.length === 0) continue
-
-    for (let index = 0; index < 9; index += 1) {
-      observations[index].push({
-        playerScore: target.grossScores[index] as number,
-        leagueAverage: mean(peers.map((card) => card.grossScores[index] as number)),
-        peerCount: peers.length,
-      })
-    }
-  }
-
-  const holes = observations.flatMap((holeObservations, index): PlayerHoleComparison[] => {
-    if (holeObservations.length === 0) return []
-    const playerAverage = mean(holeObservations.map((observation) => observation.playerScore))
-    // Give each of the golfer's starts one benchmark observation. This keeps
-    // the per-play and cumulative values coherent and avoids large fields
-    // silently outweighing smaller fields.
-    const leagueAverage = mean(holeObservations.map((observation) => observation.leagueAverage))
-    const differentials = holeObservations.map((observation) => observation.playerScore - observation.leagueAverage)
-    return [{
-      hole: index + 1,
-      par: IGC_MENS_2026_INTERBAY_CONTRACT.pars[index],
-      yardage: IGC_MENS_2026_INTERBAY_CONTRACT.yardages[index],
-      playerAverage,
-      leagueAverage,
-      differentialPerPlay: mean(differentials),
-      cumulativeDifferential: differentials.reduce((sum, value) => sum + value, 0),
-      timesPlayed: holeObservations.length,
-      comparisonCards: holeObservations.reduce((sum, observation) => sum + observation.peerCount, 0),
-    }]
-  })
-
-  if (holes.length !== 9) return null
-  const roundsCompared = holes[0].timesPlayed
-  const comparisonCards = holes[0].comparisonCards
+  const officialFlights = resolveOfficialFlights(input.officialFlightResults ?? [])
+  const field = deriveLens({ comparator: 'field', memberCardId: input.memberCardId, eligibleWeeks, cardsByWeek, officialFlights })
+  const flight = deriveLens({ comparator: 'flight', memberCardId: input.memberCardId, eligibleWeeks, cardsByWeek, officialFlights })
+  if (!field && !flight) return null
   return {
     contractKey: IGC_MENS_2026_INTERBAY_CONTRACT.key,
     courseName: IGC_MENS_2026_INTERBAY_CONTRACT.courseName,
     teeName: IGC_MENS_2026_INTERBAY_CONTRACT.teeName,
-    roundsCompared,
-    comparisonCards,
-    holes,
-    // Always expose the two strongest relative holes. For a golfer who has no
-    // below-field hole, the UI labels these honestly as "Closest to field".
-    bestRelativeHoles: [...holes]
-      .sort((a, b) => a.differentialPerPlay - b.differentialPerPlay)
-      .slice(0, 2),
-    givesBackMostHoles: holes
-      .filter((hole) => hole.differentialPerPlay > 0)
-      .sort((a, b) => b.differentialPerPlay - a.differentialPerPlay)
-      .slice(0, 2),
+    comparableRounds: field?.roundsCompared ?? flight?.roundsCompared ?? 0,
+    flight,
+    field,
+    preferredComparator: flight ? 'flight' : field ? 'field' : null,
   }
+}
+
+export function resolvePlayerPerformanceComparator(
+  performance: PlayerHolePerformance,
+  requested: PlayerPerformanceComparator | null,
+): ResolvedPlayerPerformanceComparator | null {
+  if (requested === 'field' && performance.field) {
+    return { comparator: 'field', lens: performance.field, fellBackFromFlight: false }
+  }
+  if (requested === 'flight' && performance.flight) {
+    return { comparator: 'flight', lens: performance.flight, fellBackFromFlight: false }
+  }
+  if (performance.flight) {
+    return { comparator: 'flight', lens: performance.flight, fellBackFromFlight: false }
+  }
+  if (performance.field) {
+    return { comparator: 'field', lens: performance.field, fellBackFromFlight: requested === 'flight' }
+  }
+  return null
 }

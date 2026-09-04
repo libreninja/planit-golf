@@ -34,8 +34,10 @@ export function playerDetailHrefForMemberCard(input: {
 export function playerPerformanceHref(input: {
   golferId: string
   returnTo?: string | null
+  compare?: 'flight' | 'field' | null
 }): string {
   const params = new URLSearchParams()
+  if (input.compare) params.set('compare', input.compare)
   const returnTo = safeInternalReturnTo(input.returnTo)
   if (returnTo) params.set('from', returnTo)
   const query = params.toString()

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { getMensPlayerDetail } from '@/lib/players/data'
 import { playerDetailHref, playerPerformanceHref, safeInternalReturnTo } from '@/lib/players/links'
 import type { PlayerRound } from '@/lib/players/player-detail'
-import type { PlayerHoleComparison, PlayerHolePerformance } from '@/lib/players/igc-mens-2026-hole-performance'
+import type { PlayerHolePerformance } from '@/lib/players/igc-mens-2026-hole-performance'
 
 export const dynamic = 'force-dynamic'
 
@@ -182,20 +182,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
-function PreviewHoles({ holes }: { holes: PlayerHoleComparison[] }) {
-  if (!holes.length) return <span className="text-muted-foreground">None yet</span>
-  return (
-    <span className="inline-flex flex-wrap gap-x-3 gap-y-1">
-      {holes.map((hole) => (
-        <span key={hole.hole} className="tabular-nums">
-          <strong>#{hole.hole}</strong> {Math.abs(hole.differentialPerPlay).toFixed(2)} {hole.differentialPerPlay < 0 ? 'better' : 'worse'}
-        </span>
-      ))}
-    </span>
-  )
-}
-
-function InterbayPreview({
+function InterbayPerformanceEntry({
   golferId,
   returnTo,
   performance,
@@ -204,31 +191,17 @@ function InterbayPreview({
   returnTo: string
   performance: PlayerHolePerformance
 }) {
-  const hasBelowFieldHole = performance.bestRelativeHoles.some((hole) => hole.differentialPerPlay < 0)
   return (
     <section className="border-y border-border py-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">At Interbay</p>
-          <h2 className="mt-1 text-xl font-semibold">Hole-by-hole vs the field</h2>
-        </div>
-        <p className="text-xs text-muted-foreground">{performance.roundsCompared} completed {performance.roundsCompared === 1 ? 'start' : 'starts'}</p>
-      </div>
-      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 sm:gap-6">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{hasBelowFieldHole ? 'Best vs field' : 'Closest to field'}</div>
-          <div className="mt-1"><PreviewHoles holes={performance.bestRelativeHoles} /></div>
-        </div>
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Gives back most</div>
-          <div className="mt-1"><PreviewHoles holes={performance.givesBackMostHoles} /></div>
-        </div>
-      </div>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Performance at Interbay</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {performance.comparableRounds} comparable {performance.comparableRounds === 1 ? 'round' : 'rounds'}
+      </p>
       <Link
         href={playerPerformanceHref({ golferId, returnTo })}
-        className="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:underline"
+        className="mt-3 inline-flex items-center text-sm font-semibold text-primary hover:underline"
       >
-        See all nine holes <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+        Explore all nine holes <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
       </Link>
     </section>
   )
@@ -321,7 +294,7 @@ export default async function PlayerDetailPage({
       </section>
 
       {data.holePerformance ? (
-        <InterbayPreview
+        <InterbayPerformanceEntry
           golferId={golferId}
           returnTo={playerReturnTo}
           performance={data.holePerformance}

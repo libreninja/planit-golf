@@ -13,6 +13,7 @@ import {
   isAuditedIgcMens2026InterbayOccurrence,
   type GrossHoleCardFact,
   type HoleComparisonEventFact,
+  type OfficialFlightResultFact,
   type PlayerHolePerformance,
 } from './igc-mens-2026-hole-performance'
 
@@ -47,7 +48,7 @@ async function loadComparableGrossCards(
     const from = page * pageSize
     const { data, error } = await supabase
       .from('igc_league_performances')
-      .select('id, week_number, member_card_id, gross_scores, to_par_gross, holes_completed, scorecard_status')
+      .select('id, week_number, member_card_id, player_name, gross_scores, to_par_gross, holes_completed, scorecard_status')
       .eq('league_key', 'mens')
       .in('week_number', weeks)
       .eq('holes_completed', 9)
@@ -60,10 +61,45 @@ async function loadComparableGrossCards(
     rows.push(...data.map((row) => ({
       week: row.week_number as number,
       memberCardId: row.member_card_id as string | null,
+      playerName: row.player_name as string,
       grossScores: (row.gross_scores ?? []) as (number | null)[],
       toParGross: (row.to_par_gross ?? []) as (number | null)[],
       holesCompleted: (row.holes_completed ?? 0) as number,
       scorecardStatus: row.scorecard_status as string | null,
+    })))
+    if (data.length < pageSize) return rows
+  }
+
+  return null
+}
+
+async function loadOfficialFlightResults(
+  supabase: ServerSupabaseClient,
+  weeks: number[],
+): Promise<OfficialFlightResultFact[] | null> {
+  if (weeks.length === 0) return []
+  const pageSize = 1000
+  const rows: OfficialFlightResultFact[] = []
+
+  for (let page = 0; page < 10; page += 1) {
+    const from = page * pageSize
+    const { data, error } = await supabase
+      .from('igc_league_results')
+      .select('id, week_number, member_card_id, player_name, competition, flight_name')
+      .eq('league_key', 'mens')
+      .in('week_number', weeks)
+      .in('competition', ['gross', 'net'])
+      .order('week_number', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1)
+
+    if (error || !data) return null
+    rows.push(...data.map((row) => ({
+      week: row.week_number as number,
+      memberCardId: row.member_card_id as string,
+      playerName: row.player_name as string,
+      competition: row.competition as OfficialFlightResultFact['competition'],
+      flightName: row.flight_name as string | null,
     })))
     if (data.length < pageSize) return rows
   }
@@ -278,13 +314,19 @@ export async function getMensPlayerDetail(
     .filter(isAuditedIgcMens2026InterbayOccurrence)
     .filter((event) => targetCompletedWeeks.has(event.week))
     .map((event) => event.week)
-  const comparableCards = await loadComparableGrossCards(supabase, comparisonWeeks)
+  const [comparableCards, officialFlightResults] = await Promise.all([
+    loadComparableGrossCards(supabase, comparisonWeeks),
+    loadOfficialFlightResults(supabase, comparisonWeeks),
+  ])
   const holePerformance = comparableCards === null
     ? null
     : deriveIgcMens2026HolePerformance({
       memberCardId,
       events: comparisonEvents,
       cards: comparableCards,
+      // A results read failure may remove the Flight lens, but must not take
+      // down the independently valid occurrence-matched Field comparison.
+      officialFlightResults: officialFlightResults ?? [],
     })
 
   const user = authRes.data.user

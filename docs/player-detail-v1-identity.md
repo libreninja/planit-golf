@@ -31,9 +31,11 @@ unresolved live name.
 
 `/players/[golferId]/performance` is the stable destination for deeper player
 analysis. The landing page stays limited to selected-round and recent-form
-questions plus a compact Interbay preview. The deeper page answers how the
-golfer plays each Interbay hole relative to the field. Generic scoring-outcome
-distribution is not part of the current product surface.
+questions plus a neutral Interbay entry point with the comparable-round count.
+It exposes no ambient strengths, gaps, rankings, or comparator values. The
+deeper page answers how the golfer plays each Interbay hole through explicit
+`Vs Flight` and `Vs Field` lenses. Generic scoring-outcome distribution is not
+part of the current product surface.
 
 This is not a generic course analytics contract. The code-owned
 `igc-mens-2026-interbay-back-2023-front-nine` manifest contains only occurrences
@@ -66,13 +68,33 @@ incomplete. GG exposes a separate course-catalog Back Men tee ID
 records both and keys this contract to the assigned tee evidence rather than
 assuming those identifiers are interchangeable.
 
-For each completed golfer start and hole, Planit compares the player's gross
-score with the average of the *other* completed field cards from that exact
-occurrence. The displayed league average gives each of the golfer's matched
-starts one field-benchmark observation. `vs league` is player average minus
-that matched league average, and cumulative differential is the sum of those
-per-start differences. Negative is better and positive is worse. This metric
-must not be called Strokes Gained.
+Both lenses use completed individual gross hole scores. For each completed
+golfer start and hole, `Vs Field` compares the player's score with the average
+of the *other* completed field cards from that exact occurrence. It is not a
+generic season-wide field average. The displayed field average gives each of
+the golfer's matched starts one benchmark observation.
+
+`Vs Flight` resolves the target golfer's official flight independently for
+every eligible occurrence. A card qualifies only when exactly one persisted
+gross result and one persisted net result map to the same canonical
+`Flight 1`, `Flight 2`, or `Flight 3` value for the exact occurrence, scoped
+member card, and exact source player name. Missing, projected, ambiguous, or
+gross/net-conflicting evidence fails closed. Peers must pass the same check and
+match that occurrence's target flight. Flight therefore defines the cohort;
+the scoring basis remains gross. No season-long flight is inferred.
+
+At the September 4 flight audit, 3,022 of 3,024 completed comparable cards had
+matching official gross and net flight memberships; all covered assignments
+agreed. The two uncovered cards are the known shared-card/name ambiguity and
+remain excluded from Flight. Eighty-two of 249 repeat name-consistent cards
+appeared in multiple flights, confirming that a static season cohort would be
+incorrect. Official membership was present in all 21 audited occurrences.
+
+For both lenses, differential is player average minus the average of the
+matched per-occurrence comparator benchmarks, and cumulative differential is
+the sum of those per-start differences. Negative means lower gross scoring;
+positive means higher. The UI calls this an occurrence-matched gross scoring
+differential and does not give it a generalized professional-tour metric name.
 
 One scoped Golf Genius card is known to contain two distinct names and scores
 in the same occurrence. It remains unresolved as a canonical golfer. Its two
