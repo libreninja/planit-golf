@@ -30,3 +30,14 @@ export function playerDetailHrefForMemberCard(input: {
   const golferId = input.golferIdsByMemberCard[input.memberCardId]
   return golferId ? playerDetailHref({ golferId, week: input.week, returnTo: input.returnTo }) : null
 }
+
+export function playerPerformanceHref(input: {
+  golferId: string
+  returnTo?: string | null
+}): string {
+  const params = new URLSearchParams()
+  const returnTo = safeInternalReturnTo(input.returnTo)
+  if (returnTo) params.set('from', returnTo)
+  const query = params.toString()
+  return `/players/${encodeURIComponent(input.golferId)}/performance${query ? `?${query}` : ''}`
+}

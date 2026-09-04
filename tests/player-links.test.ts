@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { playerDetailHrefForMemberCard, safeInternalReturnTo } from '../lib/players/links.ts'
+import { playerDetailHrefForMemberCard, playerPerformanceHref, safeInternalReturnTo } from '../lib/players/links.ts'
 
 test('leaderboard member card resolves to the correct canonical golfer and preserves source week', () => {
   const href = playerDetailHrefForMemberCard({
@@ -21,4 +21,11 @@ test('return path rejects external and protocol-relative destinations', () => {
   assert.equal(safeInternalReturnTo('//example.com'), null)
   assert.equal(safeInternalReturnTo('/\\example.com'), null)
   assert.equal(safeInternalReturnTo('/igc/mens-league?week=19'), '/igc/mens-league?week=19')
+})
+
+test('performance route preserves its exact player-detail return context', () => {
+  assert.equal(
+    playerPerformanceHref({ golferId: 'golfer-steven', returnTo: '/players/golfer-steven?week=19&from=%2Figc%2Fmens-league' }),
+    '/players/golfer-steven/performance?from=%2Fplayers%2Fgolfer-steven%3Fweek%3D19%26from%3D%252Figc%252Fmens-league',
+  )
 })

@@ -32,7 +32,6 @@ export interface PlayerResultFact {
 export interface PlayerSeasonFact {
   rank: number | null
   points: number | null
-  gapToLeader: number | null
 }
 
 export interface ScoringDistribution {
@@ -66,13 +65,20 @@ export interface PlayerRound {
 
 export interface PlayerDetailModel {
   selectedRound: PlayerRound | null
+  selectedRoundComparison: {
+    grossVsSeasonAverage: number | null
+    isSeasonLow: boolean
+  }
   rounds: PlayerRound[]
   completedComparableRounds: PlayerRound[]
   season: PlayerSeasonFact & { starts: number }
   form: {
     recentGross: Array<{ week: number; eventDate: string | null; gross: number }>
+    recentAverageGross: number | null
+    recentVsSeasonAverage: number | null
     seasonAverageGross: number | null
     seasonLowGross: number | null
+    seasonLowRound: { week: number; eventDate: string | null; gross: number } | null
   }
   scoringDistribution: ScoringDistribution | null
 }
@@ -149,6 +155,18 @@ export function derivePlayerDetail(input: {
   const grossTotals = completedComparableRounds
     .map((round) => round.grossTotal)
     .filter((gross): gross is number => gross !== null)
+  const roundToTenth = (value: number) => Math.round(value * 10) / 10
+  const seasonAverageGross = grossTotals.length
+    ? roundToTenth(grossTotals.reduce((sum, gross) => sum + gross, 0) / grossTotals.length)
+    : null
+  const seasonLowGross = grossTotals.length ? Math.min(...grossTotals) : null
+  const seasonLowRound = seasonLowGross === null
+    ? null
+    : completedComparableRounds.find((round) => round.grossTotal === seasonLowGross) ?? null
+  const recentGrossRounds = completedComparableRounds.slice(0, 5)
+  const recentAverageGross = recentGrossRounds.length
+    ? roundToTenth(recentGrossRounds.reduce((sum, round) => sum + round.grossTotal!, 0) / recentGrossRounds.length)
+    : null
   const starts = new Set(
     input.performances
       .filter((performance) => {
@@ -189,30 +207,46 @@ export function derivePlayerDetail(input: {
   const requestedRound = input.selectedWeek == null
     ? null
     : rounds.find((round) => round.week === input.selectedWeek) ?? null
+  const selectedRound = input.selectedWeek == null ? (rounds[0] ?? null) : requestedRound
+  const selectedComparableGross = selectedRound?.isCompletedComparableNine ? selectedRound.grossTotal : null
 
   return {
     // An explicit source week never silently falls through to a newer round.
     // If that selected occurrence has no player evidence, render an honest
     // empty selected-result state while retaining the rest of the record.
-    selectedRound: input.selectedWeek == null ? (rounds[0] ?? null) : requestedRound,
+    selectedRound,
+    selectedRoundComparison: {
+      grossVsSeasonAverage: selectedComparableGross !== null && seasonAverageGross !== null
+        ? roundToTenth(selectedComparableGross - seasonAverageGross)
+        : null,
+      isSeasonLow: selectedComparableGross !== null
+        && seasonLowGross !== null
+        && selectedComparableGross === seasonLowGross,
+    },
     rounds,
     completedComparableRounds,
     season: {
       rank: input.season?.rank ?? null,
       points: input.season?.points ?? null,
-      gapToLeader: input.season?.gapToLeader ?? null,
       starts,
     },
     form: {
-      recentGross: completedComparableRounds.slice(0, 5).map((round) => ({
+      recentGross: recentGrossRounds.map((round) => ({
         week: round.week,
         eventDate: round.eventDate,
         gross: round.grossTotal!,
       })),
-      seasonAverageGross: grossTotals.length
-        ? Math.round((grossTotals.reduce((sum, gross) => sum + gross, 0) / grossTotals.length) * 10) / 10
+      recentAverageGross,
+      recentVsSeasonAverage: recentAverageGross !== null && seasonAverageGross !== null
+        ? roundToTenth(recentAverageGross - seasonAverageGross)
         : null,
-      seasonLowGross: grossTotals.length ? Math.min(...grossTotals) : null,
+      seasonAverageGross,
+      seasonLowGross,
+      seasonLowRound: seasonLowRound ? {
+        week: seasonLowRound.week,
+        eventDate: seasonLowRound.eventDate,
+        gross: seasonLowRound.grossTotal!,
+      } : null,
     },
     scoringDistribution: scoringDistribution.totalHoles > 0 ? scoringDistribution : null,
   }

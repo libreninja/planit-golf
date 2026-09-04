@@ -4,8 +4,8 @@ import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { FollowControl } from '@/components/players/follow-control'
 import { Button } from '@/components/ui/button'
 import { getMensPlayerDetail } from '@/lib/players/data'
-import { playerDetailHref, safeInternalReturnTo } from '@/lib/players/links'
-import type { PlayerRound, ScoringDistribution } from '@/lib/players/player-detail'
+import { playerDetailHref, playerPerformanceHref, safeInternalReturnTo } from '@/lib/players/links'
+import type { PlayerRound } from '@/lib/players/player-detail'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +34,15 @@ function formatPoints(value: number | null): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '')
 }
 
+function formatAverage(value: number): string {
+  return value.toFixed(1)
+}
+
+function comparisonLabel(value: number): string {
+  if (value === 0) return 'Matches season average'
+  return `${formatAverage(Math.abs(value))} strokes ${value < 0 ? 'lower' : 'higher'} than season average`
+}
+
 function eventLabel(value: string): string {
   return value.replace(/^Points Season\s*-\s*/i, '')
 }
@@ -51,7 +60,7 @@ function StateLabel({ round }: { round: PlayerRound }) {
   return <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Final</span>
 }
 
-function ScoreFact({ label, total, toPar }: { label: string; total: number | null; toPar: number | null }) {
+function ScoreFact({ label, total, toPar, marker }: { label: string; total: number | null; toPar: number | null; marker?: string }) {
   if (total === null && toPar === null) return null
   return (
     <div>
@@ -60,6 +69,7 @@ function ScoreFact({ label, total, toPar }: { label: string; total: number | nul
         <span className="font-display text-4xl tabular-nums">{total ?? '—'}</span>
         <span className="text-lg font-semibold tabular-nums text-muted-foreground">{formatToPar(toPar)}</span>
       </div>
+      {marker ? <div className="mt-1 text-xs font-semibold text-primary">{marker}</div> : null}
     </div>
   )
 }
@@ -97,7 +107,17 @@ function ScorecardEvidence({ round }: { round: PlayerRound }) {
   )
 }
 
-function SelectedResult({ round }: { round: PlayerRound | null }) {
+function SelectedResult({
+  round,
+  seasonAverageGross,
+  grossVsSeasonAverage,
+  isSeasonLow,
+}: {
+  round: PlayerRound | null
+  seasonAverageGross: number | null
+  grossVsSeasonAverage: number | null
+  isSeasonLow: boolean
+}) {
   if (!round) {
     return (
       <section className="border-y border-border py-6">
@@ -125,9 +145,15 @@ function SelectedResult({ round }: { round: PlayerRound | null }) {
       ) : (
         <>
           <div className="mt-6 grid grid-cols-2 gap-6 sm:max-w-md">
-            <ScoreFact label="Gross" total={round.grossTotal} toPar={round.toParGrossTotal} />
+            <ScoreFact label="Gross" total={round.grossTotal} toPar={round.toParGrossTotal} marker={isSeasonLow ? 'Season best' : undefined} />
             <ScoreFact label="Net" total={round.netTotal} toPar={round.toParNetTotal} />
           </div>
+          {grossVsSeasonAverage !== null && seasonAverageGross !== null ? (
+            <p className="mt-4 text-sm">
+              <strong>{comparisonLabel(grossVsSeasonAverage)}</strong>
+              <span className="text-muted-foreground"> ({formatAverage(seasonAverageGross)})</span>
+            </p>
+          ) : null}
           <div className="mt-5 grid gap-2 text-sm sm:grid-cols-2">
             {round.grossResult ? (
               <div><span className="text-muted-foreground">Gross finish</span> <strong>{round.grossResult.positionLabel ?? '—'}</strong>{round.grossResult.points !== null ? ` · ${formatPoints(round.grossResult.points)} pts` : ''}</div>
@@ -137,7 +163,7 @@ function SelectedResult({ round }: { round: PlayerRound | null }) {
             ) : null}
           </div>
           {round.state !== 'final' ? (
-            <p className="mt-4 text-xs text-muted-foreground">Partial rounds are shown as evidence here but excluded from averages, lows, and scoring distribution.</p>
+            <p className="mt-4 text-xs text-muted-foreground">Partial rounds are shown as evidence here but excluded from completed-round comparisons.</p>
           ) : null}
           <div className="mt-5"><ScorecardEvidence round={round} /></div>
         </>
@@ -151,30 +177,6 @@ function Metric({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-2xl font-semibold tabular-nums">{value}</div>
       <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-    </div>
-  )
-}
-
-function Distribution({ distribution }: { distribution: ScoringDistribution }) {
-  const rows = [
-    ['Birdie or better', distribution.birdieOrBetter],
-    ['Par', distribution.par],
-    ['Bogey', distribution.bogey],
-    ['Double or worse', distribution.doubleOrWorse],
-  ] as const
-  return (
-    <div className="space-y-2.5">
-      {rows.map(([label, count]) => {
-        const percent = Math.round((count / distribution.totalHoles) * 100)
-        return (
-          <div key={label} className="grid grid-cols-[7.5rem_1fr_3.5rem] items-center gap-2 text-xs">
-            <span className="text-muted-foreground">{label}</span>
-            <span className="h-1.5 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full bg-primary/70" style={{ width: `${percent}%` }} /></span>
-            <span className="text-right tabular-nums">{count} · {percent}%</span>
-          </div>
-        )
-      })}
-      <p className="text-[11px] text-muted-foreground">Gross outcomes across {distribution.totalHoles} completed 9-hole league holes.</p>
     </div>
   )
 }
@@ -195,9 +197,10 @@ export default async function PlayerDetailPage({
   const returnTo = safeInternalReturnTo(query.from) ?? '/igc/mens-league?view=weekly'
   const visibleRounds = query.all === '1' ? data.model.rounds : data.model.rounds.slice(0, 5)
   const handicapDate = formatSnapshotDate(data.handicapSnapshot?.asOf ?? null)
+  const playerReturnTo = playerDetailHref({ golferId, week: query.week, returnTo, allRounds: query.all === '1' })
 
   return (
-    <article className="mx-auto max-w-3xl space-y-8">
+    <article className="mx-auto max-w-2xl space-y-8">
       <Link href={returnTo} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to leaderboard
       </Link>
@@ -221,53 +224,65 @@ export default async function PlayerDetailPage({
         />
       </header>
 
-      <SelectedResult round={data.model.selectedRound} />
+      <SelectedResult
+        round={data.model.selectedRound}
+        seasonAverageGross={data.model.form.seasonAverageGross}
+        grossVsSeasonAverage={data.model.selectedRoundComparison.grossVsSeasonAverage}
+        isSeasonLow={data.model.selectedRoundComparison.isSeasonLow}
+      />
 
-      <div className="grid gap-8 md:grid-cols-[1.2fr_0.8fr]">
-        <section className="min-w-0">
-          <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current form</p>
-              <h2 className="mt-1 text-2xl font-semibold">Gross scoring</h2>
+      <section className="min-w-0">
+        <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current form</p>
+            <h2 className="mt-1 text-2xl font-semibold">How {data.displayName.split(',')[1]?.trim().split(' ')[0] ?? data.displayName.split(' ')[0]} has been playing</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">Completed 9-hole individual rounds</p>
+        </div>
+        {data.model.form.recentGross.length ? (
+          <>
+            <div className="mt-5 grid grid-cols-2 gap-5 border-y border-border py-4">
+              <Metric label={`Recent ${data.model.form.recentGross.length} average`} value={data.model.form.recentAverageGross?.toFixed(1) ?? '—'} />
+              <Metric label="Season average" value={data.model.form.seasonAverageGross?.toFixed(1) ?? '—'} />
             </div>
-            <p className="text-xs text-muted-foreground">Completed 9-hole individual rounds</p>
-          </div>
-          {data.model.form.recentGross.length ? (
-            <>
-              <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-                {data.model.form.recentGross.map((round) => (
-                  <div key={round.week} className="min-w-[4.5rem] rounded-md border bg-card px-2 py-2 text-center">
-                    <div className="text-2xl font-semibold tabular-nums">{round.gross}</div>
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{round.eventDate ? formatDate(round.eventDate).replace(/, 2026$/, '') : `#${round.week}`}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 grid grid-cols-2 gap-5 border-t border-border pt-4">
-                <Metric label="Season average" value={data.model.form.seasonAverageGross?.toFixed(1) ?? '—'} />
-                <Metric label="Season low" value={data.model.form.seasonLowGross?.toString() ?? '—'} />
-              </div>
-            </>
-          ) : <p className="mt-4 text-sm text-muted-foreground">No completed comparable rounds yet.</p>}
-        </section>
+            {data.model.form.recentVsSeasonAverage !== null ? (
+              <p className="mt-3 text-sm font-medium">{comparisonLabel(data.model.form.recentVsSeasonAverage)}</p>
+            ) : null}
+            <div className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Recent completed gross scores">
+              {data.model.form.recentGross.map((round) => (
+                <div key={round.week} className="min-w-[4.5rem] rounded-md border bg-card px-2 py-2 text-center">
+                  <div className="text-2xl font-semibold tabular-nums">{round.gross}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{round.eventDate ? formatDate(round.eventDate).replace(/, 2026$/, '') : `#${round.week}`}</div>
+                </div>
+              ))}
+            </div>
+            {data.model.form.seasonLowRound ? (
+              <p className="mt-4 text-sm">
+                <span className="text-muted-foreground">Season best</span>{' '}
+                <strong className="tabular-nums">{data.model.form.seasonLowRound.gross}</strong>
+                {data.model.form.seasonLowRound.eventDate ? ` · ${formatDate(data.model.form.seasonLowRound.eventDate)}` : ''}
+              </p>
+            ) : null}
+          </>
+        ) : <p className="mt-4 text-sm text-muted-foreground">No completed comparable rounds yet.</p>}
+        <Button asChild variant="outline" className="mt-5">
+          <Link href={playerPerformanceHref({ golferId, returnTo: playerReturnTo })}>
+            See performance <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+          </Link>
+        </Button>
+      </section>
 
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Season pulse</p>
-          <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-6">
-            <Metric label="Season rank" value={data.model.season.rank ? `#${data.model.season.rank}` : '—'} />
-            <Metric label="Points" value={formatPoints(data.model.season.points)} />
-            <Metric label="Starts" value={String(data.model.season.starts)} />
-            <Metric label="Gap to leader" value={data.model.season.gapToLeader === null ? '—' : formatPoints(data.model.season.gapToLeader)} />
-          </div>
-        </section>
-      </div>
-
-      {data.model.scoringDistribution ? (
-        <section className="border-t border-border pt-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Gross scoring profile</p>
-          <h2 className="mt-1 text-2xl font-semibold">Hole outcomes</h2>
-          <div className="mt-4"><Distribution distribution={data.model.scoringDistribution} /></div>
-        </section>
-      ) : null}
+      <section className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">2026 season context</p>
+          <p className="mt-1 text-sm">
+            <strong className="tabular-nums">{data.model.season.rank ? `#${data.model.season.rank}` : '—'}</strong> rank
+            <span className="mx-2 text-muted-foreground">·</span>
+            <strong className="tabular-nums">{formatPoints(data.model.season.points)}</strong> points
+          </p>
+        </div>
+        <Link href="/igc/mens-league?view=season" className="text-sm font-semibold text-primary hover:underline">Full standings</Link>
+      </section>
 
       <section className="border-t border-border pt-6">
         <div className="flex items-end justify-between gap-3">

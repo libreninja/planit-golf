@@ -26,3 +26,18 @@ The finalized-round reconciliation path refreshes only the cards imported in
 that round. A first-ever live appearance stays unlinked until durable evidence
 exists; this is preferable to creating a public/followable identity from an
 unresolved live name.
+
+## Performance analysis boundary
+
+`/players/[golferId]/performance` is the stable destination for deeper player
+analysis. The landing page stays limited to selected-round and recent-form
+questions; distributions and future comparison analysis belong here.
+
+Hole-relative league comparison is intentionally deferred. The current
+performance rows persist hole array positions and derivable par, but not a
+stable course, tee, and hole identity for every occurrence. Before comparing a
+golfer to the league, Planit must establish that comparison key and define the
+eligible cohort as completed 2026 Men's League individual rounds played from
+the same course/tee setup. The first metric should be the transparent
+player-average minus league-average score for each comparable hole, labeled
+“vs league”; it must not be called Strokes Gained.

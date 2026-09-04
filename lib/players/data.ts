@@ -87,7 +87,7 @@ export async function getMensPlayerDetail(
       .limit(500),
     supabase
       .from('igc_league_season_points')
-      .select('position, total_points, points_behind')
+      .select('position, total_points')
       .eq('league_key', 'mens')
       .eq('member_card_id', memberCardId)
       .maybeSingle(),
@@ -210,7 +210,6 @@ export async function getMensPlayerDetail(
     season: seasonRow ? {
       rank: seasonRow.position as number | null,
       points: seasonRow.total_points === null ? null : Number(seasonRow.total_points),
-      gapToLeader: seasonRow.points_behind === null ? null : Number(seasonRow.points_behind),
     } : null,
     selectedWeek,
   })

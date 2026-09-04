@@ -23,11 +23,35 @@ const events = [
   { week: 3, eventName: 'Week 3', eventDate: '2026-04-14', format: 'individual' as const },
   { week: 4, eventName: 'Scheduled only', eventDate: '2026-04-21', format: 'individual' as const },
   { week: 5, eventName: 'Team week', eventDate: '2026-04-28', format: 'team' as const },
+  { week: 6, eventName: 'Week 6', eventDate: '2026-05-05', format: 'individual' as const },
+  { week: 7, eventName: 'Week 7', eventDate: '2026-05-12', format: 'individual' as const },
+  { week: 8, eventName: 'Week 8', eventDate: '2026-05-19', format: 'individual' as const },
 ]
 
 test('source week is selected even when a newer completed result exists', () => {
   const model = derivePlayerDetail({ events, performances: [completed(1, 40, 35), completed(2, 38, 34)], results: [], season: null, selectedWeek: 1 })
   assert.equal(model.selectedRound?.week, 1)
+  assert.equal(model.selectedRoundComparison.grossVsSeasonAverage, 1)
+  assert.equal(model.selectedRoundComparison.isSeasonLow, false)
+})
+
+test('selected-round and recent-form comparisons give gross scores deterministic season context', () => {
+  const model = derivePlayerDetail({
+    events,
+    performances: [
+      completed(1, 40, 35), completed(2, 41, 35), completed(3, 42, 35),
+      completed(6, 43, 35), completed(7, 44, 35), completed(8, 45, 35),
+    ],
+    results: [],
+    season: null,
+    selectedWeek: 1,
+  })
+  assert.equal(model.form.seasonAverageGross, 42.5)
+  assert.equal(model.form.recentAverageGross, 43)
+  assert.equal(model.form.recentVsSeasonAverage, 0.5)
+  assert.deepEqual(model.form.seasonLowRound, { week: 1, eventDate: '2026-03-31', gross: 40 })
+  assert.equal(model.selectedRoundComparison.grossVsSeasonAverage, -2.5)
+  assert.equal(model.selectedRoundComparison.isSeasonLow, true)
 })
 
 test('an explicit source week with no player evidence does not fall through to another result', () => {
@@ -52,6 +76,7 @@ test('completed-round form excludes live/incomplete rounds and scheduled-only ev
   assert.equal(model.form.seasonAverageGross, 39)
   assert.equal(model.form.seasonLowGross, 38)
   assert.equal(model.season.starts, 3)
+  assert.equal(model.selectedRoundComparison.grossVsSeasonAverage, null)
   assert.equal(model.rounds.some((round) => round.week === 4), false, 'scheduled-only event is not a start or round')
 })
 
