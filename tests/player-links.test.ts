@@ -1,15 +1,27 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { playerDetailHrefForMemberCard, playerPerformanceHref, safeInternalReturnTo } from '../lib/players/links.ts'
+import {
+  playerDetailHrefForMemberCard,
+  playerPerformanceHref,
+  safeInternalReturnTo,
+  scoringFromPlayerSource,
+} from '../lib/players/links.ts'
 
 test('leaderboard member card resolves to the correct canonical golfer and preserves source week', () => {
   const href = playerDetailHrefForMemberCard({
     memberCardId: 'card-steven',
     golferIdsByMemberCard: { 'card-steven': 'golfer-steven', 'card-other': 'golfer-other' },
     week: '19',
+    scoring: 'gross',
     returnTo: '/igc/mens-league?view=weekly&week=19&scoring=gross&grouping=2',
   })
-  assert.equal(href, '/players/golfer-steven?week=19&from=%2Figc%2Fmens-league%3Fview%3Dweekly%26week%3D19%26scoring%3Dgross%26grouping%3D2')
+  assert.equal(href, '/players/golfer-steven?week=19&scoring=gross&from=%2Figc%2Fmens-league%3Fview%3Dweekly%26week%3D19%26scoring%3Dgross%26grouping%3D2')
+})
+
+test('result scoring uses explicit context and falls back to the preserved leaderboard return URL', () => {
+  assert.equal(scoringFromPlayerSource('net', '/igc/mens-league?scoring=gross'), 'net')
+  assert.equal(scoringFromPlayerSource(undefined, '/igc/mens-league?view=weekly&scoring=gross'), 'gross')
+  assert.equal(scoringFromPlayerSource(undefined, 'https://example.com?scoring=net'), null)
 })
 
 test('unresolved member card has no player navigation target', () => {

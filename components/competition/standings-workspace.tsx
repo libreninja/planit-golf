@@ -17,6 +17,7 @@ import { hasActiveLeaderboardFilters, resolveGroupingSelection } from './leaderb
 import { occurrenceContextLabel } from './occurrence-context'
 import { isOccurrenceNavigationPending, selectedOccurrenceContextId } from './occurrence-loading'
 import { LeaderboardClearFilters } from './leaderboard-clear-filters'
+import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interaction'
 
 export interface StandingsWorkspaceProps {
   competitionKey: string
@@ -30,6 +31,7 @@ export interface StandingsWorkspaceProps {
   placedOnly: boolean
   defaultScoring: ScoringMode
   golferIdsByMemberCard: Record<string, string>
+  playerFollowState: LeaderboardFollowState
   capabilities: OccurrenceCapabilities
   initial: LiveResponse | null
   pollUrl: string | null
@@ -234,6 +236,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
           colorizeFlights={colorizeFlights}
           projectedFlights={flightMembership.status === 'projected'}
           golferIdsByMemberCard={props.golferIdsByMemberCard}
+          playerFollowState={props.playerFollowState}
           playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
         />
       ) : showingLastKnown ? (

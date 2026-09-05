@@ -21,7 +21,6 @@ export interface MensPlayerDetailData {
   golferId: string
   displayName: string
   memberCardId: string
-  handicapSnapshot: { value: string; asOf: string | null } | null
   model: PlayerDetailModel
   holePerformance: PlayerHolePerformance | null
   viewer: {
@@ -29,6 +28,13 @@ export interface MensPlayerDetailData {
     isFollowing: boolean
     isSelf: boolean
   }
+}
+
+export interface MensLeaderboardPlayerState {
+  golferIdsByMemberCard: Record<string, string>
+  signedIn: boolean
+  followedGolferIds: string[]
+  selfGolferIds: string[]
 }
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
@@ -107,24 +113,59 @@ async function loadOfficialFlightResults(
   return null
 }
 
-export async function getResolvedGolferIdsForMens2026(): Promise<Record<string, string>> {
+export async function getMensLeaderboardPlayerState(): Promise<MensLeaderboardPlayerState> {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('golfer_external_identities')
-    .select('external_id, golfer_id')
-    .eq('source_system', 'golf_genius')
-    .eq('scope_type', 'competition_season')
-    .eq('scope_key', IGC_MENS_2026_SCOPE)
-    .eq('resolution_status', 'resolved')
-    .not('golfer_id', 'is', null)
-    .limit(1000)
+  const [identityRes, authRes] = await Promise.all([
+    supabase
+      .from('golfer_external_identities')
+      .select('external_id, golfer_id')
+      .eq('source_system', 'golf_genius')
+      .eq('scope_type', 'competition_season')
+      .eq('scope_key', IGC_MENS_2026_SCOPE)
+      .eq('resolution_status', 'resolved')
+      .not('golfer_id', 'is', null)
+      .limit(1000),
+    supabase.auth.getUser(),
+  ])
 
-  if (error || !data) return {}
-  return Object.fromEntries(
-    data
+  if (identityRes.error || !identityRes.data) {
+    return { golferIdsByMemberCard: {}, signedIn: false, followedGolferIds: [], selfGolferIds: [] }
+  }
+  const golferIdsByMemberCard = Object.fromEntries(
+    identityRes.data
       .filter((row) => typeof row.external_id === 'string' && typeof row.golfer_id === 'string')
       .map((row) => [row.external_id as string, row.golfer_id as string]),
   )
+  const user = authRes.data.user
+  const golferIds = [...new Set(Object.values(golferIdsByMemberCard))]
+  if (!user || golferIds.length === 0) {
+    return { golferIdsByMemberCard, signedIn: !!user, followedGolferIds: [], selfGolferIds: [] }
+  }
+
+  const [followRes, selfRes] = await Promise.all([
+    supabase
+      .from('golfer_follows')
+      .select('golfer_id')
+      .eq('user_id', user.id)
+      .in('golfer_id', golferIds)
+      .limit(1000),
+    supabase
+      .from('golfer_user_links')
+      .select('golfer_id')
+      .eq('user_id', user.id)
+      .in('golfer_id', golferIds)
+      .limit(1000),
+  ])
+  return {
+    golferIdsByMemberCard,
+    signedIn: true,
+    followedGolferIds: followRes.error ? [] : (followRes.data ?? []).map((row) => row.golfer_id as string),
+    selfGolferIds: selfRes.error ? [] : (selfRes.data ?? []).map((row) => row.golfer_id as string),
+  }
+}
+
+export async function getResolvedGolferIdsForMens2026(): Promise<Record<string, string>> {
+  return (await getMensLeaderboardPlayerState()).golferIdsByMemberCard
 }
 
 export async function getMensPlayerDetail(
@@ -147,7 +188,7 @@ export async function getMensPlayerDetail(
   if (golferRes.error || identityRes.error || !golferRes.data || identityRes.data?.length !== 1) return null
 
   const memberCardId = identityRes.data[0].external_id as string
-  const [eventsRes, performancesRes, resultsRes, seasonRes, memberRes, authRes] = await Promise.all([
+  const [eventsRes, performancesRes, resultsRes, seasonRes, authRes] = await Promise.all([
     supabase
       .from('igc_league_events')
       .select('week_number, event_name, event_date, event_format, status, gg_event_id, gg_round_id')
@@ -173,12 +214,6 @@ export async function getMensPlayerDetail(
     supabase
       .from('igc_league_season_points')
       .select('position, total_points')
-      .eq('league_key', 'mens')
-      .eq('member_card_id', memberCardId)
-      .maybeSingle(),
-    supabase
-      .from('igc_league_members')
-      .select('handicap_index, synced_at')
       .eq('league_key', 'mens')
       .eq('member_card_id', memberCardId)
       .maybeSingle(),
@@ -351,14 +386,10 @@ export async function getMensPlayerDetail(
     isSelf = !selfRes.error && !!selfRes.data
   }
 
-  const handicap = memberRes.data?.handicap_index
   return {
     golferId,
     displayName: golferRes.data.display_name as string,
     memberCardId,
-    handicapSnapshot: handicap !== null && handicap !== undefined && String(handicap).trim() !== ''
-      ? { value: String(handicap), asOf: (memberRes.data?.synced_at as string | null) ?? null }
-      : null,
     model,
     holePerformance,
     viewer: {

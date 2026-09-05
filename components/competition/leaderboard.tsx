@@ -6,7 +6,10 @@ import { ScorecardRow } from "./scorecard";
 import { shouldShowPurse } from "./leaderboard-purse";
 import { pickLeaderboardCols } from "./leaderboard-cols";
 import { cn } from "@/lib/utils/cn";
-import { playerDetailHrefForMemberCard } from "@/lib/players/links";
+import {
+  resolveLeaderboardPlayerInteraction,
+  type LeaderboardFollowState,
+} from "@/lib/players/leaderboard-interaction";
 
 // showFlight renders a Flight column (POS / PLAYER / FLIGHT / …) for the Men's
 // Overall view. A specific flight makes the column redundant; women's is single
@@ -18,6 +21,7 @@ export function Leaderboard({
   colorizeFlights = false,
   projectedFlights = false,
   golferIdsByMemberCard = {},
+  playerFollowState = { signedIn: false, followedGolferIds: [], selfGolferIds: [] },
   playerReturnTo,
 }: {
   leaderboard: Leaderboard;
@@ -25,6 +29,7 @@ export function Leaderboard({
   colorizeFlights?: boolean;
   projectedFlights?: boolean;
   golferIdsByMemberCard?: Record<string, string>;
+  playerFollowState?: LeaderboardFollowState;
   playerReturnTo?: string;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -66,11 +71,13 @@ export function Leaderboard({
         {leaderboard.entries.map((e) => {
           const card = leaderboard.scorecards.find((c) => c.key === e.key) ?? null;
           const key = `${leaderboard.scoringMode}|${e.key}`;
-          const playerHref = playerDetailHrefForMemberCard({
+          const playerInteraction = resolveLeaderboardPlayerInteraction({
             memberCardId: card?.memberCardId ?? null,
             golferIdsByMemberCard,
+            followState: playerFollowState,
             week: leaderboard.occurrenceId,
             returnTo: playerReturnTo,
+            scoring: isGross ? 'gross' : 'net',
           });
           return (
             <ScorecardRow
@@ -85,7 +92,7 @@ export function Leaderboard({
               showPurse={showPurse}
               colorizeFlights={colorizeFlights}
               flightLabel={e.flight && projectedFlights ? `Projected ${e.flight}` : e.flight}
-              playerHref={playerHref}
+              playerInteraction={playerInteraction}
             />
           );
         })}

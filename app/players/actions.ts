@@ -48,5 +48,6 @@ export async function setGolferFollow(golferId: string, following: boolean): Pro
 
   if (result.error) return { ok: false, following: !following, reason: 'write_failed' }
   revalidatePath(`/players/${golferId}`)
+  revalidatePath('/igc/mens-league')
   return { ok: true, following }
 }
