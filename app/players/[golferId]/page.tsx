@@ -2,46 +2,43 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { FollowControl } from '@/components/players/follow-control'
-import { Button } from '@/components/ui/button'
 import { getMensPlayerDetail } from '@/lib/players/data'
-import { playerDetailHref, playerPerformanceHref, safeInternalReturnTo } from '@/lib/players/links'
-import type { PlayerRound } from '@/lib/players/player-detail'
+import {
+  playerDetailHref,
+  playerPerformanceHref,
+  safeInternalReturnTo,
+  scoringFromPlayerSource,
+} from '@/lib/players/links'
+import {
+  playerRoundPresentation,
+  type PlayerResultFocus,
+} from '@/lib/players/player-detail-presentation'
+import type { PlayerDetailModel, PlayerRound } from '@/lib/players/player-detail'
 import type { PlayerHolePerformance } from '@/lib/players/igc-mens-2026-hole-performance'
 
 export const dynamic = 'force-dynamic'
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, includeYear = false): string {
   if (!value) return 'Date unavailable'
   return new Intl.DateTimeFormat('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+    month: 'short', day: 'numeric', ...(includeYear ? { year: 'numeric' as const } : {}), timeZone: 'UTC',
   }).format(new Date(`${value.slice(0, 10)}T12:00:00Z`))
 }
 
-function formatSnapshotDate(value: string | null): string | null {
-  if (!value) return null
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-  }).format(new Date(value))
-}
-
 function formatToPar(value: number | null): string {
-  if (value === null) return '—'
+  if (value === null) return ''
   if (value === 0) return 'E'
   return value > 0 ? `+${value}` : String(value)
 }
 
 function formatPoints(value: number | null): string {
-  if (value === null) return '—'
+  if (value === null) return ''
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '')
 }
 
-function formatAverage(value: number): string {
-  return value.toFixed(1)
-}
-
 function comparisonLabel(value: number): string {
-  if (value === 0) return 'Matches season average'
-  return `${formatAverage(Math.abs(value))} strokes ${value < 0 ? 'lower' : 'higher'} than season average`
+  if (value === 0) return 'Matches season avg'
+  return `${Math.abs(value).toFixed(1)} ${value < 0 ? 'lower' : 'higher'} than season avg`
 }
 
 function eventLabel(value: string): string {
@@ -50,29 +47,15 @@ function eventLabel(value: string): string {
 
 function StateLabel({ round }: { round: PlayerRound }) {
   if (round.state === 'live') {
-    return <span className="rounded-full bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white">LIVE · thru {round.holesCompleted}</span>
+    return <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white">LIVE · thru {round.holesCompleted}</span>
   }
   if (round.state === 'incomplete') {
-    return <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">Incomplete · {round.holesCompleted} holes</span>
+    return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">Incomplete · {round.holesCompleted}</span>
   }
   if (round.state === 'participation') {
-    return <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Participation</span>
+    return <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Participation</span>
   }
-  return <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Final</span>
-}
-
-function ScoreFact({ label, total, toPar, marker }: { label: string; total: number | null; toPar: number | null; marker?: string }) {
-  if (total === null && toPar === null) return null
-  return (
-    <div>
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className="font-display text-4xl tabular-nums">{total ?? '—'}</span>
-        <span className="text-lg font-semibold tabular-nums text-muted-foreground">{formatToPar(toPar)}</span>
-      </div>
-      {marker ? <div className="mt-1 text-xs font-semibold text-primary">{marker}</div> : null}
-    </div>
-  )
+  return <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">Final</span>
 }
 
 function ScorecardEvidence({ round }: { round: PlayerRound }) {
@@ -84,11 +67,11 @@ function ScorecardEvidence({ round }: { round: PlayerRound }) {
   ))
   if (holes === 0) return null
   return (
-    <details className="group border-t border-border pt-3">
+    <details className="group mt-3 border-t border-border pt-2.5">
       <summary className="cursor-pointer list-none text-sm font-semibold text-primary marker:hidden">
-        <span className="inline-flex items-center gap-1">Scorecard <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden /></span>
+        <span className="inline-flex items-center gap-0.5">Scorecard <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden /></span>
       </summary>
-      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" aria-label="Hole-by-hole scorecard">
+      <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" aria-label="Hole-by-hole scorecard">
         {Array.from({ length: holes }, (_, index) => {
           const gross = round.grossScores[index] ?? null
           const net = round.netScores[index] ?? null
@@ -108,111 +91,107 @@ function ScorecardEvidence({ round }: { round: PlayerRound }) {
   )
 }
 
-function SelectedResult({
-  round,
-  seasonAverageGross,
-  grossVsSeasonAverage,
-  isSeasonLow,
-}: {
+function SelectedRound({ round, resultFocus, grossVsSeasonAverage, isSeasonLow }: {
   round: PlayerRound | null
-  seasonAverageGross: number | null
+  resultFocus: PlayerResultFocus | null
   grossVsSeasonAverage: number | null
   isSeasonLow: boolean
 }) {
   if (!round) {
     return (
-      <section className="border-y border-border py-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Selected result</p>
-        <p className="mt-3 text-sm text-muted-foreground">No supported 2026 Men&apos;s League result is available for this golfer.</p>
+      <section className="border-y border-border py-4">
+        <p className="text-sm text-muted-foreground">No supported 2026 Men&apos;s League result is available for this golfer.</p>
       </section>
     )
   }
 
+  const selected = playerRoundPresentation(round, resultFocus)
+  const position = selected.result?.positionLabel?.trim() ?? ''
+  const points = selected.result?.points ?? null
+  const meaning = selected.competition === 'gross'
+    ? [isSeasonLow ? 'Season best' : null, grossVsSeasonAverage !== null ? comparisonLabel(grossVsSeasonAverage) : null].filter(Boolean)
+    : []
+
   return (
-    <section className="border-y border-border py-5 sm:py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Selected result</p>
-          <h2 className="mt-1 text-2xl font-semibold">{eventLabel(round.eventName)}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{formatDate(round.eventDate)}{round.flight ? ` · ${round.flight}` : ''}</p>
+    <section className="border-y border-border py-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-xl font-semibold">{eventLabel(round.eventName)}</h2>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {formatDate(round.eventDate)}{round.flight ? ` · ${round.flight}` : ''}
+          </p>
         </div>
         <StateLabel round={round} />
       </div>
 
-      {round.format === 'team' && round.grossTotal === null ? (
-        <div className="mt-5 rounded-md bg-muted/45 p-4 text-sm">
-          This was a team-format appearance. No authoritative individual score is available, so no individual performance is inferred.
-        </div>
-      ) : (
+      {round.format === 'team' && selected.total === null ? (
+        <p className="mt-3 text-sm text-muted-foreground">Team-format appearance · no authoritative individual score</p>
+      ) : selected.total !== null || selected.toPar !== null ? (
         <>
-          <div className="mt-6 grid grid-cols-2 gap-6 sm:max-w-md">
-            <ScoreFact label="Gross" total={round.grossTotal} toPar={round.toParGrossTotal} marker={isSeasonLow ? 'Season best' : undefined} />
-            <ScoreFact label="Net" total={round.netTotal} toPar={round.toParNetTotal} />
+          <div className="mt-3 flex items-end gap-2">
+            <span className="font-display text-4xl leading-none tabular-nums">{selected.total}</span>
+            {selected.toPar !== null ? <span className="pb-0.5 text-lg font-semibold tabular-nums text-muted-foreground">{formatToPar(selected.toPar)}</span> : null}
+            <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{selected.competition}</span>
           </div>
-          {grossVsSeasonAverage !== null && seasonAverageGross !== null ? (
-            <p className="mt-4 text-sm">
-              <strong>{comparisonLabel(grossVsSeasonAverage)}</strong>
-              <span className="text-muted-foreground"> ({formatAverage(seasonAverageGross)})</span>
+          {position || points !== null ? (
+            <p className="mt-1.5 text-sm font-medium">
+              {position ? <><strong>{position}</strong> {selected.competition === 'gross' ? 'Gross' : 'Net'}</> : null}
+              {position && points !== null ? <span className="text-muted-foreground"> · </span> : null}
+              {points !== null ? <>{formatPoints(points)} pts</> : null}
             </p>
           ) : null}
-          <div className="mt-5 grid gap-2 text-sm sm:grid-cols-2">
-            {round.grossResult ? (
-              <div><span className="text-muted-foreground">Gross finish</span> <strong>{round.grossResult.positionLabel ?? '—'}</strong>{round.grossResult.points !== null ? ` · ${formatPoints(round.grossResult.points)} pts` : ''}</div>
-            ) : null}
-            {round.netResult ? (
-              <div><span className="text-muted-foreground">Net finish</span> <strong>{round.netResult.positionLabel ?? '—'}</strong>{round.netResult.points !== null ? ` · ${formatPoints(round.netResult.points)} pts` : ''}</div>
-            ) : null}
-          </div>
-          {round.state !== 'final' ? (
-            <p className="mt-4 text-xs text-muted-foreground">Partial rounds are shown as evidence here but excluded from completed-round comparisons.</p>
-          ) : null}
-          <div className="mt-5"><ScorecardEvidence round={round} /></div>
+          {meaning.length ? <p className="mt-1 text-sm font-semibold text-primary">{meaning.join(' · ')}</p> : null}
+          <ScorecardEvidence round={round} />
         </>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">No authoritative individual {selected.competition} score</p>
       )}
     </section>
   )
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function RecentForm({ model }: { model: PlayerDetailModel }) {
+  const form = model.form
   return (
-    <div>
-      <div className="text-2xl font-semibold tabular-nums">{value}</div>
-      <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-    </div>
+    <section className="min-w-0">
+      <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recent form</h2>
+      {form.recentGross.length ? (
+        <>
+          <div className="mt-2 grid grid-cols-5 gap-1" aria-label="Recent completed gross scores">
+            {form.recentGross.map((round) => (
+              <div key={round.week} className="min-w-0 text-center">
+                <div className="text-2xl font-semibold leading-none tabular-nums">{round.gross}</div>
+                <div className="mt-1 truncate text-[10px] uppercase tracking-wide text-muted-foreground">{round.eventDate ? formatDate(round.eventDate) : `#${round.week}`}</div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+            <strong className="text-foreground">{form.recentAverageGross?.toFixed(1)}</strong> last {form.recentGross.length}
+            {form.seasonAverageGross !== null ? <> · <strong className="text-foreground">{form.seasonAverageGross.toFixed(1)}</strong> season</> : null}
+            {form.seasonLowGross !== null ? <> · <strong className="text-foreground">{form.seasonLowGross}</strong> low</> : null}
+          </p>
+        </>
+      ) : <p className="mt-2 text-sm text-muted-foreground">No completed comparable rounds yet.</p>}
+    </section>
   )
 }
 
-function InterbayPerformanceEntry({
-  golferId,
-  returnTo,
-  performance,
-}: {
+function InterbayPerformanceEntry({ golferId, returnTo, performance }: {
   golferId: string
   returnTo: string
   performance: PlayerHolePerformance
 }) {
   return (
-    <section className="border-y border-border py-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Performance at Interbay</p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {performance.comparableRounds} comparable {performance.comparableRounds === 1 ? 'round' : 'rounds'}
-      </p>
-      <Link
-        href={playerPerformanceHref({ golferId, returnTo })}
-        className="mt-3 inline-flex items-center text-sm font-semibold text-primary hover:underline"
-      >
-        Explore all nine holes <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
-      </Link>
-    </section>
+    <Link href={playerPerformanceHref({ golferId, returnTo })} className="flex items-center justify-between gap-3 border-y border-border py-3 text-sm hover:bg-muted/25">
+      <span><strong>Performance at Interbay</strong> <span className="text-muted-foreground">· {performance.comparableRounds} rounds</span></span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+    </Link>
   )
 }
 
-export default async function PlayerDetailPage({
-  params,
-  searchParams,
-}: {
+export default async function PlayerDetailPage({ params, searchParams }: {
   params: Promise<{ golferId: string }>
-  searchParams: Promise<{ week?: string; from?: string; all?: string; intent?: string }>
+  searchParams: Promise<{ week?: string; from?: string; all?: string; intent?: string; scoring?: string }>
 }) {
   const [{ golferId }, query] = await Promise.all([params, searchParams])
   const parsedWeek = query.week ? Number(query.week) : null
@@ -221,26 +200,18 @@ export default async function PlayerDetailPage({
   if (!data) notFound()
 
   const returnTo = safeInternalReturnTo(query.from) ?? '/igc/mens-league?view=weekly'
+  const resultFocus = scoringFromPlayerSource(query.scoring, query.from)
   const visibleRounds = query.all === '1' ? data.model.rounds : data.model.rounds.slice(0, 5)
-  const handicapDate = formatSnapshotDate(data.handicapSnapshot?.asOf ?? null)
-  const playerReturnTo = playerDetailHref({ golferId, week: query.week, returnTo, allRounds: query.all === '1' })
+  const playerReturnTo = playerDetailHref({ golferId, week: query.week, scoring: resultFocus, returnTo, allRounds: query.all === '1' })
 
   return (
-    <article className="mx-auto max-w-2xl space-y-8">
+    <article className="mx-auto max-w-2xl space-y-5 sm:space-y-6">
       <Link href={returnTo} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to leaderboard
       </Link>
 
-      <header className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">IGC Men&apos;s League · 2026 Planit coverage</p>
-          <h1 className="mt-2 text-4xl font-semibold leading-tight sm:text-5xl">{data.displayName}</h1>
-          {data.handicapSnapshot ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Handicap Index snapshot <span className="font-semibold text-foreground">{data.handicapSnapshot.value}</span>{handicapDate ? ` · as of ${handicapDate}` : ''}
-            </p>
-          ) : null}
-        </div>
+      <header className="flex min-w-0 items-center gap-1">
+        <h1 title={data.displayName} className="min-w-0 truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{data.displayName}</h1>
         <FollowControl
           golferId={data.golferId}
           signedIn={data.viewer.signedIn}
@@ -250,102 +221,57 @@ export default async function PlayerDetailPage({
         />
       </header>
 
-      <SelectedResult
+      <SelectedRound
         round={data.model.selectedRound}
-        seasonAverageGross={data.model.form.seasonAverageGross}
+        resultFocus={resultFocus}
         grossVsSeasonAverage={data.model.selectedRoundComparison.grossVsSeasonAverage}
         isSeasonLow={data.model.selectedRoundComparison.isSeasonLow}
       />
 
-      <section className="min-w-0">
-        <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current form</p>
-            <h2 className="mt-1 text-2xl font-semibold">How {data.displayName.split(',')[1]?.trim().split(' ')[0] ?? data.displayName.split(' ')[0]} has been playing</h2>
-          </div>
-          <p className="text-xs text-muted-foreground">Completed 9-hole individual rounds</p>
-        </div>
-        {data.model.form.recentGross.length ? (
-          <>
-            <div className="mt-5 grid grid-cols-2 gap-5 border-y border-border py-4">
-              <Metric label={`Recent ${data.model.form.recentGross.length} average`} value={data.model.form.recentAverageGross?.toFixed(1) ?? '—'} />
-              <Metric label="Season average" value={data.model.form.seasonAverageGross?.toFixed(1) ?? '—'} />
-            </div>
-            {data.model.form.recentVsSeasonAverage !== null ? (
-              <p className="mt-3 text-sm font-medium">{comparisonLabel(data.model.form.recentVsSeasonAverage)}</p>
-            ) : null}
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Recent completed gross scores">
-              {data.model.form.recentGross.map((round) => (
-                <div key={round.week} className="min-w-[4.5rem] rounded-md border bg-card px-2 py-2 text-center">
-                  <div className="text-2xl font-semibold tabular-nums">{round.gross}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{round.eventDate ? formatDate(round.eventDate).replace(/, 2026$/, '') : `#${round.week}`}</div>
-                </div>
-              ))}
-            </div>
-            {data.model.form.seasonLowRound ? (
-              <p className="mt-4 text-sm">
-                <span className="text-muted-foreground">Season best</span>{' '}
-                <strong className="tabular-nums">{data.model.form.seasonLowRound.gross}</strong>
-                {data.model.form.seasonLowRound.eventDate ? ` · ${formatDate(data.model.form.seasonLowRound.eventDate)}` : ''}
-              </p>
-            ) : null}
-          </>
-        ) : <p className="mt-4 text-sm text-muted-foreground">No completed comparable rounds yet.</p>}
+      <RecentForm model={data.model} />
+
+      {data.holePerformance ? <InterbayPerformanceEntry golferId={golferId} returnTo={playerReturnTo} performance={data.holePerformance} /> : null}
+
+      <section className="flex items-center justify-between gap-3 text-sm">
+        <p className="tabular-nums">
+          <strong>{data.model.season.rank ? `#${data.model.season.rank}` : 'Unranked'}</strong>{data.model.season.rank ? ' rank' : ''}
+          {data.model.season.points !== null ? <> <span className="text-muted-foreground">·</span> <strong>{formatPoints(data.model.season.points)}</strong> points</> : null}
+        </p>
+        <Link href="/igc/mens-league?view=season" className="shrink-0 font-semibold text-primary hover:underline">Full standings <ChevronRight className="inline h-3.5 w-3.5" aria-hidden /></Link>
       </section>
 
-      {data.holePerformance ? (
-        <InterbayPerformanceEntry
-          golferId={golferId}
-          returnTo={playerReturnTo}
-          performance={data.holePerformance}
-        />
-      ) : null}
-
-      <section className="flex flex-wrap items-center justify-between gap-3 py-1">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">2026 season context</p>
-          <p className="mt-1 text-sm">
-            <strong className="tabular-nums">{data.model.season.rank ? `#${data.model.season.rank}` : '—'}</strong> rank
-            <span className="mx-2 text-muted-foreground">·</span>
-            <strong className="tabular-nums">{formatPoints(data.model.season.points)}</strong> points
-          </p>
-        </div>
-        <Link href="/igc/mens-league?view=season" className="text-sm font-semibold text-primary hover:underline">Full standings</Link>
-      </section>
-
-      <section className="border-t border-border pt-6">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Evidence</p>
-            <h2 className="mt-1 text-2xl font-semibold">Recent rounds</h2>
-          </div>
+      <section className="border-t border-border pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Recent rounds</h2>
           {data.model.rounds.length > 5 ? (
-            <Button asChild variant="ghost" size="sm">
-              <Link href={playerDetailHref({ golferId, week: query.week, returnTo, allRounds: query.all !== '1' })}>
-                {query.all === '1' ? 'Recent only' : `All ${data.model.rounds.length}`}
-              </Link>
-            </Button>
+            <Link className="text-xs font-semibold text-primary hover:underline" href={playerDetailHref({ golferId, week: query.week, scoring: resultFocus, returnTo, allRounds: query.all !== '1' })}>
+              {query.all === '1' ? 'Recent only' : `All ${data.model.rounds.length}`}
+            </Link>
           ) : null}
         </div>
-        <div className="mt-3 divide-y divide-border border-y border-border">
-          {visibleRounds.map((round) => (
-            <Link
-              key={round.week}
-              href={playerDetailHref({ golferId, week: String(round.week), returnTo, allRounds: query.all === '1' })}
-              aria-current={round.week === data.model.selectedRound?.week ? 'true' : undefined}
-              className="grid grid-cols-[1fr_auto] items-center gap-3 px-1 py-3 text-sm hover:bg-muted/35"
-            >
-              <span>
-                <span className="font-semibold">{eventLabel(round.eventName)}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">{formatDate(round.eventDate)} · {round.state === 'final' ? 'Final' : round.state}</span>
-              </span>
-              <span className="text-right tabular-nums">
-                <span className="font-semibold">G {round.grossTotal ?? '—'}</span>
-                <span className="ml-3 text-muted-foreground">N {round.netTotal ?? '—'}</span>
-              </span>
-            </Link>
-          ))}
-          {visibleRounds.length === 0 ? <p className="px-1 py-4 text-sm text-muted-foreground">No supported rounds.</p> : null}
+        <div className="mt-2 divide-y divide-border border-y border-border">
+          {visibleRounds.map((round) => {
+            const shown = playerRoundPresentation(round, resultFocus)
+            const position = shown.result?.positionLabel?.trim()
+            return (
+              <Link
+                key={round.week}
+                href={playerDetailHref({ golferId, week: String(round.week), scoring: shown.competition, returnTo, allRounds: query.all === '1' })}
+                aria-current={round.week === data.model.selectedRound?.week ? 'true' : undefined}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-1 py-2 text-sm hover:bg-muted/35"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{eventLabel(round.eventName)}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{formatDate(round.eventDate, true)} · {round.state === 'final' ? 'Final' : round.state}</span>
+                </span>
+                <span className="text-right tabular-nums">
+                  {shown.total !== null ? <span className="font-semibold">{shown.competition === 'gross' ? 'G' : 'N'} {shown.total}</span> : null}
+                  {position ? <span className="ml-2 text-xs text-muted-foreground">{position}</span> : null}
+                </span>
+              </Link>
+            )
+          })}
+          {visibleRounds.length === 0 ? <p className="px-1 py-3 text-sm text-muted-foreground">No supported rounds.</p> : null}
         </div>
       </section>
     </article>

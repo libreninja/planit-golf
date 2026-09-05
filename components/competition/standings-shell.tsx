@@ -31,6 +31,7 @@ import { StandingsWorkspace } from './standings-workspace'
 import { LeaderboardControlPanel } from './leaderboard-control-panel'
 import { hasActiveLeaderboardFilters, leaderboardControlReducer } from './leaderboard-control-state'
 import { LeaderboardClearFilters } from './leaderboard-clear-filters'
+import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interaction'
 
 export interface StandingsShellProps {
   competitionKey: string
@@ -43,6 +44,7 @@ export interface StandingsShellProps {
   // null when the competition has no 'season' view (e.g. women's).
   seasonRows: SeasonPointsRow[] | null
   golferIdsByMemberCard: Record<string, string>
+  playerFollowState: LeaderboardFollowState
   weekly: {
     occurrences: { id: string; label: string; resultStatus: LiveResponse['resultStatus'] }[]
     selectedOccurrenceId: string | null
@@ -159,6 +161,7 @@ export function StandingsShell(props: StandingsShellProps) {
           placedOnly={placedOnly}
           defaultScoring={props.defaultScoring}
           golferIdsByMemberCard={props.golferIdsByMemberCard}
+          playerFollowState={props.playerFollowState}
           capabilities={props.weekly.capabilities}
           initial={weeklyInitial}
           pollUrl={props.weekly.pollUrl}

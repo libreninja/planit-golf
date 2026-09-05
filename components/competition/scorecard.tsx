@@ -2,7 +2,9 @@
 
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { FollowControl } from "@/components/players/follow-control";
+import type { LeaderboardPlayerInteraction } from "@/lib/players/leaderboard-interaction";
 import type {
   Scorecard as ScorecardT,
   ResultEntry,
@@ -53,7 +55,7 @@ export function ScorecardRow({
   showPurse = false,
   colorizeFlights = false,
   flightLabel,
-  playerHref,
+  playerInteraction,
 }: {
   entry: ResultEntry;
   card: ScorecardT | null;
@@ -65,7 +67,7 @@ export function ScorecardRow({
   showPurse?: boolean;
   colorizeFlights?: boolean;
   flightLabel?: string | null;
-  playerHref?: string | null;
+  playerInteraction?: LeaderboardPlayerInteraction | null;
 }) {
   const isGross = scoringMode === "gross";
   const hasHoles = !!card && card.holes.some((h) => h.gross !== null || h.net !== null);
@@ -93,12 +95,28 @@ export function ScorecardRow({
         {/* Portrait mobile layout (sm:hidden). Name is primary on its own
             line, with a compact labeled stat strip beneath it so every value
             has context without the desktop header (which is hidden at this
-            width). Names wrap rather than truncate — identity must stay
-            visible. The desktop/landscape grid table is rendered below. */}
+            width). The desktop/landscape grid table is rendered below. */}
         <div className="sm:hidden">
           <div className="flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-2 text-[15px] font-semibold leading-tight break-words">
-              {playerHref ? <Link href={playerHref} className="underline-offset-4 hover:text-primary hover:underline">{entry.name}</Link> : entry.name}
+            <span className="flex min-w-0 items-center gap-0.5 text-[15px] font-semibold leading-tight">
+              {playerInteraction ? (
+                <Link
+                  href={playerInteraction.playerHref}
+                  title={entry.name}
+                  className="group/player inline-flex min-w-0 items-center text-foreground underline-offset-4 hover:text-primary hover:underline"
+                >
+                  <span className="truncate">{entry.name}</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/70 transition-transform group-hover/player:translate-x-0.5" aria-hidden />
+                </Link>
+              ) : <span className="truncate">{entry.name}</span>}
+              {playerInteraction ? (
+                <FollowControl
+                  golferId={playerInteraction.golferId}
+                  signedIn={playerInteraction.signedIn}
+                  isSelf={playerInteraction.isSelf}
+                  initialFollowing={playerInteraction.initialFollowing}
+                />
+              ) : null}
               {hasHoles ? (
                 <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${entry.name} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
                   Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
@@ -134,8 +152,21 @@ export function ScorecardRow({
           <span className="font-medium tabular-nums text-muted-foreground">
             {entry.positionLabel ?? "—"}
           </span>
-          <span className="flex min-w-0 items-center gap-2 truncate font-medium">
-            {playerHref ? <Link href={playerHref} className="truncate underline-offset-4 hover:text-primary hover:underline">{entry.name}</Link> : <span className="truncate">{entry.name}</span>}
+          <span className="flex min-w-0 items-center gap-0.5 truncate font-medium">
+            {playerInteraction ? (
+              <Link href={playerInteraction.playerHref} title={entry.name} className="group/player inline-flex min-w-0 items-center truncate underline-offset-4 hover:text-primary hover:underline">
+                <span className="truncate">{entry.name}</span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/70 transition-transform group-hover/player:translate-x-0.5" aria-hidden />
+              </Link>
+            ) : <span className="truncate">{entry.name}</span>}
+            {playerInteraction ? (
+              <FollowControl
+                golferId={playerInteraction.golferId}
+                signedIn={playerInteraction.signedIn}
+                isSelf={playerInteraction.isSelf}
+                initialFollowing={playerInteraction.initialFollowing}
+              />
+            ) : null}
             {hasHoles ? (
               <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${entry.name} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
                 Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />

@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { Check, Plus } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { setGolferFollow } from '@/app/players/actions'
-import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils/cn'
+
+const FOLLOW_STATE_EVENT = 'planit:golfer-follow-state'
 
 export function FollowControl({
   golferId,
@@ -19,78 +21,77 @@ export function FollowControl({
   followIntent?: boolean
 }) {
   const [following, setFollowing] = useState(initialFollowing)
-  const [showUndo, setShowUndo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const consumedIntent = useRef(false)
 
+  const setSharedFollowing = (next: boolean) => {
+    setFollowing(next)
+    window.dispatchEvent(new CustomEvent(FOLLOW_STATE_EVENT, { detail: { golferId, following: next } }))
+  }
+
   const update = (next: boolean) => {
     if (!signedIn) {
       const destination = new URL(window.location.href)
-      destination.searchParams.set('intent', 'follow')
+      destination.searchParams.set('follow', golferId)
       window.location.assign(`/login?next=${encodeURIComponent(`${destination.pathname}${destination.search}`)}`)
       return
     }
 
     const previous = following
-    setFollowing(next)
-    setShowUndo(previous && !next)
+    setSharedFollowing(next)
     setError(null)
     startTransition(async () => {
       const result = await setGolferFollow(golferId, next)
       if (!result.ok) {
-        setFollowing(previous)
-        setShowUndo(false)
+        setSharedFollowing(previous)
         setError(result.reason === 'self_follow' ? 'This is your player page.' : 'Follow could not be updated.')
       }
     })
   }
 
   useEffect(() => {
-    if (!followIntent || !signedIn || isSelf || initialFollowing || consumedIntent.current) return
-    consumedIntent.current = true
     const url = new URL(window.location.href)
+    const matchesInlineIntent = url.searchParams.get('follow') === golferId
+    if ((!followIntent && !matchesInlineIntent) || !signedIn || consumedIntent.current) return
+    consumedIntent.current = true
     url.searchParams.delete('intent')
+    url.searchParams.delete('follow')
     window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+    if (isSelf || initialFollowing) return
     update(true)
     // This is a one-time continuation of the user's pre-auth Follow click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [followIntent, signedIn, isSelf, initialFollowing])
+  }, [followIntent, golferId, signedIn, isSelf, initialFollowing])
 
-  if (isSelf) {
-    return <span className="rounded-md bg-muted px-3 py-2 text-sm font-medium text-muted-foreground">You</span>
-  }
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<{ golferId: string; following: boolean }>).detail
+      if (detail?.golferId === golferId) setFollowing(detail.following)
+    }
+    window.addEventListener(FOLLOW_STATE_EVENT, sync)
+    return () => window.removeEventListener(FOLLOW_STATE_EVENT, sync)
+  }, [golferId])
 
-  if (showUndo && !following) {
-    return (
-      <div className="flex items-center gap-2" aria-live="polite">
-        <span className="text-sm text-muted-foreground">Unfollowed</span>
-        <button
-          type="button"
-          onClick={() => update(true)}
-          disabled={pending}
-          className="text-sm font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
-        >
-          Undo
-        </button>
-      </div>
-    )
-  }
+  if (isSelf) return null
 
   return (
-    <div className="text-right">
-      <Button
+    <span className="inline-flex shrink-0 items-center">
+      <button
         type="button"
-        size="sm"
-        variant={following ? 'outline' : 'default'}
         aria-pressed={following}
+        aria-label={following ? 'Unfollow player' : 'Follow player'}
+        title={following ? 'Unfollow' : 'Follow'}
         disabled={pending}
         onClick={() => update(!following)}
+        className={cn(
+          'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50',
+          following ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground hover:bg-muted hover:text-primary',
+        )}
       >
-        {following ? <Check className="mr-1.5 h-4 w-4" aria-hidden /> : <Plus className="mr-1.5 h-4 w-4" aria-hidden />}
-        {following ? 'Following' : 'Follow'}
-      </Button>
-      {error ? <p className="mt-1 text-xs text-destructive" role="alert">{error}</p> : null}
-    </div>
+        <Star className={cn('h-[18px] w-[18px]', following && 'fill-current')} aria-hidden />
+      </button>
+      {error ? <span className="sr-only" role="alert">{error}</span> : null}
+    </span>
   )
 }
