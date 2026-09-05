@@ -42,6 +42,7 @@ export interface StandingsShellProps {
   scoringModes: ScoringMode[]
   // null when the competition has no 'season' view (e.g. women's).
   seasonRows: SeasonPointsRow[] | null
+  golferIdsByMemberCard: Record<string, string>
   weekly: {
     occurrences: { id: string; label: string; resultStatus: LiveResponse['resultStatus'] }[]
     selectedOccurrenceId: string | null
@@ -142,7 +143,7 @@ export function StandingsShell(props: StandingsShellProps) {
               <LeaderboardClearFilters active={filtersActive} onClear={onClearFilters} />
             </div>
           </LeaderboardControlPanel>
-          <SeasonPointsView rows={props.seasonRows!} />
+          <SeasonPointsView rows={props.seasonRows!} golferIdsByMemberCard={props.golferIdsByMemberCard} />
         </>
       ) : (
         <StandingsWorkspace
@@ -157,6 +158,7 @@ export function StandingsShell(props: StandingsShellProps) {
           grouping={grouping}
           placedOnly={placedOnly}
           defaultScoring={props.defaultScoring}
+          golferIdsByMemberCard={props.golferIdsByMemberCard}
           capabilities={props.weekly.capabilities}
           initial={weeklyInitial}
           pollUrl={props.weekly.pollUrl}

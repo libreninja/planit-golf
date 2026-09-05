@@ -27,6 +27,7 @@ import {
 import { defaultOccurrenceId, latestNonFutureWeeks } from '@/lib/competition/adapters/golfgenius/mapping'
 import type { LiveResponse, ResultStatus, ScoringMode } from '@/lib/competition/types'
 import { availableLeaderboardOccurrences, latestResultsOccurrenceId } from './occurrence-availability'
+import { getResolvedGolferIdsForMens2026 } from '@/lib/players/data'
 
 // Today's calendar date (YYYY-MM-DD) in the league timezone — used to identify
 // the play-day occurrence ("Tuesday's event") for the initial-selection rule.
@@ -242,6 +243,9 @@ export async function StandingsWorkspaceServer({
   const seasonRows = config.capabilities.views.includes('season')
     ? await resolveSeasonPoints(competitionKey)
     : null
+  const golferIdsByMemberCard = competitionKey === 'mens-league'
+    ? await getResolvedGolferIdsForMens2026()
+    : {}
 
   return (
     <StandingsShell
@@ -253,6 +257,7 @@ export async function StandingsWorkspaceServer({
       initialPlacedOnly={urlState.placedOnly}
       scoringModes={scoringModes}
       seasonRows={seasonRows}
+      golferIdsByMemberCard={golferIdsByMemberCard}
       weekly={{
         occurrences: vm.occurrences,
         selectedOccurrenceId: vm.selectedOccurrenceId,

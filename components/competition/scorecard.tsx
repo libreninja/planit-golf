@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
+import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import type {
   Scorecard as ScorecardT,
   ResultEntry,
@@ -51,6 +53,7 @@ export function ScorecardRow({
   showPurse = false,
   colorizeFlights = false,
   flightLabel,
+  playerHref,
 }: {
   entry: ResultEntry;
   card: ScorecardT | null;
@@ -62,6 +65,7 @@ export function ScorecardRow({
   showPurse?: boolean;
   colorizeFlights?: boolean;
   flightLabel?: string | null;
+  playerHref?: string | null;
 }) {
   const isGross = scoringMode === "gross";
   const hasHoles = !!card && card.holes.some((h) => h.gross !== null || h.net !== null);
@@ -80,17 +84,10 @@ export function ScorecardRow({
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={hasHoles ? onToggle : undefined}
-        disabled={!hasHoles}
-        aria-expanded={isOpen}
+      <div
         className={cn(
           "w-full px-3 py-2 text-left text-sm",
-          hasHoles ? "cursor-pointer" : "cursor-default",
-          // Default hover when uncolored; the flight color's hover when tinted.
-          color ? color.row : hasHoles ? "hover:bg-muted/30" : "",
-          color && hasHoles ? color.rowHover : "",
+          color ? color.row : "",
         )}
       >
         {/* Portrait mobile layout (sm:hidden). Name is primary on its own
@@ -100,8 +97,13 @@ export function ScorecardRow({
             visible. The desktop/landscape grid table is rendered below. */}
         <div className="sm:hidden">
           <div className="flex items-center justify-between gap-2">
-            <span className="min-w-0 text-[15px] font-semibold leading-tight break-words">
-              {entry.name}
+            <span className="flex min-w-0 items-center gap-2 text-[15px] font-semibold leading-tight break-words">
+              {playerHref ? <Link href={playerHref} className="underline-offset-4 hover:text-primary hover:underline">{entry.name}</Link> : entry.name}
+              {hasHoles ? (
+                <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${entry.name} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                  Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
+                </button>
+              ) : null}
             </span>
             {showFlight &&
               (color ? (
@@ -132,7 +134,14 @@ export function ScorecardRow({
           <span className="font-medium tabular-nums text-muted-foreground">
             {entry.positionLabel ?? "—"}
           </span>
-          <span className="truncate font-medium">{entry.name}</span>
+          <span className="flex min-w-0 items-center gap-2 truncate font-medium">
+            {playerHref ? <Link href={playerHref} className="truncate underline-offset-4 hover:text-primary hover:underline">{entry.name}</Link> : <span className="truncate">{entry.name}</span>}
+            {hasHoles ? (
+              <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${entry.name} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
+              </button>
+            ) : null}
+          </span>
           {showFlight && (
             color ? (
               <span className="hidden justify-end sm:flex">
@@ -160,7 +169,7 @@ export function ScorecardRow({
             <span className="text-right tabular-nums text-muted-foreground">{entry.purse}</span>
           )}
         </div>
-      </button>
+      </div>
       {isOpen && hasHoles && card && <Scorecard card={card} />}
     </div>
   );

@@ -33,6 +33,10 @@ export interface ImportDb {
   // unchanged. See Task 19F.1.
   upsertSeasonPointEntries?(rows: Record<string, unknown>[]): Promise<{ ok: boolean }>
   pruneSeasonPointEntries?(week: number, retainedMemberIds: string[]): Promise<{ ok: boolean }>
+  // Refresh Planit's scoped canonical-golfer evidence after the durable rows
+  // exist. Optional keeps injected test adapters and non-Men's competitions
+  // source-compatible.
+  refreshGolferIdentities?(memberCardIds: string[]): Promise<{ ok: boolean }>
 }
 
 export interface ImportInput {
@@ -199,6 +203,14 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     weekNumber,
     seasonPointRows.map((row) => String(row.member_card_id)),
   )
+  if (leagueKey === 'mens') {
+    const memberCardIds = [...new Set(
+      perfRows
+        .map((row) => row.member_card_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    )]
+    if (memberCardIds.length) await input.db.refreshGolferIdentities?.(memberCardIds)
+  }
   // Record both the import time AND the source version captured, so the
   // durable-current version-equality branch (Task 11) can compare
   // source_version vs durable_source_version.

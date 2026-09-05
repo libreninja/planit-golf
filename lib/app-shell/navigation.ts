@@ -39,6 +39,11 @@ export function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
   if (pathname === '/igc/league') return [{ label: 'Interbay', href: '/igc' }, { label: 'Leagues' }]
   if (pathname === '/igc/mens-league') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }, { label: 'Standings' }]
+  if (/^\/players\/[^/]+\/performance$/.test(pathname)) {
+    const golferId = pathname.split('/')[2]
+    return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Player detail', href: `/players/${golferId}` }, { label: 'Performance' }]
+  }
+  if (pathname.startsWith('/players/')) return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Player detail' }]
   if (pathname === '/igc/mens-league/tee-times') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Times' }]
   if (pathname === '/igc/club-championship') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Club Championship' }]
   if (pathname === '/igc/womens-league') return [{ label: 'Interbay', href: '/igc' }, { label: "Women's League" }, { label: 'Standings' }]

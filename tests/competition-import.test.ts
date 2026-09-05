@@ -31,6 +31,7 @@ test('importOccurrence writes both gross+net results and is idempotent on re-run
     upsertPerformances: async (rows: any[]) => { writes.push({ kind: 'perf', rows }); return { ok: true } },
     upsertResults: async (rows: any[]) => { writes.push({ kind: 'res', rows }); return { ok: true } },
     upsertEvent: async (row: any) => { writes.push({ kind: 'event', row }); return { ok: true } },
+    refreshGolferIdentities: async (memberCardIds: string[]) => { writes.push({ kind: 'identity', memberCardIds }); return { ok: true } },
     setDurableImported: async (week: number, atIso: string, sourceVersion: string | null) => { writes.push({ kind: 'durable', week, atIso, sourceVersion }); return { ok: true } },
   }
   const gg = fakeGg({ results })
@@ -40,7 +41,7 @@ test('importOccurrence writes both gross+net results and is idempotent on re-run
   // Idempotent: same number of write operations on re-run (upserts overwrite).
   assert.equal(a2.performances, a1.performances)
   assert.equal(a2.results, a1.results)
-  assert.equal(writes.length - w1, 4, 're-run wrote the same 4 buckets (event, perf, res, durable)')
+  assert.equal(writes.length - w1, 5, 're-run wrote the same 5 buckets (event, perf, res, identity, durable)')
   // Both competitions present in the results upsert.
   const resRows = writes.filter((w) => w.kind === 'res').flatMap((w) => w.rows)
   const competitions = new Set(resRows.map((r: any) => r.competition))
@@ -56,6 +57,9 @@ test('importOccurrence writes both gross+net results and is idempotent on re-run
   // The durable write records the source version it captured.
   const durable = writes.find((w) => w.kind === 'durable')!
   assert.equal(durable.sourceVersion, 'v9')
+  const identity = writes.find((w) => w.kind === 'identity')!
+  assert.deepEqual(identity.memberCardIds, ['mc-1'])
+  assert.ok(writes.indexOf(identity) < writes.indexOf(durable), 'identity evidence is refreshed before the durable stamp')
 })
 
 test('a refreshed authoritative snapshot prunes stale performance, result, and season-point rows', async () => {
