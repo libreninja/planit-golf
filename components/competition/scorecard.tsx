@@ -20,6 +20,7 @@ import {
   formatPoints,
   toParClass,
 } from "./leaderboard-format";
+import { displayPersonName } from "@/lib/players/person-name";
 
 // One labeled stat for the portrait mobile stat strip. The value sits
 // prominently on top; the micro-label beneath gives it context (the desktop
@@ -83,6 +84,7 @@ export function ScorecardRow({
   // variant (dynamically built class names are silently dropped by the JIT).
   const cols = pickLeaderboardCols(showFlight, showPurse);
   const showPlayerPurse = showPurse && hasPurseAward(entry.purse);
+  const displayName = displayPersonName(entry.name);
 
   return (
     <div>
@@ -90,6 +92,11 @@ export function ScorecardRow({
         className={cn(
           "w-full px-3 py-2 text-left text-sm",
           color ? color.row : "",
+          playerInteraction?.isSelf
+            ? "border-l-2 border-l-primary bg-primary/[0.08]"
+            : playerInteraction?.initialFollowing
+              ? "bg-primary/[0.035]"
+              : "",
         )}
       >
         {/* Portrait mobile layout (sm:hidden). Name is primary on its own
@@ -102,13 +109,14 @@ export function ScorecardRow({
               {playerInteraction ? (
                 <Link
                   href={playerInteraction.playerHref}
-                  title={entry.name}
+                  title={displayName}
                   className="group/player inline-flex min-w-0 items-center text-foreground underline-offset-4 hover:text-primary hover:underline"
                 >
-                  <span className="truncate">{entry.name}</span>
+                  <span className="truncate">{displayName}</span>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/70 transition-transform group-hover/player:translate-x-0.5" aria-hidden />
                 </Link>
-              ) : <span className="truncate">{entry.name}</span>}
+              ) : <span className="truncate">{displayName}</span>}
+              {playerInteraction?.isSelf ? <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-primary">You</span> : null}
               {playerInteraction ? (
                 <FollowControl
                   golferId={playerInteraction.golferId}
@@ -118,7 +126,7 @@ export function ScorecardRow({
                 />
               ) : null}
               {hasHoles ? (
-                <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${entry.name} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${displayName} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
                   Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
                 </button>
               ) : null}
@@ -154,11 +162,12 @@ export function ScorecardRow({
           </span>
           <span className="flex min-w-0 items-center gap-0.5 truncate font-medium">
             {playerInteraction ? (
-              <Link href={playerInteraction.playerHref} title={entry.name} className="group/player inline-flex min-w-0 items-center truncate underline-offset-4 hover:text-primary hover:underline">
-                <span className="truncate">{entry.name}</span>
+              <Link href={playerInteraction.playerHref} title={displayName} className="group/player inline-flex min-w-0 items-center truncate underline-offset-4 hover:text-primary hover:underline">
+                <span className="truncate">{displayName}</span>
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/70 transition-transform group-hover/player:translate-x-0.5" aria-hidden />
               </Link>
-            ) : <span className="truncate">{entry.name}</span>}
+            ) : <span className="truncate">{displayName}</span>}
+            {playerInteraction?.isSelf ? <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-primary">You</span> : null}
             {playerInteraction ? (
               <FollowControl
                 golferId={playerInteraction.golferId}
@@ -168,7 +177,7 @@ export function ScorecardRow({
               />
             ) : null}
             {hasHoles ? (
-              <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${entry.name} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+              <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${displayName} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
                 Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
               </button>
             ) : null}

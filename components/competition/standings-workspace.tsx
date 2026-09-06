@@ -117,16 +117,15 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
       }
     }
   }, [effectiveGrouping, grouping, membershipSettled, onSelectGroupingProp, pathname])
-  const groupedLb = filterLeaderboardByGrouping(lb, effectiveGrouping, flightMembership.status)
-  const filteredLb = filterLeaderboardByPlacement(groupedLb, props.placedOnly)
-  // Row order follows the selected score for both Overall and a flight subset.
-  // Award placement remains exactly as supplied on each entry.
-  const displayLb = filteredLb
-    ? {
-        ...filteredLb,
-        entries: sortEntriesBySelectedScore(filteredLb.entries, filteredLb.scorecards, filteredLb.scoringMode),
-      }
+  // Establish the existing score-relative competition order once, before any
+  // presentation-only filtering or personalization. The For You summary selects
+  // from this order; it never reorders the full board around the viewer.
+  const orderedLb = lb
+    ? { ...lb, entries: sortEntriesBySelectedScore(lb.entries, lb.scorecards, lb.scoringMode) }
     : null
+  const groupedLb = filterLeaderboardByGrouping(orderedLb, effectiveGrouping, flightMembership.status)
+  const filteredLb = filterLeaderboardByPlacement(groupedLb, props.placedOnly)
+  const displayLb = filteredLb
   // Render the flight column only for Men's Overall; a specific flight makes
   // it redundant and women's is single Overall.
   const showFlight = effectiveGrouping === 'all' && hasFlightFilter
@@ -238,6 +237,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
           golferIdsByMemberCard={props.golferIdsByMemberCard}
           playerFollowState={props.playerFollowState}
           playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
+          showForYou={props.selectedOccurrenceId === props.latestResultsOccurrenceId && (resultStatus === 'live' || resultStatus === 'final')}
+          forYouLeaderboard={orderedLb}
         />
       ) : showingLastKnown ? (
         <UnavailableState message="Live results are temporarily unavailable. Showing the last known standings." onRetry={() => void refresh()} retrying={refreshing} />

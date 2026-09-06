@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { getMensPlayerDetail } from '@/lib/players/data'
 import { playerDetailHref, playerPerformanceHref, safeInternalReturnTo } from '@/lib/players/links'
+import { displayPersonFirstName, displayPersonName } from '@/lib/players/person-name'
 import {
   resolvePlayerPerformanceComparator,
   type PlayerHoleComparison,
@@ -18,10 +19,6 @@ function formatAverage(value: number): string {
 function formatSigned(value: number, digits = 2): string {
   if (Math.abs(value) < 0.005) return (0).toFixed(digits)
   return `${value > 0 ? '+' : '−'}${Math.abs(value).toFixed(digits)}`
-}
-
-function firstName(displayName: string): string {
-  return displayName.split(',')[1]?.trim().split(' ')[0] ?? displayName.split(' ')[0]
 }
 
 function SummaryGroup({
@@ -113,7 +110,8 @@ export default async function PlayerPerformancePage({
     : null
   const performance = data.holePerformance
   const resolved = performance ? resolvePlayerPerformanceComparator(performance, requested) : null
-  const name = firstName(data.displayName)
+  const displayName = displayPersonName(data.displayName)
+  const name = displayPersonFirstName(data.displayName)
   const comparatorLabel = resolved?.comparator === 'flight' ? 'Flight' : 'Field'
 
   return (
@@ -123,7 +121,7 @@ export default async function PlayerPerformancePage({
       </Link>
 
       <header className="min-w-0">
-        <h1 title={data.displayName} className="truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{data.displayName}</h1>
+        <h1 title={displayName} className="truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{displayName}</h1>
         <p className="mt-1 text-sm text-muted-foreground">Interbay performance</p>
       </header>
 

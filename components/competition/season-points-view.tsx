@@ -10,6 +10,7 @@
 import type { SeasonPointsRow } from '@/lib/competition/reconcile/season-points'
 import Link from 'next/link'
 import { playerDetailHref } from '@/lib/players/links'
+import { displayPersonName } from '@/lib/players/person-name'
 
 export function SeasonPointsView({
   rows,
@@ -35,6 +36,7 @@ export function SeasonPointsView({
           <div className="divide-y divide-border">
             {rows.map((r) => {
               const golferId = golferIdsByMemberCard[r.member_card_id]
+              const playerName = r.player_name ? displayPersonName(r.player_name) : r.member_card_id
               return (
                 <div key={r.member_card_id} className="grid grid-cols-[3rem_1fr_6rem_5rem_5rem] gap-2 px-3 py-1.5 text-sm">
                   <div className="font-medium tabular-nums">{r.position}</div>
@@ -44,9 +46,9 @@ export function SeasonPointsView({
                         className="font-medium underline-offset-4 hover:text-primary hover:underline"
                         href={playerDetailHref({ golferId, returnTo: '/igc/mens-league?view=season' })}
                       >
-                        {r.player_name ?? r.member_card_id}
+                        {playerName}
                       </Link>
-                    ) : (r.player_name ?? r.member_card_id)}
+                    ) : playerName}
                   </div>
                   <div className="text-right tabular-nums">{r.total_points.toFixed(2)}</div>
                   <div className="text-right tabular-nums text-muted-foreground">{r.previous_position ?? '—'}</div>

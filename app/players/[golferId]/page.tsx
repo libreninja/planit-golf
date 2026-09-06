@@ -15,6 +15,7 @@ import {
 } from '@/lib/players/player-detail-presentation'
 import type { PlayerDetailModel, PlayerRound } from '@/lib/players/player-detail'
 import type { PlayerHolePerformance } from '@/lib/players/igc-mens-2026-hole-performance'
+import { displayPersonName } from '@/lib/players/person-name'
 
 export const dynamic = 'force-dynamic'
 
@@ -198,6 +199,7 @@ export default async function PlayerDetailPage({ params, searchParams }: {
   const selectedWeek = parsedWeek !== null && Number.isInteger(parsedWeek) ? parsedWeek : null
   const data = await getMensPlayerDetail(golferId, selectedWeek)
   if (!data) notFound()
+  const displayName = displayPersonName(data.displayName)
 
   const returnTo = safeInternalReturnTo(query.from) ?? '/igc/mens-league?view=weekly'
   const resultFocus = scoringFromPlayerSource(query.scoring, query.from)
@@ -211,7 +213,7 @@ export default async function PlayerDetailPage({ params, searchParams }: {
       </Link>
 
       <header className="flex min-w-0 items-center gap-1">
-        <h1 title={data.displayName} className="min-w-0 truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{data.displayName}</h1>
+        <h1 title={displayName} className="min-w-0 truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{displayName}</h1>
         <FollowControl
           golferId={data.golferId}
           signedIn={data.viewer.signedIn}

@@ -4,8 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { Star } from 'lucide-react'
 import { setGolferFollow } from '@/app/players/actions'
 import { cn } from '@/lib/utils/cn'
-
-const FOLLOW_STATE_EVENT = 'planit:golfer-follow-state'
+import { FOLLOW_STATE_EVENT, type FollowStateEventDetail } from '@/lib/players/follow-state-event'
 
 export function FollowControl({
   golferId,
@@ -66,7 +65,7 @@ export function FollowControl({
 
   useEffect(() => {
     const sync = (event: Event) => {
-      const detail = (event as CustomEvent<{ golferId: string; following: boolean }>).detail
+      const detail = (event as CustomEvent<FollowStateEventDetail>).detail
       if (detail?.golferId === golferId) setFollowing(detail.following)
     }
     window.addEventListener(FOLLOW_STATE_EVENT, sync)

@@ -31,7 +31,8 @@ test('unresolved leaderboard identity exposes neither player navigation nor foll
 
 test('player link, star, and scorecard remain distinct tap targets', () => {
   const source = readFileSync(new URL('../components/competition/scorecard.tsx', import.meta.url), 'utf8')
-  assert.match(source, /<Link[\s\S]*playerInteraction\.playerHref[\s\S]*entry\.name[\s\S]*<\/Link>/)
+  assert.match(source, /displayPersonName\(entry\.name\)/)
+  assert.match(source, /<Link[\s\S]*playerInteraction\.playerHref[\s\S]*displayName[\s\S]*<\/Link>/)
   assert.match(source, /<FollowControl[\s\S]*golferId=\{playerInteraction\.golferId\}/)
   assert.match(source, /<button type="button" onClick=\{onToggle\}[\s\S]*scorecard/)
   const playerLink = source.indexOf('href={playerInteraction.playerHref}')

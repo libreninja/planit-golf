@@ -16,6 +16,7 @@ export function buildNav(user: AppShellUser): NavItem[] {
     items.push({ type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 0 })
     items.push({ type: 'label', label: "Men's League", level: 1 })
     items.push({ type: 'link', label: 'Standings', href: '/igc/mens-league', level: 2 })
+    items.push({ type: 'link', label: 'Tee Sheet', href: '/igc/mens-league/tee-sheet', level: 2 })
     items.push({ type: 'link', label: 'Club Championship', href: '/igc/club-championship', level: 2 })
     if (user.gtgAccess) items.push({ type: 'link', label: 'Tee Times', href: '/igc/mens-league/tee-times', level: 2 })
     items.push({ type: 'label', label: "Women's League", level: 1 })
@@ -39,6 +40,7 @@ export function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
   if (pathname === '/igc/league') return [{ label: 'Interbay', href: '/igc' }, { label: 'Leagues' }]
   if (pathname === '/igc/mens-league') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }, { label: 'Standings' }]
+  if (pathname === '/igc/mens-league/tee-sheet') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Sheet' }]
   if (/^\/players\/[^/]+\/performance$/.test(pathname)) {
     const golferId = pathname.split('/')[2]
     return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Player detail', href: `/players/${golferId}` }, { label: 'Performance' }]
