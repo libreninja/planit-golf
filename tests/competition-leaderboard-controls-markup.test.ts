@@ -58,7 +58,6 @@ test('CLEAR FILTERS is always reserved and only interactive when filters are dir
   assert.doesNotMatch(source, /invisible|aria-hidden/)
   assert.match(source, /CLEAR FILTERS/)
   const workspace = readFileSync(new URL('../components/competition/standings-workspace.tsx', import.meta.url), 'utf8')
-  assert.match(workspace, /ViewTabs|viewControl/)
   assert.match(workspace, /<LeaderboardClearFilters active=\{filtersActive\}/)
 })
 

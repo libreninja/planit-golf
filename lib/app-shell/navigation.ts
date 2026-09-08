@@ -1,6 +1,6 @@
 import type { AppShellUser } from './user.ts'
 
-export type NavLink = { type: 'link'; label: string; href: string; level: number }
+export type NavLink = { type: 'link'; label: string; href: string; level: number; match?: 'exact' | 'prefix' }
 export type NavLabel = { type: 'label'; label: string; level: number }
 export type NavItem = NavLink | NavLabel
 export type Crumb = { label: string; href?: string }
@@ -15,8 +15,7 @@ export function buildNav(user: AppShellUser): NavItem[] {
   if (!contributorOnly) {
     items.push({ type: 'link', label: 'Interbay Golf Club', href: '/igc', level: 0 })
     items.push({ type: 'label', label: "Men's League", level: 1 })
-    items.push({ type: 'link', label: 'Standings', href: '/igc/mens-league', level: 2 })
-    items.push({ type: 'link', label: 'Tee Sheet', href: '/igc/mens-league/tee-sheet', level: 2 })
+    items.push({ type: 'link', label: 'Standings', href: '/igc/mens-league', level: 2, match: 'exact' })
     items.push({ type: 'link', label: 'Club Championship', href: '/igc/club-championship', level: 2 })
     if (user.gtgAccess) items.push({ type: 'link', label: 'Tee Times', href: '/igc/mens-league/tee-times', level: 2 })
     items.push({ type: 'label', label: "Women's League", level: 1 })
@@ -39,7 +38,7 @@ export function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/') return [{ label: 'Home' }]
   if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
   if (pathname === '/igc/league') return [{ label: 'Interbay', href: '/igc' }, { label: 'Leagues' }]
-  if (pathname === '/igc/mens-league') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }, { label: 'Standings' }]
+  if (pathname === '/igc/mens-league') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }]
   if (pathname === '/igc/mens-league/tee-sheet') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Sheet' }]
   if (/^\/players\/[^/]+\/performance$/.test(pathname)) {
     const golferId = pathname.split('/')[2]
@@ -57,4 +56,18 @@ export function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/admin') return [{ label: 'Interbay', href: '/igc' }, { label: 'Registration admin' }]
   if (pathname === '/admin/scouting') return [{ label: 'Interbay', href: '/igc' }, { label: 'Seattle Cup' }, { label: 'Manage access' }]
   return []
+}
+
+export function computeActiveHref(pathname: string, items: NavItem[]): string | null {
+  let best: string | null = null
+  for (const item of items) {
+    if (item.type !== 'link') continue
+    const matches = pathname === item.href || (
+      item.match !== 'exact'
+      && item.href !== '/'
+      && pathname.startsWith(item.href + '/')
+    )
+    if (matches && (best === null || item.href.length > best.length)) best = item.href
+  }
+  return best
 }

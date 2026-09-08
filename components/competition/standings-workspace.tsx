@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { EyeOff } from 'lucide-react'
 import type { LiveResponse, OccurrenceCapabilities, ResultStatus, ScoringMode, View } from '@/lib/competition/types'
 import { OccurrenceNav } from './occurrence-nav'
@@ -44,7 +44,6 @@ export interface StandingsWorkspaceProps {
   onSelectGrouping: (grouping: string) => void
   onSelectPlacedOnly: (placedOnly: boolean) => void
   onClearFilters: () => void
-  viewControl: ReactNode
 }
 
 export function StandingsWorkspace(props: StandingsWorkspaceProps) {
@@ -176,8 +175,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     <section className="space-y-4">
       <LeaderboardControlPanel summary={controlSummary}>
         <div className="flex flex-col gap-2">
-          <div className="flex flex-nowrap items-center justify-between gap-2">
-            {props.viewControl}
+          <div className="flex justify-end">
             <LeaderboardClearFilters active={filtersActive} onClear={props.onClearFilters} />
           </div>
           <div className="flex min-w-0 items-center">

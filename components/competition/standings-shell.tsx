@@ -25,13 +25,11 @@ import type {
 } from '@/lib/competition/types'
 import type { SeasonPointsRow } from '@/lib/competition/reconcile/season-points'
 import { writeScoringPref } from '@/lib/competition/scoring-prefs'
-import { ViewTabs } from './view-tabs'
 import { SeasonPointsView } from './season-points-view'
 import { StandingsWorkspace } from './standings-workspace'
-import { LeaderboardControlPanel } from './leaderboard-control-panel'
-import { hasActiveLeaderboardFilters, leaderboardControlReducer } from './leaderboard-control-state'
-import { LeaderboardClearFilters } from './leaderboard-clear-filters'
+import { leaderboardControlReducer } from './leaderboard-control-state'
 import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interaction'
+import { MensLeagueLocalNavigation } from '@/components/igc/mens-league-local-navigation'
 
 export interface StandingsShellProps {
   competitionKey: string
@@ -129,24 +127,17 @@ export function StandingsShell(props: StandingsShellProps) {
   const seasonAvailable = props.configViews.includes('season') && props.seasonRows !== null
   const showSeason = view === 'season' && seasonAvailable
   const weeklyInitial = props.weekly.initialByScoring[scoring] ?? null
-  const filtersActive = hasActiveLeaderboardFilters({ scoring, grouping, placedOnly }, props.defaultScoring)
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
+      {props.competitionKey === 'mens-league' ? (
+        <MensLeagueLocalNavigation
+          activeDestination={showSeason ? 'season' : 'weekly'}
+          onSelectStandingsView={onSelectView}
+        />
+      ) : null}
       {showSeason ? (
-        <>
-          <LeaderboardControlPanel summary="Season Points">
-            <div className="flex flex-nowrap items-center justify-between gap-2">
-              <ViewTabs
-                views={props.configViews}
-                selectedView={view}
-                onSelectView={onSelectView}
-              />
-              <LeaderboardClearFilters active={filtersActive} onClear={onClearFilters} />
-            </div>
-          </LeaderboardControlPanel>
-          <SeasonPointsView rows={props.seasonRows!} golferIdsByMemberCard={props.golferIdsByMemberCard} />
-        </>
+        <SeasonPointsView rows={props.seasonRows!} golferIdsByMemberCard={props.golferIdsByMemberCard} />
       ) : (
         <StandingsWorkspace
           key={props.weekly.selectedOccurrenceId ?? 'none'}
@@ -171,13 +162,6 @@ export function StandingsShell(props: StandingsShellProps) {
           onSelectGrouping={(nextGrouping) => dispatch({ type: 'select-grouping', grouping: nextGrouping })}
           onSelectPlacedOnly={onSelectPlacedOnly}
           onClearFilters={onClearFilters}
-          viewControl={(
-            <ViewTabs
-              views={props.configViews}
-              selectedView={view}
-              onSelectView={onSelectView}
-            />
-          )}
         />
       )}
     </section>

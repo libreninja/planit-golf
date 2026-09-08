@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/session-actions'
 import { ActivityInbox } from '@/components/app-shell/activity-inbox'
 import type { AppShellUser } from '@/lib/app-shell/user'
-import { buildBreadcrumb, buildNav, type Crumb, type NavItem } from '@/lib/app-shell/navigation'
+import { buildBreadcrumb, buildNav, computeActiveHref, type Crumb } from '@/lib/app-shell/navigation'
 
 // Routes that do NOT get the shell. Matched by exact path or path-prefix.
 const HIDDEN_PREFIXES = [
@@ -85,23 +85,9 @@ export function isShellVisible(pathname: string): boolean {
 // remain reachable directly and keep their own authorization boundaries.
 // Exactly ONE destination may be active at a time. Parents are never given the
 // active style — hierarchy is conveyed only by indentation/typography. The
-// active item is the single link whose href is the longest prefix of the
-// current pathname (exact match, or pathname starts with href + '/'), so a
-// nested route highlights its own leaf, not its ancestors.
-function computeActiveHref(pathname: string, items: NavItem[]): string | null {
-  let best: string | null = null
-  for (const item of items) {
-    if (item.type !== 'link') continue
-    const matches =
-      pathname === item.href ||
-      (item.href !== '/' && pathname.startsWith(item.href + '/'))
-    if (matches && (best === null || item.href.length > best.length)) {
-      best = item.href
-    }
-  }
-  return best
-}
-
+// active item is the single matching link with the longest href. Links match
+// nested paths by default; an explicitly exact entry (Men's Standings) does not
+// claim a separate local destination such as the Tee Sheet.
 // Conventional sidebar menuing. Destinations are rectangular rows (modest
 // corner radius), full sidebar width, with restrained vertical rhythm. The
 // active row is marked by a subtle background PLUS a thin left-edge accent bar
