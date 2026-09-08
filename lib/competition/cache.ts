@@ -16,7 +16,7 @@
 // never compose raw keys. The DB layer is injectable for unit tests via
 // makeLiveCacheStore.
 
-import { resultsCacheKey, discoveryCacheKey } from './cache-keys.ts'
+import { resultsCacheKey, discoveryCacheKey, teeSheetCacheKey } from './cache-keys.ts'
 import type { LiveResponse, ScoringMode } from './types.ts'
 
 export function makeSingleFlight<T>() {
@@ -44,7 +44,7 @@ export interface ResultCacheKeyArgs extends CacheKeyArgs { scoring: ScoringMode 
 
 export interface CacheRow {
   cache_key: string
-  payload: LiveResponse
+  payload: unknown
   result_status: string | null
   fetched_at: string
   expires_at: string
@@ -58,6 +58,8 @@ export interface LiveCacheStore {
   writeCachedResult(args: ResultCacheKeyArgs, payload: LiveResponse): Promise<void>
   readCachedDiscovery(args: CacheKeyArgs): Promise<unknown | null>
   writeCachedDiscovery(args: CacheKeyArgs, payload: unknown): Promise<void>
+  readCachedTeeSheet(args: CacheKeyArgs): Promise<unknown | null>
+  writeCachedTeeSheet(args: CacheKeyArgs, payload: unknown, ttlSeconds: number): Promise<void>
   cleanExpired(): Promise<void>
 }
 
@@ -69,14 +71,14 @@ export function makeLiveCacheStore(rows: Map<string, CacheRow>): LiveCacheStore 
       const r = rows.get(k)
       if (!r) return null
       if (Date.parse(r.expires_at) <= Date.now()) return null
-      return r.payload
+      return r.payload as LiveResponse
     },
     async readStaleResult(args) {
       // most recent row regardless of expiry
       const matching = [...rows.entries()].filter(([k]) => k === keyOf(args))
       if (!matching.length) return null
       matching.sort((a, b) => Date.parse(b[1].fetched_at) - Date.parse(a[1].fetched_at))
-      return matching[0][1].payload
+      return matching[0][1].payload as LiveResponse
     },
     async writeCachedResult(args, payload) {
       rows.set(keyOf(args), {
@@ -93,9 +95,21 @@ export function makeLiveCacheStore(rows: Map<string, CacheRow>): LiveCacheStore 
     },
     async writeCachedDiscovery(args, payload) {
       rows.set(discoveryCacheKey(args), {
-        cache_key: discoveryCacheKey(args), payload: payload as LiveResponse, result_status: null,
+        cache_key: discoveryCacheKey(args), payload, result_status: null,
         fetched_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + DISCOVERY_TTL_SECONDS * 1000).toISOString(),
+      })
+    },
+    async readCachedTeeSheet(args) {
+      const r = rows.get(teeSheetCacheKey(args))
+      if (!r || Date.parse(r.expires_at) <= Date.now()) return null
+      return r.payload
+    },
+    async writeCachedTeeSheet(args, payload, ttlSeconds) {
+      rows.set(teeSheetCacheKey(args), {
+        cache_key: teeSheetCacheKey(args), payload, result_status: null,
+        fetched_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
       })
     },
     async cleanExpired() {
@@ -109,6 +123,13 @@ export function makeLiveCacheStore(rows: Map<string, CacheRow>): LiveCacheStore 
 let _dbStore: LiveCacheStore | null = null
 async function dbStore(): Promise<LiveCacheStore> {
   if (_dbStore) return _dbStore
+  // Local/preview environments may intentionally omit the service credential.
+  // Preserve the same TTL semantics in-process instead of turning every live
+  // read into a render error. Production still uses the shared DB cache.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    _dbStore = makeLiveCacheStore(new Map())
+    return _dbStore
+  }
   const { createServiceClient } = await import('../supabase/service.ts')
   const supabase = createServiceClient()
   _dbStore = {
@@ -146,6 +167,20 @@ async function dbStore(): Promise<LiveCacheStore> {
         expires_at: new Date(Date.now() + DISCOVERY_TTL_SECONDS * 1000).toISOString(),
       })
     },
+    async readCachedTeeSheet(args) {
+      const { data } = await supabase.from('competition_live_cache')
+        .select('payload').eq('cache_key', teeSheetCacheKey(args))
+        .gt('expires_at', new Date().toISOString()).maybeSingle()
+      return data?.payload ?? null
+    },
+    async writeCachedTeeSheet(args, payload, ttlSeconds) {
+      await supabase.from('competition_live_cache').upsert({
+        cache_key: teeSheetCacheKey(args), tenant_key: args.tenantKey, competition_key: args.competitionKey,
+        occurrence_id: args.occurrenceId, scope: 'discovery', scoring: null,
+        payload: payload as Record<string, unknown>, fetched_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+      })
+    },
     async cleanExpired() {
       await supabase.from('competition_live_cache').delete()
         .lt('expires_at', new Date(Date.now() - 24 * 3600_000).toISOString())
@@ -170,6 +205,17 @@ export async function readCachedDiscovery(args: CacheKeyArgs, store?: LiveCacheS
 }
 export async function writeCachedDiscovery(args: CacheKeyArgs, payload: unknown, store?: LiveCacheStore): Promise<void> {
   await (store ?? await dbStore()).writeCachedDiscovery(args, payload)
+}
+export async function readCachedTeeSheet(args: CacheKeyArgs, store?: LiveCacheStore): Promise<unknown | null> {
+  return (store ?? await dbStore()).readCachedTeeSheet(args)
+}
+export async function writeCachedTeeSheet(
+  args: CacheKeyArgs,
+  payload: unknown,
+  ttlSeconds: number,
+  store?: LiveCacheStore,
+): Promise<void> {
+  await (store ?? await dbStore()).writeCachedTeeSheet(args, payload, ttlSeconds)
 }
 export async function cleanExpiredCache(store?: LiveCacheStore): Promise<void> {
   await (store ?? await dbStore()).cleanExpired()

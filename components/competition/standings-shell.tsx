@@ -39,6 +39,7 @@ export interface StandingsShellProps {
   initialScoring: ScoringMode
   defaultScoring: ScoringMode
   initialPlacedOnly: boolean
+  initialFavoritesOnly: boolean
   scoringModes: ScoringMode[]
   // null when the competition has no 'season' view (e.g. women's).
   seasonRows: SeasonPointsRow[] | null
@@ -53,6 +54,7 @@ export interface StandingsShellProps {
     capabilities: OccurrenceCapabilities
     initialByScoring: Record<string, LiveResponse | null>
     pollUrl: string | null
+    selectedResultStatus: LiveResponse['resultStatus']
     initialIsHistoricalFinal: boolean
     awaitingOfficialFlights?: boolean
     // true when the selected occurrence renders via the live path — the shell
@@ -68,12 +70,13 @@ export function StandingsShell(props: StandingsShellProps) {
     scoring: props.initialScoring,
     grouping: props.weekly.grouping ?? 'all',
     placedOnly: props.initialPlacedOnly,
+    favoritesOnly: props.initialFavoritesOnly,
   })
-  const { view, scoring, grouping, placedOnly } = controls
+  const { view, scoring, grouping, placedOnly, favoritesOnly } = controls
 
   // Update the URL without navigating — keeps refresh/bookmark correct while
   // the toggle itself is an instant client state change.
-  const updateUrl = (next: { view?: View; scoring?: ScoringMode; grouping?: string; placedOnly?: boolean }) => {
+  const updateUrl = (next: { view?: View; scoring?: ScoringMode; grouping?: string; placedOnly?: boolean; favoritesOnly?: boolean }) => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     if (next.view) url.searchParams.set('view', next.view)
@@ -81,6 +84,8 @@ export function StandingsShell(props: StandingsShellProps) {
     if (next.grouping) url.searchParams.set('grouping', next.grouping)
     if (next.placedOnly === true) url.searchParams.set('placed', 'only')
     if (next.placedOnly === false) url.searchParams.delete('placed')
+    if (next.favoritesOnly === true) url.searchParams.set('favorites', 'only')
+    if (next.favoritesOnly === false) url.searchParams.delete('favorites')
     window.history.replaceState(null, '', `${url.pathname}${url.search}`)
   }
 
@@ -103,10 +108,16 @@ export function StandingsShell(props: StandingsShellProps) {
     updateUrl({ placedOnly: nextPlacedOnly })
   }
 
+  const onSelectFavoritesOnly = (nextFavoritesOnly: boolean) => {
+    if (nextFavoritesOnly === favoritesOnly) return
+    dispatch({ type: 'select-favorites-only', favoritesOnly: nextFavoritesOnly })
+    updateUrl({ favoritesOnly: nextFavoritesOnly })
+  }
+
   const onClearFilters = () => {
     dispatch({ type: 'clear-filters', defaultScoring: props.defaultScoring })
     writeScoringPref(props.competitionKey, props.defaultScoring, window.localStorage)
-    updateUrl({ scoring: props.defaultScoring, grouping: 'all', placedOnly: false })
+    updateUrl({ scoring: props.defaultScoring, grouping: 'all', placedOnly: false, favoritesOnly: false })
   }
 
   // P1-2 (live): prefetch the OTHER scoring's live URL so the first Gross/Net
@@ -152,18 +163,21 @@ export function StandingsShell(props: StandingsShellProps) {
           view={view}
           grouping={grouping}
           placedOnly={placedOnly}
+          favoritesOnly={favoritesOnly}
           defaultScoring={props.defaultScoring}
           golferIdsByMemberCard={props.golferIdsByMemberCard}
           playerFollowState={props.playerFollowState}
           capabilities={props.weekly.capabilities}
           initial={weeklyInitial}
           pollUrl={props.weekly.pollUrl}
+          selectedResultStatus={props.weekly.selectedResultStatus}
           initialIsHistoricalFinal={props.weekly.initialIsHistoricalFinal}
           awaitingOfficialFlights={props.weekly.awaitingOfficialFlights}
           teeSheet={props.weekly.teeSheet}
           onSelectScoring={onSelectScoring}
           onSelectGrouping={(nextGrouping) => dispatch({ type: 'select-grouping', grouping: nextGrouping })}
           onSelectPlacedOnly={onSelectPlacedOnly}
+          onSelectFavoritesOnly={onSelectFavoritesOnly}
           onClearFilters={onClearFilters}
         />
       )}

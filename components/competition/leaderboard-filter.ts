@@ -5,6 +5,7 @@
 // Relative import (no @/ alias) so node --test can load it.
 
 import type { Leaderboard } from '../../lib/competition/types.ts'
+import type { LeaderboardFollowState } from '../../lib/players/leaderboard-interaction.ts'
 
 export function filterLeaderboardByGrouping(
   leaderboard: Leaderboard | null,
@@ -34,5 +35,27 @@ export function filterLeaderboardByPlacement(
   return {
     ...leaderboard,
     entries: leaderboard.entries.filter((entry) => entry.positionLabel !== null),
+  }
+}
+
+// Explicit favorites lens: select canonical privately-followed golfers from
+// the existing rows without changing their authoritative order. Missing or
+// unresolved member-card identities fail closed.
+export function filterLeaderboardByFavorites(
+  leaderboard: Leaderboard | null,
+  favoritesOnly: boolean,
+  golferIdsByMemberCard: Record<string, string>,
+  followState: LeaderboardFollowState,
+): Leaderboard | null {
+  if (!leaderboard || !favoritesOnly) return leaderboard
+  const followed = new Set(followState.followedGolferIds)
+  const cardByKey = new Map(leaderboard.scorecards.map((card) => [card.key, card]))
+  return {
+    ...leaderboard,
+    entries: leaderboard.entries.filter((entry) => {
+      const memberCardId = cardByKey.get(entry.key)?.memberCardId
+      const golferId = memberCardId ? golferIdsByMemberCard[memberCardId] : null
+      return !!golferId && followed.has(golferId)
+    }),
   }
 }

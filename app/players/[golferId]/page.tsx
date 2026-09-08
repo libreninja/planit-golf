@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { FollowControl } from '@/components/players/follow-control'
+import { PendingLink } from '@/components/navigation/pending-link'
 import { getMensPlayerDetail } from '@/lib/players/data'
 import {
   playerDetailHref,
@@ -183,10 +184,15 @@ function InterbayPerformanceEntry({ golferId, returnTo, performance }: {
   performance: PlayerHolePerformance
 }) {
   return (
-    <Link href={playerPerformanceHref({ golferId, returnTo })} className="flex items-center justify-between gap-3 border-y border-border py-3 text-sm hover:bg-muted/25">
+    <PendingLink
+      href={playerPerformanceHref({ golferId, returnTo })}
+      pendingLabel="Opening…"
+      className="block border-y border-border py-3 text-sm hover:bg-muted/25"
+      contentClassName="flex items-center justify-between gap-3"
+    >
       <span><strong>Performance at Interbay</strong> <span className="text-muted-foreground">· {performance.comparableRounds} rounds</span></span>
       <ChevronRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-    </Link>
+    </PendingLink>
   )
 }
 
@@ -208,9 +214,9 @@ export default async function PlayerDetailPage({ params, searchParams }: {
 
   return (
     <article className="mx-auto max-w-2xl space-y-5 sm:space-y-6">
-      <Link href={returnTo} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <PendingLink href={returnTo} pendingLabel="Returning…" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to leaderboard
-      </Link>
+      </PendingLink>
 
       <header className="flex min-w-0 items-center gap-1">
         <h1 title={displayName} className="min-w-0 truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{displayName}</h1>

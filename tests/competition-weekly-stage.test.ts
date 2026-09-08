@@ -18,6 +18,12 @@ test('authoritative final and live scoring outrank a published tee sheet', () =>
   }), 'final')
 })
 
+test('REGRESSION: live response outranks a previously stored final-like render memo', () => {
+  assert.equal(resolveWeeklyStage({
+    resultStatus: 'live', historicalFinal: true, teeSheetStatus: 'published',
+  }), 'live')
+})
+
 test('published pairings and confirmed absence produce distinct upcoming states', () => {
   assert.equal(resolveWeeklyStage({
     resultStatus: 'not_started', historicalFinal: false, teeSheetStatus: 'published',
@@ -41,7 +47,7 @@ test('only live and final stages own leaderboard filters', () => {
 test('Weekly renders occurrence navigation in every stage and leaderboard filters only for live/final', () => {
   const workspace = readFileSync(new URL('../components/competition/standings-workspace.tsx', import.meta.url), 'utf8')
   assert.match(workspace, /<OccurrenceNav/)
-  assert.match(workspace, /const leaderboardStage = !mensWeeklyLifecycle \|\| weeklyStageUsesLeaderboardControls/)
+  assert.match(workspace, /const leaderboardStage = scoringPending \|\| !mensWeeklyLifecycle \|\| weeklyStageUsesLeaderboardControls/)
   assert.match(workspace, /\{leaderboardStage \? \([\s\S]*<LeaderboardClearFilters/)
   assert.match(workspace, /\{leaderboardStage \? \([\s\S]*<ScoringToggle[\s\S]*<GroupingFilter[\s\S]*Hide unranked/)
   assert.match(workspace, /weeklyStage === 'pairings' \|\| weeklyStage === 'upcoming'[\s\S]*<WeeklyUpcoming/)

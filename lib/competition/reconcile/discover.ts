@@ -15,6 +15,7 @@ export interface ClassifyDb {
     discovered_at: string
     source_finalized_at: string | null
     source_version: string | null
+    status: 'upcoming' | 'live' | 'finalized'
   }): Promise<{ ok: boolean }>
 }
 
@@ -49,6 +50,7 @@ export async function discoverAndPersistEventClassification(input: DiscoverPersi
     scoringMode: 'net',
   })
   const finalized = r.resolved.upstreamStatus === 'completed' ? (r.resolved.sourceFinalizedAt ?? input.nowIso) : null
+  const hasScoring = r.leaderboard?.scorecards.some((card) => card.holesCompleted > 0) ?? false
   await input.db.updateClassification({
     league_key: input.competitionKey === 'mens-league' ? 'mens' : 'womens',
     week_number: input.weekNumber,
@@ -57,6 +59,11 @@ export async function discoverAndPersistEventClassification(input: DiscoverPersi
     discovered_at: input.nowIso,
     source_finalized_at: finalized,
     source_version: r.resolved.sourceVersion,
+    status: finalized
+      ? 'finalized'
+      : r.resolved.upstreamStatus === 'in_progress' || hasScoring
+        ? 'live'
+        : 'upcoming',
   })
   return r
 }

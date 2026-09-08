@@ -155,33 +155,51 @@ export function normalizeTournament(
   }
 
   const rawStatus = results?.event?.status?.toLowerCase() ?? ''
+  const hasActiveCard = cardStatuses.some((status) => (
+    status === 'in_progress' || status === 'live' || status === 'started'
+  ))
+  const terminalCardStatuses = new Set([
+    'completed', 'withdrawn', 'withdraw', 'wd', 'dns', 'no_show', 'no show',
+    'disqualified', 'disqual', 'dq',
+  ])
+  const allReportedCardsTerminal = cardStatuses.length > 0
+    && cardStatuses.every((status) => terminalCardStatuses.has(status))
+  const hasCompletedAndOpenCards = cardStatuses.includes('completed')
+    && cardStatuses.some((status) => !terminalCardStatuses.has(status))
   let upstreamStatus: 'completed' | 'in_progress' | 'not_started' | 'unknown' = 'unknown'
-  if (rawStatus === 'completed' || rawStatus === 'final') upstreamStatus = 'completed'
+  // A card actively being scored is the freshest lifecycle evidence in the
+  // payload. It must beat a stale/premature tournament-level final marker.
+  if (hasActiveCard) upstreamStatus = 'in_progress'
+  else if (rawStatus === 'completed' || rawStatus === 'final') upstreamStatus = 'completed'
   else if (rawStatus === 'in_progress' || rawStatus === 'live') upstreamStatus = 'in_progress'
   else if (rawStatus === 'not_started' || rawStatus === 'upcoming') upstreamStatus = 'not_started'
+  // GG's live weekly payload can contain early completed cards alongside
+  // later `no_holes` entrants without exposing event.status. That mixed state
+  // is authoritative evidence the occurrence is still open when the event
+  // itself does not publish a lifecycle status.
+  else if (hasCompletedAndOpenCards) upstreamStatus = 'in_progress'
   // GG league rounds never expose event.status (it is null on the .json
-  // endpoint). The authoritative completion signal for points-tracking leagues
-  // is a NON-EMPTY event.season_points array — GG computes the cumulative
-  // standings at scoring time, so its presence means the round is
-  // scored/finalized. A future or in-progress round returns season_points: []
-  // (or no scopes). This unblocks reconcile's `upstreamStatus === 'completed'`
-  // import gate and the per-round season-points capture in import.ts.
-  else if (Array.isArray(results?.event?.season_points) && (results!.event!.season_points!.length > 0)) {
+  // endpoint). A non-empty event.season_points array becomes completion
+  // evidence only when every reported card is terminal. GG may populate points
+  // while scoring is still open, so points alone can never close the round.
+  else if (
+    Array.isArray(results?.event?.season_points)
+    && results!.event!.season_points!.length > 0
+    && allReportedCardsTerminal
+  ) {
     upstreamStatus = 'completed'
   }
   // Fallback for leagues that never populate event.season_points because GG has
   // no points category configured for them (Women's League: views is weekly-only,
   // no Season tab, no points). GG still marks every turned-in scorecard
   // `scorecard_statuses[].status = 'completed'` at finalization. A round is
-  // finalized when it has scored cards, at least one is 'completed', and NONE is
-  // still in progress/live — a not-yet-posted round has no cards, a live round
-  // has partial cards, so neither misclassifies. This is the SAME conclusion
-  // season_points draws; men's rounds keep the season_points branch above (it
-  // fires first), so this fallback only changes leagues without season_points.
+  // finalized only when every reported card has a terminal disposition and at
+  // least one is completed. A mix of completed and `no_holes` golfers remains
+  // open; that exact GG shape occurs while later tee times have not started.
   else if (
-    cardStatuses.length > 0 &&
+    allReportedCardsTerminal &&
     cardStatuses.includes('completed') &&
-    !cardStatuses.some((s) => s === 'in_progress' || s === 'live' || s === 'started')
+    !hasActiveCard
   ) {
     upstreamStatus = 'completed'
   }

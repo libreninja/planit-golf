@@ -1,11 +1,11 @@
 // Pure result-status derivation. Card completeness (Scorecard.isLive) is
 // NEVER used to infer 'final' — only 'live'. It combines, in priority order:
-//   1. durableFinalized — the durable reconciliation captured finalized results
-//   2. upstream round/tournament status — 'completed' → final, 'in_progress' → live
-//   3. partial scorecards (anyPartial) — cards on the course → live, AUTHORITATIVE
+//   1. current upstream round/tournament status — in_progress → live, completed → final
+//   2. partial scorecards (anyPartial) — cards on the course → live, AUTHORITATIVE
 //      over the configured active window (scores can arrive before playStartLocal)
-//   4. configured active window + card evidence — all-completed cards while the
-//      window is open and no upstream signal → live; otherwise unknown.
+//   3. configured active window + card evidence — all-completed cards while the
+//      window is open and no upstream signal → live
+//   4. durableFinalized — historical fallback when current evidence is absent.
 // The DB/historical path sets durableFinalized=true for persisted finalized
 // results, so it doesn't need upstream status. The live path supplies upstream
 // status from GG. See design spec §4 (revision: result-status model).
@@ -23,7 +23,9 @@ export interface ResultStatusInput {
 }
 
 export function deriveResultStatus(input: ResultStatusInput): ResultStatus {
-  if (input.durableFinalized) return 'final'
+  // A current explicit in-progress response is stronger than a prior durable
+  // snapshot. This is the stale-final recovery path.
+  if (input.upstreamStatus === 'in_progress') return 'live'
   if (input.upstreamStatus === 'completed') return 'final'
   // Partial scorecards (cards genuinely on the course) are DEFINITIVE evidence
   // of a live round — authoritative over the configured active window. GG
@@ -36,11 +38,11 @@ export function deriveResultStatus(input: ResultStatusInput): ResultStatus {
   // and durableFinalized/completed are checked first, so this never overrides a
   // finalized round. See design spec §4 (revision: result-status model).
   if (input.anyPartial) return 'live'
-  if (input.upstreamStatus === 'in_progress') return 'live'
   if (input.upstreamStatus === 'not_started') return 'not_started'
   // upstream unknown: use window + card evidence. Completeness is NEVER final.
   // (anyPartial is already handled above; this covers all-completed cards while
   // the window is open and no upstream signal has arrived yet.)
   if (input.active && input.hasResults) return 'live'
+  if (input.durableFinalized) return 'final'
   return 'unknown'
 }

@@ -11,6 +11,7 @@ import { allCompetitionConfigs, getCompetitionConfig } from '../registry.ts'
 import { selectReconciliationCandidates, type CandidateEvent } from './candidates.ts'
 import { canonicalFlight, FLIGHT_KEYS } from '../projected-flights.ts'
 import { normalizeTournament } from '../adapters/golfgenius/normalize.ts'
+import { isDurableCurrent } from '../durable-current.ts'
 import type { ResolvedOccurrence, ResultEntry } from '../types.ts'
 
 export interface ReconcileSummary {
@@ -277,7 +278,7 @@ async function defaultOps(): Promise<ReconcileOps> {
     async listEvents(competitionKey) {
       const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
       const { data, error: eventsError } = await supabase.from('igc_league_events')
-        .select('week_number, event_date, event_format, discovery_state, source_finalized_at, durable_imported_at, discovered_at')
+        .select('week_number, event_date, event_format, discovery_state, source_finalized_at, source_version, durable_source_version, durable_imported_at, discovered_at')
         .eq('league_key', leagueKey).order('week_number', { ascending: false }).limit(200)
       if (eventsError) throw new Error(`igc_league_events candidate read: ${eventsError.message}`)
       // A position-1 result is a compact existence marker for stored named
@@ -309,24 +310,34 @@ async function defaultOps(): Promise<ReconcileOps> {
       const specialWeeks = new Set(
         (getCompetitionConfig(competitionKey)?.adapterConfig.specialOccurrences ?? []).map((spec) => spec.weekNumber),
       )
-      return (data ?? []).map((e: any) => ({
-        week_number: e.week_number, event_date: e.event_date,
-        event_format: e.event_format, discovery_state: e.discovery_state,
-        upstream_status: e.source_finalized_at ? 'completed' : null,
-        durable_imported_at: e.durable_imported_at,
-        awaiting_official_flights: competitionKey === 'mens-league'
-          && e.event_format === 'individual'
-          && !!e.source_finalized_at
-          && !!e.durable_imported_at
-          && !specialWeeks.has(Number(e.week_number))
-          && !storedOfficialFlightSnapshotIsCurrent(
-            officialMarkersByWeek.get(Number(e.week_number)) ?? [],
-            e.durable_imported_at,
-          ),
-        // Feeds the staleness gate in selectReconciliationCandidates so frequent
-        // runs don't re-read GG for an occurrence discovered within STALENESS_MS.
-        discovered_at: e.discovered_at ?? null,
-      }))
+      return (data ?? []).map((e: any) => {
+        const durableCurrent = isDurableCurrent({
+          sourceFinalizedAt: e.source_finalized_at ?? null,
+          sourceVersion: e.source_version ?? null,
+          durableSourceVersion: e.durable_source_version ?? null,
+          durableImportedAt: e.durable_imported_at ?? null,
+        })
+        return {
+          week_number: e.week_number, event_date: e.event_date,
+          event_format: e.event_format, discovery_state: e.discovery_state,
+          upstream_status: e.source_finalized_at ? 'completed' : null,
+          // A prior import only closes reconciliation when it captured this
+          // finalized source. Premature imports remain eligible for repair.
+          durable_imported_at: durableCurrent ? e.durable_imported_at : null,
+          awaiting_official_flights: durableCurrent && competitionKey === 'mens-league'
+            && e.event_format === 'individual'
+            && !!e.source_finalized_at
+            && !!e.durable_imported_at
+            && !specialWeeks.has(Number(e.week_number))
+            && !storedOfficialFlightSnapshotIsCurrent(
+              officialMarkersByWeek.get(Number(e.week_number)) ?? [],
+              e.durable_imported_at,
+            ),
+          // Feeds the staleness gate in selectReconciliationCandidates so frequent
+          // runs don't re-read GG for an occurrence discovered within STALENESS_MS.
+          discovered_at: e.discovered_at ?? null,
+        }
+      })
     },
     async discoverAndPersist(competitionKey, week, nowIso) {
       const config = (await import('../registry.ts')).getCompetitionConfig(competitionKey)!
@@ -385,7 +396,7 @@ function classifyDb(supabase: any, competitionKey: string) {
       await supabase.from('igc_league_events').update({
         event_format: w.event_format, discovery_state: w.discovery_state,
         discovered_at: w.discovered_at, source_finalized_at: w.source_finalized_at,
-        source_version: w.source_version,
+        source_version: w.source_version, status: w.status,
       }).eq('league_key', leagueKey).eq('week_number', w.week_number)
       return { ok: true }
     },

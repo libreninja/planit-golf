@@ -16,6 +16,8 @@ import {
   readCachedResult,
   readStaleResult,
   writeCachedDiscovery,
+  readCachedTeeSheet,
+  writeCachedTeeSheet,
   writeCachedResult,
   makeSingleFlight,
   type LiveCacheStore,
@@ -69,7 +71,12 @@ async function projectedFlightSnapshot(input: {
     const secondRead = await readCachedDiscovery(cacheArgs, input.cacheStore)
     if (isProjectedFlightSnapshot(secondRead, input.roundKey)) return secondRead
 
-    const raw = await input.ggClient(`/events/${input.ggEventId}/rounds/${input.ggRoundId}/tee_sheet`)
+    let raw = await readCachedTeeSheet(cacheArgs, input.cacheStore)
+    if (raw === null) {
+      raw = await input.ggClient(`/events/${input.ggEventId}/rounds/${input.ggRoundId}/tee_sheet`)
+      const hasParticipants = teeSheetProjectionParticipants(raw).length > 0
+      try { await writeCachedTeeSheet(cacheArgs, raw, hasParticipants ? 300 : 60, input.cacheStore) } catch { /* best-effort */ }
+    }
     const participants = teeSheetProjectionParticipants(raw)
     if (participants.length === 0) return null
     const snapshot: ProjectedFlightSnapshot = {

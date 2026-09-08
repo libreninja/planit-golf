@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getLiveResults } from '@/lib/competition/live'
 import { IGC_MENS_2026_SCOPE } from './identity'
 import {
@@ -37,10 +39,18 @@ export interface MensLeaderboardPlayerState {
   selfGolferIds: string[]
 }
 
-type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
+type DataSupabaseClient = SupabaseClient
+
+function createPublicDataClient(): DataSupabaseClient {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
+  )
+}
 
 async function loadComparableGrossCards(
-  supabase: ServerSupabaseClient,
+  supabase: DataSupabaseClient,
   weeks: number[],
 ): Promise<GrossHoleCardFact[] | null> {
   if (weeks.length === 0) return []
@@ -80,7 +90,7 @@ async function loadComparableGrossCards(
 }
 
 async function loadOfficialFlightResults(
-  supabase: ServerSupabaseClient,
+  supabase: DataSupabaseClient,
   weeks: number[],
 ): Promise<OfficialFlightResultFact[] | null> {
   if (weeks.length === 0) return []
@@ -113,10 +123,31 @@ async function loadOfficialFlightResults(
   return null
 }
 
-export async function getMensLeaderboardPlayerState(): Promise<MensLeaderboardPlayerState> {
-  const supabase = await createClient()
-  const [identityRes, authRes] = await Promise.all([
-    supabase
+const loadCachedComparisonCards = unstable_cache(
+  async (weeks: number[]) => {
+    const supabase = createPublicDataClient()
+    const cards = await loadComparableGrossCards(supabase, weeks)
+    if (cards === null) throw new Error('player comparison card read failed')
+    return cards
+  },
+  ['igc-mens-2026-player-comparison-cards-v1'],
+  { revalidate: 60 * 60 },
+)
+
+const loadCachedOfficialFlightResults = unstable_cache(
+  async (weeks: number[]) => {
+    const flights = await loadOfficialFlightResults(createPublicDataClient(), weeks)
+    if (flights === null) throw new Error('player comparison flight read failed')
+    return flights
+  },
+  ['igc-mens-2026-player-comparison-flights-v1'],
+  { revalidate: 60 * 60 },
+)
+
+const loadCachedResolvedMensGolferMap = unstable_cache(
+  async (): Promise<Record<string, string> | null> => {
+    const supabase = createPublicDataClient()
+    const { data, error } = await supabase
       .from('golfer_external_identities')
       .select('external_id, golfer_id')
       .eq('source_system', 'golf_genius')
@@ -124,18 +155,29 @@ export async function getMensLeaderboardPlayerState(): Promise<MensLeaderboardPl
       .eq('scope_key', IGC_MENS_2026_SCOPE)
       .eq('resolution_status', 'resolved')
       .not('golfer_id', 'is', null)
-      .limit(1000),
+      .limit(1000)
+
+    if (error || !data) throw new Error('resolved golfer identity read failed')
+    return Object.fromEntries(
+      data
+        .filter((row) => typeof row.external_id === 'string' && typeof row.golfer_id === 'string')
+        .map((row) => [row.external_id as string, row.golfer_id as string]),
+    )
+  },
+  ['igc-mens-2026-resolved-golfer-map-v1'],
+  { revalidate: 5 * 60 },
+)
+
+export async function getMensLeaderboardPlayerState(): Promise<MensLeaderboardPlayerState> {
+  const supabase = await createClient()
+  const [golferIdsByMemberCard, authRes] = await Promise.all([
+    loadCachedResolvedMensGolferMap().catch(() => null),
     supabase.auth.getUser(),
   ])
 
-  if (identityRes.error || !identityRes.data) {
+  if (!golferIdsByMemberCard) {
     return { golferIdsByMemberCard: {}, signedIn: false, followedGolferIds: [], selfGolferIds: [] }
   }
-  const golferIdsByMemberCard = Object.fromEntries(
-    identityRes.data
-      .filter((row) => typeof row.external_id === 'string' && typeof row.golfer_id === 'string')
-      .map((row) => [row.external_id as string, row.golfer_id as string]),
-  )
   const user = authRes.data.user
   const golferIds = [...new Set(Object.values(golferIdsByMemberCard))]
   if (!user || golferIds.length === 0) {
@@ -168,98 +210,143 @@ export async function getResolvedGolferIdsForMens2026(): Promise<Record<string, 
   return (await getMensLeaderboardPlayerState()).golferIdsByMemberCard
 }
 
+interface CachedMensPlayerFacts {
+  displayName: string
+  memberCardId: string
+  events: PlayerEventFact[]
+  comparisonEvents: HoleComparisonEventFact[]
+  performances: PlayerPerformanceFact[]
+  results: PlayerResultFact[]
+  season: { rank: number | null; points: number | null } | null
+}
+
+// These inputs are public, persisted season facts. They can be reused across
+// Player Detail and Performance navigations. Live overlays and viewer-private
+// follow state are deliberately applied outside this cache.
+const loadCachedMensPlayerFacts = unstable_cache(
+  async (golferId: string): Promise<CachedMensPlayerFacts | null> => {
+    const supabase = createPublicDataClient()
+    const [golferRes, identityRes] = await Promise.all([
+      supabase.from('golfers').select('id, display_name').eq('id', golferId).maybeSingle(),
+      supabase
+        .from('golfer_external_identities')
+        .select('external_id')
+        .eq('golfer_id', golferId)
+        .eq('source_system', 'golf_genius')
+        .eq('scope_type', 'competition_season')
+        .eq('scope_key', IGC_MENS_2026_SCOPE)
+        .eq('resolution_status', 'resolved')
+        .limit(2),
+    ])
+    if (golferRes.error || identityRes.error || !golferRes.data || identityRes.data?.length !== 1) return null
+
+    const memberCardId = identityRes.data[0].external_id as string
+    const [eventsRes, performancesRes, resultsRes, seasonRes] = await Promise.all([
+      supabase
+        .from('igc_league_events')
+        .select('week_number, event_name, event_date, event_format, status, gg_event_id, gg_round_id')
+        .eq('league_key', 'mens')
+        .gte('event_date', '2026-01-01')
+        .lt('event_date', '2027-01-01')
+        .order('event_date', { ascending: true })
+        .limit(200),
+      supabase
+        .from('igc_league_performances')
+        .select('week_number, player_name, gross_scores, net_scores, to_par_gross, to_par_net, gross_total, net_total, to_par_gross_total, to_par_net_total, holes_completed, scorecard_status')
+        .eq('league_key', 'mens')
+        .eq('member_card_id', memberCardId)
+        .gte('event_date', '2026-01-01')
+        .lt('event_date', '2027-01-01')
+        .limit(200),
+      supabase
+        .from('igc_league_results')
+        .select('week_number, competition, position_label, flight_name, points')
+        .eq('league_key', 'mens')
+        .eq('member_card_id', memberCardId)
+        .limit(500),
+      supabase
+        .from('igc_league_season_points')
+        .select('position, total_points')
+        .eq('league_key', 'mens')
+        .eq('member_card_id', memberCardId)
+        .maybeSingle(),
+    ])
+    if (eventsRes.error || performancesRes.error || resultsRes.error) {
+      throw new Error('player persisted fact read failed')
+    }
+
+    const events: PlayerEventFact[] = (eventsRes.data ?? []).map((event) => ({
+      week: event.week_number as number,
+      eventName: event.event_name as string,
+      eventDate: event.event_date as string | null,
+      format: (event.event_format ?? 'unknown') as PlayerEventFact['format'],
+    }))
+    const comparisonEvents: HoleComparisonEventFact[] = (eventsRes.data ?? []).map((event) => ({
+      week: event.week_number as number,
+      eventName: event.event_name as string,
+      eventDate: event.event_date as string | null,
+      format: (event.event_format ?? 'unknown') as HoleComparisonEventFact['format'],
+      status: event.status as string | null,
+      ggEventId: event.gg_event_id as string | null,
+      ggRoundId: event.gg_round_id as string | null,
+    }))
+    const eventWeeks = new Set(events.map((event) => event.week))
+    const performances: PlayerPerformanceFact[] = (performancesRes.data ?? []).map((performance) => ({
+      week: performance.week_number as number,
+      playerName: performance.player_name as string,
+      grossScores: (performance.gross_scores ?? []) as (number | null)[],
+      netScores: (performance.net_scores ?? []) as (number | null)[],
+      toParGross: (performance.to_par_gross ?? []) as (number | null)[],
+      toParNet: (performance.to_par_net ?? []) as (number | null)[],
+      grossTotal: performance.gross_total as number | null,
+      netTotal: performance.net_total as number | null,
+      toParGrossTotal: performance.to_par_gross_total as number | null,
+      toParNetTotal: performance.to_par_net_total as number | null,
+      holesCompleted: (performance.holes_completed ?? 0) as number,
+      scorecardStatus: performance.scorecard_status as string | null,
+    }))
+    const results: PlayerResultFact[] = (resultsRes.data ?? [])
+      .filter((result) => eventWeeks.has(result.week_number as number))
+      .map((result) => ({
+        week: result.week_number as number,
+        competition: result.competition as PlayerResultFact['competition'],
+        positionLabel: result.position_label as string | null,
+        flightName: result.flight_name as string | null,
+        points: result.points === null ? null : Number(result.points),
+      }))
+    const seasonRow = seasonRes.data
+    return {
+      displayName: golferRes.data.display_name as string,
+      memberCardId,
+      events,
+      comparisonEvents,
+      performances,
+      results,
+      season: seasonRow ? {
+        rank: seasonRow.position as number | null,
+        points: seasonRow.total_points === null ? null : Number(seasonRow.total_points),
+      } : null,
+    }
+  },
+  ['igc-mens-2026-player-facts-v1'],
+  { revalidate: 15 * 60 },
+)
+
 export async function getMensPlayerDetail(
   golferId: string,
   selectedWeek: number | null,
 ): Promise<MensPlayerDetailData | null> {
   const supabase = await createClient()
-  const [golferRes, identityRes] = await Promise.all([
-    supabase.from('golfers').select('id, display_name').eq('id', golferId).maybeSingle(),
-    supabase
-      .from('golfer_external_identities')
-      .select('external_id')
-      .eq('golfer_id', golferId)
-      .eq('source_system', 'golf_genius')
-      .eq('scope_type', 'competition_season')
-      .eq('scope_key', IGC_MENS_2026_SCOPE)
-      .eq('resolution_status', 'resolved')
-      .limit(2),
-  ])
-  if (golferRes.error || identityRes.error || !golferRes.data || identityRes.data?.length !== 1) return null
-
-  const memberCardId = identityRes.data[0].external_id as string
-  const [eventsRes, performancesRes, resultsRes, seasonRes, authRes] = await Promise.all([
-    supabase
-      .from('igc_league_events')
-      .select('week_number, event_name, event_date, event_format, status, gg_event_id, gg_round_id')
-      .eq('league_key', 'mens')
-      .gte('event_date', '2026-01-01')
-      .lt('event_date', '2027-01-01')
-      .order('event_date', { ascending: true })
-      .limit(200),
-    supabase
-      .from('igc_league_performances')
-      .select('week_number, player_name, gross_scores, net_scores, to_par_gross, to_par_net, gross_total, net_total, to_par_gross_total, to_par_net_total, holes_completed, scorecard_status')
-      .eq('league_key', 'mens')
-      .eq('member_card_id', memberCardId)
-      .gte('event_date', '2026-01-01')
-      .lt('event_date', '2027-01-01')
-      .limit(200),
-    supabase
-      .from('igc_league_results')
-      .select('week_number, competition, position_label, flight_name, points')
-      .eq('league_key', 'mens')
-      .eq('member_card_id', memberCardId)
-      .limit(500),
-    supabase
-      .from('igc_league_season_points')
-      .select('position, total_points')
-      .eq('league_key', 'mens')
-      .eq('member_card_id', memberCardId)
-      .maybeSingle(),
+  const [facts, authRes] = await Promise.all([
+    loadCachedMensPlayerFacts(golferId).catch(() => null),
     supabase.auth.getUser(),
   ])
-
-  if (eventsRes.error || performancesRes.error || resultsRes.error) return null
-  const events: PlayerEventFact[] = (eventsRes.data ?? []).map((event) => ({
-    week: event.week_number as number,
-    eventName: event.event_name as string,
-    eventDate: event.event_date as string | null,
-    format: (event.event_format ?? 'unknown') as PlayerEventFact['format'],
-  }))
-  const comparisonEvents: HoleComparisonEventFact[] = (eventsRes.data ?? []).map((event) => ({
-    week: event.week_number as number,
-    eventName: event.event_name as string,
-    eventDate: event.event_date as string | null,
-    format: (event.event_format ?? 'unknown') as HoleComparisonEventFact['format'],
-    status: event.status as string | null,
-    ggEventId: event.gg_event_id as string | null,
-    ggRoundId: event.gg_round_id as string | null,
-  }))
-  const eventWeeks = new Set(events.map((event) => event.week))
-  const performances: PlayerPerformanceFact[] = (performancesRes.data ?? []).map((performance) => ({
-    week: performance.week_number as number,
-    playerName: performance.player_name as string,
-    grossScores: (performance.gross_scores ?? []) as (number | null)[],
-    netScores: (performance.net_scores ?? []) as (number | null)[],
-    toParGross: (performance.to_par_gross ?? []) as (number | null)[],
-    toParNet: (performance.to_par_net ?? []) as (number | null)[],
-    grossTotal: performance.gross_total as number | null,
-    netTotal: performance.net_total as number | null,
-    toParGrossTotal: performance.to_par_gross_total as number | null,
-    toParNetTotal: performance.to_par_net_total as number | null,
-    holesCompleted: (performance.holes_completed ?? 0) as number,
-    scorecardStatus: performance.scorecard_status as string | null,
-  }))
-  const results: PlayerResultFact[] = (resultsRes.data ?? [])
-    .filter((result) => eventWeeks.has(result.week_number as number))
-    .map((result) => ({
-      week: result.week_number as number,
-      competition: result.competition as PlayerResultFact['competition'],
-      positionLabel: result.position_label as string | null,
-      flightName: result.flight_name as string | null,
-      points: result.points === null ? null : Number(result.points),
-    }))
+  if (!facts) return null
+  const { displayName, memberCardId, events, comparisonEvents, season } = facts
+  // A selected live round can replace a persisted fact for this request; clone
+  // the arrays so cached public data is never mutated by that overlay.
+  const performances = facts.performances.map((performance) => ({ ...performance }))
+  const results = facts.results.map((result) => ({ ...result }))
 
   // Persisted rows are authoritative for completed rounds. If the originating
   // occurrence is not durably complete yet, read the same live competition
@@ -331,15 +418,11 @@ export async function getMensPlayerDetail(
       }
     }
   }
-  const seasonRow = seasonRes.data
   const model = derivePlayerDetail({
     events,
     performances,
     results,
-    season: seasonRow ? {
-      rank: seasonRow.position as number | null,
-      points: seasonRow.total_points === null ? null : Number(seasonRow.total_points),
-    } : null,
+    season,
     selectedWeek,
   })
   const targetCompletedWeeks = new Set(
@@ -349,9 +432,10 @@ export async function getMensPlayerDetail(
     .filter(isAuditedIgcMens2026InterbayOccurrence)
     .filter((event) => targetCompletedWeeks.has(event.week))
     .map((event) => event.week)
+    .sort((a, b) => a - b)
   const [comparableCards, officialFlightResults] = await Promise.all([
-    loadComparableGrossCards(supabase, comparisonWeeks),
-    loadOfficialFlightResults(supabase, comparisonWeeks),
+    loadCachedComparisonCards(comparisonWeeks).catch(() => null),
+    loadCachedOfficialFlightResults(comparisonWeeks).catch(() => null),
   ])
   const holePerformance = comparableCards === null
     ? null
@@ -388,7 +472,7 @@ export async function getMensPlayerDetail(
 
   return {
     golferId,
-    displayName: golferRes.data.display_name as string,
+    displayName,
     memberCardId,
     model,
     holePerformance,

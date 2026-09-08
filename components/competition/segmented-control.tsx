@@ -40,7 +40,7 @@ export interface SegmentedOption {
 }
 
 export function SegmentedControl({
-  options, selected, onSelect, ariaLabel, fill = false,
+  options, selected, onSelect, ariaLabel, fill = false, pendingKey = null,
 }: {
   options: SegmentedOption[]
   selected: string
@@ -48,12 +48,15 @@ export function SegmentedControl({
   ariaLabel?: string
   /** Distribute options across the available row width. */
   fill?: boolean
+  /** Selected destination while its data is still loading. */
+  pendingKey?: string | null
 }) {
   if (options.length <= 1) return null
   return (
     <div
       role="group"
       aria-label={ariaLabel}
+      aria-busy={pendingKey !== null || undefined}
       className={cn(
         'inline-flex max-w-full overflow-hidden rounded-md border border-border',
         fill ? 'w-full min-w-0 flex-1' : 'w-fit shrink-0 self-start',
@@ -61,16 +64,18 @@ export function SegmentedControl({
     >
       {options.map((o, i) => {
         const active = selected === o.key
+        const pending = pendingKey === o.key
         const isFirst = i === 0
         return (
           <button
             key={o.key}
             type="button"
             onClick={() => onSelect(o.key)}
+            disabled={pendingKey !== null && !pending}
             aria-pressed={active}
             aria-label={o.label}
             className={cn(
-              'whitespace-nowrap px-1.5 py-1 text-xs transition-colors sm:px-3 sm:text-sm',
+              'whitespace-nowrap px-1.5 py-1 text-xs transition-colors disabled:cursor-wait disabled:opacity-55 sm:px-3 sm:text-sm',
               fill && 'min-w-0 flex-1',
               // Single hairline seam between segments (part of the pill, not a
               // second border). First segment has no left divider.
@@ -88,6 +93,7 @@ export function SegmentedControl({
                 <span className="hidden sm:inline">{o.label}</span>
               </>
             ) : o.label}
+            {pending ? <span className="ml-1 animate-pulse text-[10px]" role="status">Loading…</span> : null}
           </button>
         )
       })}

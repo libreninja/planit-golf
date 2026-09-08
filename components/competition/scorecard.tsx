@@ -57,6 +57,7 @@ export function ScorecardRow({
   colorizeFlights = false,
   flightLabel,
   playerInteraction,
+  participationLabel,
 }: {
   entry: ResultEntry;
   card: ScorecardT | null;
@@ -69,6 +70,7 @@ export function ScorecardRow({
   colorizeFlights?: boolean;
   flightLabel?: string | null;
   playerInteraction?: LeaderboardPlayerInteraction | null;
+  participationLabel?: string | null;
 }) {
   const isGross = scoringMode === "gross";
   const hasHoles = !!card && card.holes.some((h) => h.gross !== null || h.net !== null);
@@ -109,6 +111,7 @@ export function ScorecardRow({
               {playerInteraction ? (
                 <Link
                   href={playerInteraction.playerHref}
+                  prefetch={true}
                   title={displayName}
                   className="group/player inline-flex min-w-0 items-center text-foreground underline-offset-4 hover:text-primary hover:underline"
                 >
@@ -142,6 +145,7 @@ export function ScorecardRow({
                 </span>
               ))}
           </div>
+          {participationLabel ? <p className="mt-1 truncate text-[11px] text-muted-foreground">{participationLabel}</p> : null}
           <div className="mt-1.5 grid grid-cols-5 gap-1">
             {buildMobileStats(entry, card, scoringMode, isPlayerLive).map((s) => (
               <MobileStat key={s.label} label={s.label} value={s.value} valueClass={s.valueClass} />
@@ -160,9 +164,10 @@ export function ScorecardRow({
           <span className="font-medium tabular-nums text-muted-foreground">
             {entry.positionLabel ?? "—"}
           </span>
-          <span className="flex min-w-0 items-center gap-0.5 truncate font-medium">
+          <span className="min-w-0 truncate font-medium">
+            <span className="flex min-w-0 items-center gap-0.5">
             {playerInteraction ? (
-              <Link href={playerInteraction.playerHref} title={displayName} className="group/player inline-flex min-w-0 items-center truncate underline-offset-4 hover:text-primary hover:underline">
+              <Link prefetch={true} href={playerInteraction.playerHref} title={displayName} className="group/player inline-flex min-w-0 items-center truncate underline-offset-4 hover:text-primary hover:underline">
                 <span className="truncate">{displayName}</span>
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary/70 transition-transform group-hover/player:translate-x-0.5" aria-hidden />
               </Link>
@@ -181,6 +186,8 @@ export function ScorecardRow({
                 Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
               </button>
             ) : null}
+            </span>
+            {participationLabel ? <span className="block truncate text-[10px] font-normal text-muted-foreground">{participationLabel}</span> : null}
           </span>
           {showFlight && (
             color ? (

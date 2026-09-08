@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { PendingLink } from '@/components/navigation/pending-link'
 import { getMensPlayerDetail } from '@/lib/players/data'
 import { playerDetailHref, playerPerformanceHref, safeInternalReturnTo } from '@/lib/players/links'
 import { displayPersonFirstName, displayPersonName } from '@/lib/players/person-name'
@@ -61,31 +61,35 @@ function ComparatorControl({
   fieldAvailable: boolean
 }) {
   const optionClass = (selected: boolean, available: boolean) => [
-    'flex-1 rounded-md px-3 py-1.5 text-center text-sm font-semibold transition-colors',
+    'block flex-1 rounded-md px-3 py-1.5 text-center text-sm font-semibold transition-colors',
     selected ? 'bg-background text-foreground shadow-sm' : available ? 'text-muted-foreground hover:text-foreground' : 'cursor-not-allowed text-muted-foreground/50',
   ].join(' ')
 
   return (
     <nav aria-label="Performance comparator" className="flex rounded-lg bg-muted p-1">
       {flightAvailable ? (
-        <Link
+        <PendingLink
           href={playerPerformanceHref({ golferId, returnTo, compare: 'flight' })}
           aria-current={active === 'flight' ? 'page' : undefined}
-          className={optionClass(active === 'flight', true)}
+          className="flex-1"
+          contentClassName={optionClass(active === 'flight', true)}
+          pendingClassName="bg-background text-foreground shadow-sm"
         >
           Vs Flight
-        </Link>
+        </PendingLink>
       ) : (
         <span aria-disabled="true" className={optionClass(false, false)}>Vs Flight</span>
       )}
       {fieldAvailable ? (
-        <Link
+        <PendingLink
           href={playerPerformanceHref({ golferId, returnTo, compare: 'field' })}
           aria-current={active === 'field' ? 'page' : undefined}
-          className={optionClass(active === 'field', true)}
+          className="flex-1"
+          contentClassName={optionClass(active === 'field', true)}
+          pendingClassName="bg-background text-foreground shadow-sm"
         >
           Vs Field
-        </Link>
+        </PendingLink>
       ) : (
         <span aria-disabled="true" className={optionClass(false, false)}>Vs Field</span>
       )}
@@ -116,9 +120,9 @@ export default async function PlayerPerformancePage({
 
   return (
     <article className="mx-auto max-w-2xl space-y-5 sm:space-y-6">
-      <Link href={returnTo} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <PendingLink href={returnTo} pendingLabel="Returning…" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to player
-      </Link>
+      </PendingLink>
 
       <header className="min-w-0">
         <h1 title={displayName} className="truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{displayName}</h1>

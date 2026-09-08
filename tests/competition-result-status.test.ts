@@ -13,8 +13,14 @@ function mk(over: Partial<ResultStatusInput>): ResultStatusInput {
   }
 }
 
-test('durable-finalized → final (authoritative, regardless of upstream)', () => {
-  assert.equal(deriveResultStatus(mk({ durableFinalized: true, upstreamStatus: 'in_progress' })), 'final')
+test('durable-finalized remains final without stronger current evidence', () => {
+  assert.equal(deriveResultStatus(mk({ durableFinalized: true, upstreamStatus: 'unknown' })), 'final')
+})
+
+test('REGRESSION: current in-progress evidence outranks stale durable-final state', () => {
+  assert.equal(deriveResultStatus(mk({ durableFinalized: true, upstreamStatus: 'in_progress' })), 'live')
+  assert.equal(deriveResultStatus(mk({ durableFinalized: true, anyPartial: true })), 'live')
+  assert.equal(deriveResultStatus(mk({ durableFinalized: true, active: true, hasResults: true })), 'live')
 })
 
 test('upstream completed → final only after upstream finalization', () => {
@@ -60,9 +66,6 @@ test('REGRESSION 2026-08-25: partial scorecards → live even when the active wi
   )
 })
 
-test('partial cards never override a finalized round (durableFinalized / completed win first)', () => {
-  // A finalized round that happens to contain a DNF/partial card stays final —
-  // the durable import and the upstream completed signal are authoritative.
-  assert.equal(deriveResultStatus(mk({ durableFinalized: true, anyPartial: true, hasResults: true })), 'final')
+test('explicit upstream completed remains final for a terminal partial/WD card', () => {
   assert.equal(deriveResultStatus(mk({ upstreamStatus: 'completed', anyPartial: true, hasResults: true })), 'final')
 })

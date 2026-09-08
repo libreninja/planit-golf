@@ -143,7 +143,7 @@ export async function StandingsWorkspaceServer({
   // engages the live path even before the nominal playStartLocal — distinct
   // from todayLiveHasGolf, which is also true once a round is finalized. See
   // 2026-08-25 regression (live scores arrived at 15:59, before the 16:00 window).
-  const todayLiveInProgress = !!todayLive?.leaderboard?.scorecards.some((c) => c.isLive)
+  const todayLiveInProgress = todayLive?.resultStatus === 'live'
 
   const liveScoredOccurrenceIds = new Set(
     todayId && (todayHasPostedGolf || todayLiveHasGolf) ? [todayId] : [],
@@ -171,14 +171,35 @@ export async function StandingsWorkspaceServer({
     liveScoredOccurrenceIds,
   )
 
+  // Start independent persisted/private reads together. Tee-sheet data shares
+  // the occurrence cache with live flight projection, so in the common live
+  // path this is a cache hit rather than another Golf Genius round trip.
+  const historicalPromise = selected
+    ? buildHistoricalLiveResponse(competitionKey, selected, scoring)
+    : Promise.resolve(null)
+  const teeSheetPromise = competitionKey === 'mens-league' && selected
+    ? getMensWeeklyTeeSheet(selected.id)
+    : Promise.resolve(competitionKey === 'mens-league'
+      ? {
+          occurrence: null,
+          groups: [],
+          status: selected ? 'not_published' as const : 'no_occurrence' as const,
+        }
+      : null)
+  const availableGroupingsPromise = resolveAvailableGroupings(competitionKey, selectedId)
+  const seasonRowsPromise = config.capabilities.views.includes('season')
+    ? resolveSeasonPoints(competitionKey)
+    : Promise.resolve(null)
+  const playerStatePromise = competitionKey === 'mens-league'
+    ? getMensLeaderboardPlayerState()
+    : Promise.resolve({ golferIdsByMemberCard: {}, signedIn: false, followedGolferIds: [], selfGolferIds: [] })
+
   // ---- Historical-vs-live render decision (P0) ----
-  // Always read the STORED results first; route to live ONLY for today's
-  // in-window event with no stored results yet. This makes a completed
-  // historical week render its actual leaderboard instead of an empty live
-  // fetch (the P0 regression: resultStatus was never 'final' because
-  // source_finalized_at is null on legacy imports, so every week took the
-  // live path and rendered empty).
-  const historical = selected ? await buildHistoricalLiveResponse(competitionKey, selected, scoring) : null
+  // Prefer stored results for historical rounds, but current live evidence for
+  // today's occurrence outranks a stale stored final snapshot. This keeps
+  // completed history durable without letting premature finalization mask an
+  // actively scoring week.
+  const historical = await historicalPromise
   const hasStoredResults = !!(historical?.leaderboard?.entries?.length && historical.leaderboard.entries.length > 0)
   const todayActive = !!(selected && isOccurrenceActive(selected.activeWindow, nowIso, false))
   const dec = decideInitialRender({
@@ -212,23 +233,11 @@ export async function StandingsWorkspaceServer({
     ? `/api/competition/live?competition=${encodeURIComponent(competitionKey)}&occurrence=${encodeURIComponent(selected.id)}`
     : null
 
-  // Pairings are occurrence-scoped, just like results. Resolve them for the
-  // selected Men's League week only while no final/live scoring state is
-  // already authoritative. The client still gives live/final precedence if a
-  // poll advances the stage after this server render.
-  const scoringStageIsAuthoritative = dec.initialIsHistoricalFinal
-    || (selected?.id === todayId && (
-      todayLive?.resultStatus === 'live' || todayLive?.resultStatus === 'final'
-    ))
-  const teeSheet = competitionKey === 'mens-league' && selected && !scoringStageIsAuthoritative
-    ? await getMensWeeklyTeeSheet(selected.id)
-    : competitionKey === 'mens-league'
-      ? {
-          occurrence: null,
-          groups: [],
-          status: selected ? 'not_published' as const : 'no_occurrence' as const,
-        }
-      : null
+  // Pairings are also participation evidence during live/final scoring: they
+  // distinguish a scheduled no-score golfer from a league-roster row that is
+  // not playing this occurrence. The short shared cache prevents a 7–10 second
+  // GG tee-sheet call on every revisit.
+  const teeSheet = await teeSheetPromise
 
   // ---- P1-2: preload BOTH scoring datasets for instant Gross/Net toggle ----
   // Finalized/historical weeks: fetch every scoring from the DB (cheap RLS
@@ -256,7 +265,7 @@ export async function StandingsWorkspaceServer({
     urlState: { view: urlState.view, scoring: urlState.scoring, grouping: urlState.grouping },
     availableScoringModes: scoringModes,
     storedScoring: null, // server has no localStorage; client resolves stored pref on toggle
-    availableGroupings: await resolveAvailableGroupings(competitionKey, selectedId),
+    availableGroupings: await availableGroupingsPromise,
     // effectiveStatus uses DIRECT evidence (hasStoredResults), so a completed
     // historical week exposes multi-flight grouping capabilities even though
     // its source_finalized_at bookkeeping is null.
@@ -270,12 +279,7 @@ export async function StandingsWorkspaceServer({
   // ---- P1-1: preload Season Points rows so the view switch is instant ----
   // Resolved only when the competition actually has a 'season' view; null
   // otherwise (women's is weekly-only) so the shell never offers a season tab.
-  const seasonRows = config.capabilities.views.includes('season')
-    ? await resolveSeasonPoints(competitionKey)
-    : null
-  const playerState = competitionKey === 'mens-league'
-    ? await getMensLeaderboardPlayerState()
-    : { golferIdsByMemberCard: {}, signedIn: false, followedGolferIds: [], selfGolferIds: [] }
+  const [seasonRows, playerState] = await Promise.all([seasonRowsPromise, playerStatePromise])
 
   return (
     <StandingsShell
@@ -285,6 +289,7 @@ export async function StandingsWorkspaceServer({
       initialScoring={vm.scoring}
       defaultScoring={defaultScoring}
       initialPlacedOnly={urlState.placedOnly}
+      initialFavoritesOnly={urlState.favoritesOnly}
       scoringModes={scoringModes}
       seasonRows={seasonRows}
       golferIdsByMemberCard={playerState.golferIdsByMemberCard}
@@ -302,6 +307,7 @@ export async function StandingsWorkspaceServer({
         capabilities: vm.capabilities,
         initialByScoring,
         pollUrl,
+        selectedResultStatus: dec.effectiveStatus,
         initialIsHistoricalFinal: dec.initialIsHistoricalFinal,
         awaitingOfficialFlights,
         useLivePath,

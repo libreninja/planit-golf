@@ -73,9 +73,18 @@ test('Latest scored-round action always renders inside the joined navigator', ()
 
 test('occurrence loading replaces the leaderboard content area', () => {
   const source = readFileSync(new URL('../components/competition/standings-workspace.tsx', import.meta.url), 'utf8')
-  assert.match(source, /\{occurrenceChanging \? \([\s\S]*<LoadingSkeleton \/>[\s\S]*\) : isInitialEmpty/)
+  assert.match(source, /\{occurrenceChanging \? \([\s\S]*<LoadingSkeleton \/>[\s\S]*\) : scoringPending/)
   assert.match(source, /const activeOccurrenceId = selectedOccurrenceContextId/)
   assert.match(source, /find\(\(item\) => item\.id === activeOccurrenceId\)/)
   assert.match(source, /selectedId=\{activeOccurrenceId\}/)
   assert.doesNotMatch(source, /Loading…|Loading\.\.\./)
+})
+
+test('Gross/Net exposes selected pending feedback while live data is loading', () => {
+  const workspace = readFileSync(new URL('../components/competition/standings-workspace.tsx', import.meta.url), 'utf8')
+  const segmented = readFileSync(new URL('../components/competition/segmented-control.tsx', import.meta.url), 'utf8')
+  assert.match(workspace, /pending=\{scoringPending\}/)
+  assert.match(workspace, /scoringPending \? \([\s\S]*<LoadingSkeleton \/>/)
+  assert.match(segmented, /pendingKey === o\.key/)
+  assert.match(segmented, /role="status"[\s\S]*Loading…/)
 })
