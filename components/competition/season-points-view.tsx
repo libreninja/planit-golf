@@ -26,7 +26,7 @@ export function SeasonPointsView({
             header (and the controls above) stay put. max-h keeps the page from
             growing unbounded; no players are hidden or paginated. */}
         <div className="max-h-[60vh] overflow-y-auto">
-          <div className="sticky top-0 z-10 grid grid-cols-[3rem_1fr_6rem_5rem_5rem] gap-2 border-b border-border bg-muted/85 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur">
+          <div className="sticky top-0 z-10 grid grid-cols-[2rem_minmax(0,1fr)_4.5rem_2.5rem_3rem] gap-1 border-b border-border bg-muted/85 px-2 py-2 text-[10px] font-semibold uppercase tracking-normal text-muted-foreground backdrop-blur sm:grid-cols-[3rem_minmax(0,1fr)_6rem_5rem_5rem] sm:gap-2 sm:px-3 sm:text-xs sm:tracking-wide">
             <div>Pos</div>
             <div>Player</div>
             <div className="text-right">Points</div>
@@ -38,7 +38,7 @@ export function SeasonPointsView({
               const golferId = golferIdsByMemberCard[r.member_card_id]
               const playerName = r.player_name ? displayPersonName(r.player_name) : r.member_card_id
               return (
-                <div key={r.member_card_id} className="grid grid-cols-[3rem_1fr_6rem_5rem_5rem] gap-2 px-3 py-1.5 text-sm">
+                <div key={r.member_card_id} className="grid grid-cols-[2rem_minmax(0,1fr)_4.5rem_2.5rem_3rem] gap-1 px-2 py-1.5 text-sm sm:grid-cols-[3rem_minmax(0,1fr)_6rem_5rem_5rem] sm:gap-2 sm:px-3">
                   <div className="font-medium tabular-nums">{r.position}</div>
                   <div className="truncate">
                     {golferId ? (
