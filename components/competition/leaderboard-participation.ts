@@ -42,10 +42,8 @@ export function weeklyParticipationForCard(
     return { kind: 'scheduled', label: `Tee time ${group.teeTime}`, teeTime: group.teeTime }
   }
   if (group) return { kind: 'entered', label: 'Entered · tee time TBD', teeTime: null }
-  if (memberCardId && teeSheet?.status === 'published') {
-    // A published occurrence tee sheet is positive membership evidence. Only
-    // its explicit absence supports this wording; score absence alone never does.
-    return { kind: 'not_playing', label: 'Not playing this week', teeTime: null }
-  }
+  // The GG tee-sheet endpoint returns a bare group array with no completeness
+  // or pagination contract. Presence is authoritative for scheduled/entered
+  // states, but absence must fail closed instead of implying non-participation.
   return { kind: 'unknown', label: 'Entry status unavailable', teeTime: null }
 }

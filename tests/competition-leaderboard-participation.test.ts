@@ -24,10 +24,10 @@ test('scheduled no-score golfer shows the authoritative tee time', () => {
   })
 })
 
-test('authoritative tee-sheet absence is not presented as Not started', () => {
+test('published tee-sheet absence fails closed without a completeness guarantee', () => {
   const state = weeklyParticipationForCard(card({ memberCardId: 'not-entered' }), teeSheet)
-  assert.equal(state.kind, 'not_playing')
-  assert.equal(state.label, 'Not playing this week')
+  assert.equal(state.kind, 'unknown')
+  assert.equal(state.label, 'Entry status unavailable')
 })
 
 test('missing participation evidence fails closed instead of inferring not signed up', () => {
