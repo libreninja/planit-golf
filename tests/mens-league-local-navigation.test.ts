@@ -107,6 +107,6 @@ test('existing standings deep-link query state remains accepted', () => {
     { occurrenceParam: 'week', allowedViews: ['season', 'weekly'], allowedScoring: ['gross', 'net'] },
   )
   assert.deepEqual(state, {
-    view: 'weekly', occurrenceId: '17', scoring: 'gross', grouping: 'Flight 2', placedOnly: true,
+    view: 'weekly', occurrenceId: '17', scoring: 'gross', grouping: 'Flight 2', placedOnly: true, favoritesOnly: false,
   })
 })

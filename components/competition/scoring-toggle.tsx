@@ -7,14 +7,15 @@ import { SegmentedControl } from './segmented-control'
 // Geometry/selection styling is owned by the shared SegmentedControl (one pill,
 // square seam, constant geometry — see segmented-control).
 export function ScoringToggle({
-  modes, selected, onSelect,
-}: { modes: { key: string; label: string }[]; selected: string; onSelect: (m: string) => void }) {
+  modes, selected, onSelect, pending = false,
+}: { modes: { key: string; label: string }[]; selected: string; onSelect: (m: string) => void; pending?: boolean }) {
   return (
     <SegmentedControl
       ariaLabel="Scoring"
       options={modes.map((m) => ({ key: m.key, label: m.label.charAt(0).toUpperCase() + m.label.slice(1) }))}
       selected={selected}
       onSelect={onSelect}
+      pendingKey={pending ? selected : null}
     />
   )
 }

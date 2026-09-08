@@ -25,3 +25,7 @@ export function resultsCacheKey(input: ResultsKeyInput): string {
 export function discoveryCacheKey(input: DiscoveryKeyInput): string {
   return `discovery:${input.tenantKey}:${input.competitionKey}:${input.occurrenceId}`
 }
+
+export function teeSheetCacheKey(input: DiscoveryKeyInput): string {
+  return `tee-sheet:${input.tenantKey}:${input.competitionKey}:${input.occurrenceId}`
+}

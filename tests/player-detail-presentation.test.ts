@@ -46,6 +46,13 @@ test('Performance exposes explicit neutral Flight and Field comparison lenses', 
   assert.doesNotMatch(performance, /Strokes Gained/)
 })
 
+test('slow Player Detail and Performance transitions acknowledge navigation immediately', () => {
+  assert.match(landing, /PendingLink[\s\S]*Back to leaderboard/)
+  assert.match(landing, /pendingLabel="Opening…"[\s\S]*Performance at Interbay/)
+  assert.match(performance, /PendingLink[\s\S]*Back to player/)
+  assert.equal(performance.match(/pendingClassName="bg-background text-foreground shadow-sm"/g)?.length, 2)
+})
+
 test('implemented hole-relative analysis records a fail-closed comparable-course contract', () => {
   assert.match(identityBoundary, /must be checked against the same source evidence and explicitly added/)
   assert.match(identityBoundary, /matching hole ordinals alone is never sufficient/)

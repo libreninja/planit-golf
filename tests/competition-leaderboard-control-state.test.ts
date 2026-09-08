@@ -8,7 +8,7 @@ import {
 } from '../components/competition/leaderboard-control-state.ts'
 import type { FlightMembershipState } from '../lib/competition/types.ts'
 
-const base: LeaderboardControlState = { view: 'weekly', scoring: 'gross', grouping: 'Flight 2', placedOnly: false }
+const base: LeaderboardControlState = { view: 'weekly', scoring: 'gross', grouping: 'Flight 2', placedOnly: false, favoritesOnly: false }
 const projected: FlightMembershipState = {
   status: 'projected',
   groupings: [1, 2, 3].map((n) => ({ key: `Flight ${n}`, label: `Projected Flight ${n}` })),
@@ -21,7 +21,7 @@ const official: FlightMembershipState = {
 test('Gross → Net preserves selected Flight N', () => {
   assert.deepEqual(
     leaderboardControlReducer(base, { type: 'select-scoring', scoring: 'net' }),
-    { view: 'weekly', scoring: 'net', grouping: 'Flight 2', placedOnly: false },
+    { view: 'weekly', scoring: 'net', grouping: 'Flight 2', placedOnly: false, favoritesOnly: false },
   )
 })
 
@@ -32,7 +32,7 @@ test('Net → Gross preserves selected Flight N', () => {
 
 test('Season Points ↔ Weekly preserves scoring and grouping dimensions', () => {
   const season = leaderboardControlReducer(base, { type: 'select-view', view: 'season' })
-  assert.deepEqual(season, { view: 'season', scoring: 'gross', grouping: 'Flight 2', placedOnly: false })
+  assert.deepEqual(season, { view: 'season', scoring: 'gross', grouping: 'Flight 2', placedOnly: false, favoritesOnly: false })
   assert.equal(leaderboardControlReducer(season, { type: 'select-view', view: 'weekly' }).grouping, 'Flight 2')
 })
 
@@ -46,7 +46,7 @@ test('Clear restores filter defaults without changing the view dimension', () =>
   const selectedOccurrenceId = '20'
   const filtered = { ...base, scoring: 'net' as const, placedOnly: true }
   const cleared = leaderboardControlReducer(filtered, { type: 'clear-filters', defaultScoring: 'gross' })
-  assert.deepEqual(cleared, { view: 'weekly', scoring: 'gross', grouping: 'all', placedOnly: false })
+  assert.deepEqual(cleared, { view: 'weekly', scoring: 'gross', grouping: 'all', placedOnly: false, favoritesOnly: false })
   assert.equal(hasActiveLeaderboardFilters(cleared, 'gross'), false)
   assert.equal(hasActiveLeaderboardFilters(filtered, 'gross'), true)
   assert.equal(selectedOccurrenceId, '20', 'occurrence is not part of filter state')

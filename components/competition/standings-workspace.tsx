@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { EyeOff } from 'lucide-react'
+import { EyeOff, Star } from 'lucide-react'
 import type { LiveResponse, OccurrenceCapabilities, ResultStatus, ScoringMode, View } from '@/lib/competition/types'
 import { OccurrenceNav } from './occurrence-nav'
 import { ScoringToggle } from './scoring-toggle'
@@ -10,7 +10,7 @@ import { GroupingFilter } from './grouping-filter'
 import { Leaderboard } from './leaderboard'
 import { LoadingSkeleton, UnavailableState, TeamEventState } from './states'
 import { useLivePoll } from './use-live-poll'
-import { filterLeaderboardByGrouping, filterLeaderboardByPlacement } from './leaderboard-filter'
+import { filterLeaderboardByFavorites, filterLeaderboardByGrouping, filterLeaderboardByPlacement } from './leaderboard-filter'
 import { sortEntriesBySelectedScore } from './leaderboard-sort'
 import { LeaderboardControlPanel } from './leaderboard-control-panel'
 import { hasActiveLeaderboardFilters, resolveGroupingSelection } from './leaderboard-control-state'
@@ -21,6 +21,7 @@ import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interacti
 import type { WeeklyTeeSheetData } from '@/lib/competition/weekly-tee-sheet'
 import { resolveWeeklyStage, weeklyStageUsesLeaderboardControls } from './weekly-stage'
 import { WeeklyUpcoming } from './weekly-upcoming'
+import { FOLLOW_STATE_EVENT, type FollowStateEventDetail } from '@/lib/players/follow-state-event'
 
 export interface StandingsWorkspaceProps {
   competitionKey: string
@@ -32,12 +33,14 @@ export interface StandingsWorkspaceProps {
   view: View
   grouping: string | null
   placedOnly: boolean
+  favoritesOnly: boolean
   defaultScoring: ScoringMode
   golferIdsByMemberCard: Record<string, string>
   playerFollowState: LeaderboardFollowState
   capabilities: OccurrenceCapabilities
   initial: LiveResponse | null
   pollUrl: string | null
+  selectedResultStatus: ResultStatus
   initialIsHistoricalFinal: boolean
   awaitingOfficialFlights?: boolean
   teeSheet: WeeklyTeeSheetData | null
@@ -47,6 +50,7 @@ export interface StandingsWorkspaceProps {
   onSelectScoring: (mode: ScoringMode) => void
   onSelectGrouping: (grouping: string) => void
   onSelectPlacedOnly: (placedOnly: boolean) => void
+  onSelectFavoritesOnly: (favoritesOnly: boolean) => void
   onClearFilters: () => void
 }
 
@@ -59,6 +63,19 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
   const [pendingOccurrenceId, setPendingOccurrenceId] = useState<string | null>(null)
   const occurrenceChanging = isOccurrenceNavigationPending(props.selectedOccurrenceId, pendingOccurrenceId)
   const activeOccurrenceId = selectedOccurrenceContextId(props.selectedOccurrenceId, pendingOccurrenceId)
+  const [followedGolferIds, setFollowedGolferIds] = useState(props.playerFollowState.followedGolferIds)
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<FollowStateEventDetail>).detail
+      if (!detail?.golferId) return
+      setFollowedGolferIds((current) => detail.following
+        ? [...new Set([...current, detail.golferId])]
+        : current.filter((golferId) => golferId !== detail.golferId))
+    }
+    window.addEventListener(FOLLOW_STATE_EVENT, sync)
+    return () => window.removeEventListener(FOLLOW_STATE_EVENT, sync)
+  }, [])
+  const effectiveFollowState = { ...props.playerFollowState, followedGolferIds }
 
   const { data, refreshing, showingLastKnown, refresh } = useLivePoll({
     initial: props.initial,
@@ -68,7 +85,6 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     initialIsHistoricalFinal: props.initialIsHistoricalFinal,
     awaitingOfficialFlights: props.awaitingOfficialFlights,
   })
-
   // Week navigation is a REAL server navigation (a different occurrence needs
   // different data). The URL is built here so it preserves the shell's CURRENT
   // scoring + view — which the shell tracks in client state and writes via
@@ -83,6 +99,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     next.set('grouping', grouping)
     if (props.placedOnly) next.set('placed', 'only')
     else next.delete('placed')
+    if (props.favoritesOnly) next.set('favorites', 'only')
+    else next.delete('favorites')
     return `${pathname}?${next.toString()}`
   }
   const onSelectWeek = (id: string) => {
@@ -121,20 +139,23 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     }
   }, [effectiveGrouping, grouping, membershipSettled, onSelectGroupingProp, pathname])
   // Establish the existing score-relative competition order once, before any
-  // presentation-only filtering or personalization. The For You summary selects
+  // presentation-only filtering or personalization. The favorites lens selects
   // from this order; it never reorders the full board around the viewer.
   const orderedLb = lb
     ? { ...lb, entries: sortEntriesBySelectedScore(lb.entries, lb.scorecards, lb.scoringMode) }
     : null
   const groupedLb = filterLeaderboardByGrouping(orderedLb, effectiveGrouping, flightMembership.status)
   const filteredLb = filterLeaderboardByPlacement(groupedLb, props.placedOnly)
-  const displayLb = filteredLb
+  const displayLb = filterLeaderboardByFavorites(
+    filteredLb, props.favoritesOnly, props.golferIdsByMemberCard, effectiveFollowState,
+  )
   // Render the flight column only for Men's Overall; a specific flight makes
   // it redundant and women's is single Overall.
   const showFlight = effectiveGrouping === 'all' && hasFlightFilter
   // Keep the existing flight colors in projected and official states.
   const colorizeFlights = hasFlightFilter
   const isInitialEmpty = !props.initial?.leaderboard && !props.initial
+  const scoringPending = !occurrenceChanging && !!props.pollUrl && props.initial === null && data === null
   const eventFormat = data?.eventFormat ?? props.initial?.eventFormat ?? 'unknown'
   const discoveryState = data?.discoveryState ?? props.initial?.discoveryState ?? 'pending'
 
@@ -147,7 +168,9 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
   }
 
   const occurrence = props.occurrences.find((item) => item.id === activeOccurrenceId)
-  const responseStatus = data?.resultStatus ?? props.initial?.resultStatus ?? 'unknown'
+  const responseStatus = scoringPending
+    ? props.selectedResultStatus
+    : data?.resultStatus ?? props.initial?.resultStatus ?? 'unknown'
   const resultStatus = occurrenceChanging
     ? (occurrence?.resultStatus ?? 'unknown')
     : occurrence?.resultStatus === 'not_started' && responseStatus === 'unknown'
@@ -161,7 +184,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
         teeSheetStatus: props.teeSheet!.status,
       })
     : null
-  const leaderboardStage = !mensWeeklyLifecycle || weeklyStageUsesLeaderboardControls(weeklyStage!)
+  const leaderboardStage = scoringPending || !mensWeeklyLifecycle || weeklyStageUsesLeaderboardControls(weeklyStage!)
   const navigationStatus = weeklyStage === 'upcoming' || weeklyStage === 'pairings'
     ? 'not_started'
     : resultStatus
@@ -185,6 +208,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     scoring: props.scoring,
     grouping,
     placedOnly: props.placedOnly,
+    favoritesOnly: props.favoritesOnly,
   }, props.defaultScoring)
 
   return (
@@ -215,6 +239,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
                   modes={props.capabilities.scoring.modes.map((m) => ({ key: m, label: m }))}
                   selected={props.scoring}
                   onSelect={(m) => props.onSelectScoring(m as ScoringMode)}
+                  pending={scoringPending}
                 />
                 {hasFlightFilter && (
                   <GroupingFilter
@@ -224,7 +249,20 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
                   />
                 )}
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                {props.playerFollowState.signedIn ? (
+                  <button
+                    type="button"
+                    aria-pressed={props.favoritesOnly}
+                    onClick={() => props.onSelectFavoritesOnly(!props.favoritesOnly)}
+                    className={props.favoritesOnly
+                      ? 'inline-flex min-w-[6.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-foreground bg-foreground px-2 py-1 text-xs font-medium text-background'
+                      : 'inline-flex min-w-[6.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground'}
+                  >
+                    <Star aria-hidden="true" className={props.favoritesOnly ? 'h-3.5 w-3.5 fill-current' : 'h-3.5 w-3.5'} />
+                    Favorites
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   aria-pressed={props.placedOnly}
@@ -244,13 +282,15 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
 
       {occurrenceChanging ? (
         <LoadingSkeleton />
+      ) : scoringPending ? (
+        <LoadingSkeleton />
       ) : isInitialEmpty && refreshing ? (
         <LoadingSkeleton />
       ) : mensWeeklyLifecycle && (weeklyStage === 'pairings' || weeklyStage === 'upcoming') ? (
         <WeeklyUpcoming
           teeSheet={props.teeSheet!}
           golferIdsByMemberCard={props.golferIdsByMemberCard}
-          playerFollowState={props.playerFollowState}
+          playerFollowState={effectiveFollowState}
           returnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
         />
       ) : mensWeeklyLifecycle && weeklyStage === 'unavailable' ? (
@@ -270,10 +310,10 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
             colorizeFlights={colorizeFlights}
             projectedFlights={flightMembership.status === 'projected'}
             golferIdsByMemberCard={props.golferIdsByMemberCard}
-            playerFollowState={props.playerFollowState}
+            playerFollowState={effectiveFollowState}
             playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
-            showForYou={props.selectedOccurrenceId === props.latestResultsOccurrenceId && (resultStatus === 'live' || resultStatus === 'final')}
-            forYouLeaderboard={orderedLb}
+            teeSheet={props.teeSheet}
+            favoritesOnly={props.favoritesOnly}
           />
         </div>
       ) : showingLastKnown ? (

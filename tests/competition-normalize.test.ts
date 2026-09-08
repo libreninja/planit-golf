@@ -97,13 +97,26 @@ test('empty season_points + an in_progress card → not completed (live round mi
   assert.notEqual(upstreamStatus, 'completed')
 })
 
-test('season_points takes precedence over the scorecard fallback (men\'s path unchanged)', () => {
-  // Men's league rounds populate season_points; that branch fires first, so the
-  // fallback never changes men's behavior even if cards were somehow mixed.
+test('season_points cannot override a currently active scorecard', () => {
   const fx = fixture()
   fx.event!.status = undefined
   fx.event!.season_points = [{ member_card_id: 'mc-1', total_points: 50 }]
   fx.event!.scopes![0].aggregates![0].scorecard_statuses = [{ status: 'in_progress' }]
   const { upstreamStatus } = normalizeTournament(fx, 'gross')
-  assert.equal(upstreamStatus, 'completed')
+  assert.equal(upstreamStatus, 'in_progress')
+})
+
+test('REGRESSION: completed cards mixed with no_holes entrants are in progress, not final', () => {
+  const fx = fixture()
+  fx.event!.status = undefined
+  fx.event!.season_points = []
+  fx.event!.scopes![0].aggregates!.push({
+    name: 'Scheduled Later',
+    member_cards: [{ member_card_id_str: 'mc-2' }],
+    gross_scores: [null, null, null],
+    net_scores: [null, null, null],
+    scorecard_statuses: [{ status: 'no_holes' }],
+  })
+  const { upstreamStatus } = normalizeTournament(fx, 'net')
+  assert.equal(upstreamStatus, 'in_progress')
 })

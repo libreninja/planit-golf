@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
 import { makeGolfGeniusRequestOptional } from '@/lib/gg/client'
+import { readCachedTeeSheet, writeCachedTeeSheet } from './cache'
 import {
   normalizeWeeklyTeeSheet,
   type WeeklyOccurrenceRow,
@@ -18,9 +19,19 @@ async function resolveTeeSheet(
   if (!process.env.GOLF_GENIUS_API_KEY) return { occurrence, groups: [], status: 'unavailable' }
 
   try {
-    const raw = await makeGolfGeniusRequestOptional({
-      endpoint: `/events/${occurrence.gg_event_id}/rounds/${occurrence.gg_round_id}/tee_sheet`,
-    })
+    const cacheArgs = {
+      tenantKey: 'igc', competitionKey: 'mens-league', occurrenceId: String(occurrence.week_number),
+    }
+    let raw = await readCachedTeeSheet(cacheArgs)
+    if (raw === null) {
+      raw = await makeGolfGeniusRequestOptional({
+        endpoint: `/events/${occurrence.gg_event_id}/rounds/${occurrence.gg_round_id}/tee_sheet`,
+      })
+      // Published pairings are stable enough for five minutes. An empty sheet
+      // is retried after one minute so newly posted pairings appear promptly.
+      const hasGroups = normalizeWeeklyTeeSheet(raw).length > 0
+      await writeCachedTeeSheet(cacheArgs, raw, hasGroups ? 300 : 60)
+    }
     const groups = normalizeWeeklyTeeSheet(raw)
     return { occurrence, groups, status: groups.length > 0 ? 'published' : 'not_published' }
   } catch {

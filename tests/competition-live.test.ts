@@ -210,6 +210,42 @@ test('durableCurrent derived from event row source vs import (version equality)'
   assert.equal(r.durableCurrent, true, 'version equality (v9==v9) → current despite older import timestamp')
 })
 
+test('REGRESSION: live occurrence beats a previously durable final-like snapshot', async () => {
+  const nine = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+  const empty = Array(9).fill(null)
+  const gg = fakeGg({
+    tournaments: [{ event: { id: 'n1', name: 'Net Regular Season' } }],
+    results: { n1: { event: { status: null, season_points: [], scopes: [{ name: 'Overall', aggregates: [
+      {
+        name: 'Early Player', position: '1', member_cards: [{ member_card_id_str: 'early' }],
+        gross_scores: nine, net_scores: nine, to_par_net: nine.map(() => 0), to_par_gross: nine.map(() => 0),
+        scorecard_statuses: [{ status: 'completed' }],
+      },
+      {
+        name: 'Later Player', position: null, member_cards: [{ member_card_id_str: 'later' }],
+        gross_scores: empty, net_scores: empty, to_par_net: empty, to_par_gross: empty,
+        scorecard_statuses: [{ status: 'no_holes' }],
+      },
+    ] }] } } },
+  })
+  const r = await getLiveResults({
+    competitionKey: 'mens-league', occurrenceId: '22', scoring: 'net',
+    nowIso: '2026-09-08T18:00:00-07:00',
+    deps: {
+      adapterConfig,
+      ggClient: gg,
+      readEvent: fakeEventReader({
+        event_date: '2026-09-08', event_format: 'individual', discovery_state: 'discovered',
+        source_finalized_at: '2026-09-08T20:01:40Z', source_version: 'v22',
+        durable_source_version: 'v22', durable_imported_at: '2026-09-08T20:02:00Z',
+      }),
+      cacheStore: makeLiveCacheStore(new Map()),
+    },
+  })
+  assert.equal(r.durableCurrent, true, 'fixture includes the stale durable-final signal')
+  assert.equal(r.resultStatus, 'live', 'completed early cards plus scheduled no_holes cards remains live in-window')
+})
+
 // REGRESSION 2026-08-25 (Men's League live round). Today's round (Week 20,
 // dated 2026-08-25) had scores reported at 15:59 PDT — one minute BEFORE the
 // configured 16:00 playStartLocal window. GG league rounds never expose

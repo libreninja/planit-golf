@@ -15,8 +15,11 @@ export function resolveWeeklyStage(input: {
   historicalFinal: boolean
   teeSheetStatus: WeeklyTeeSheetStatus
 }): WeeklyStage {
-  if (input.historicalFinal || input.resultStatus === 'final') return 'final'
+  if (input.resultStatus === 'final') return 'final'
   if (input.resultStatus === 'live') return 'live'
+  // Historical-final is a server-render fallback only. A fresh live poll is
+  // stronger evidence and is checked above so this memo cannot pin the label.
+  if (input.historicalFinal) return 'final'
   if (input.teeSheetStatus === 'published') return 'pairings'
   if (input.teeSheetStatus === 'unavailable') return 'unavailable'
   return 'upcoming'

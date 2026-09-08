@@ -26,6 +26,7 @@ test('persists individual/discovered and source_finalized_at when upstream compl
   assert.equal(r.eventFormat, 'individual')
   assert.equal(r.discoveryState, 'discovered')
   assert.ok(writes[0].source_finalized_at, 'source_finalized_at persisted when completed')
+  assert.equal(writes[0].status, 'finalized')
 })
 
 test('persists unknown/pending for an upcoming round with no tournaments', async () => {
@@ -36,4 +37,20 @@ test('persists unknown/pending for an upcoming round with no tournaments', async
   assert.equal(r.eventFormat, 'unknown')
   assert.equal(r.discoveryState, 'pending')
   assert.equal(writes[0].source_finalized_at, null)
+  assert.equal(writes[0].status, 'upcoming')
+})
+
+test('rediscovery demotes a premature finalized row when GG is still in progress', async () => {
+  const writes: any[] = []
+  const db = { updateClassification: async (w: any) => { writes.push(w); return { ok: true } } }
+  const gg = fakeGg({
+    tournaments: [{ event: { id: 'n1', name: 'Net Regular Season' } }],
+    results: { n1: { event: { scopes: [{ name: 'Overall', aggregates: [
+      { name: 'Early', position: '1', gross_scores: [4], net_scores: [3], to_par_net: [0], to_par_gross: [1], scorecard_statuses: [{ status: 'completed' }] },
+      { name: 'Later', position: null, gross_scores: [null], net_scores: [null], to_par_net: [null], to_par_gross: [null], scorecard_statuses: [{ status: 'no_holes' }] },
+    ] }] } } },
+  })
+  await discoverAndPersistEventClassification({ competitionKey: 'mens-league', weekNumber: 22, adapterConfig, ggClient: gg, db: db as any, nowIso: '2026-09-08T20:15:00Z' })
+  assert.equal(writes[0].source_finalized_at, null)
+  assert.equal(writes[0].status, 'live')
 })

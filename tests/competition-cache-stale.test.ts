@@ -31,3 +31,28 @@ test('readStaleResult returns null when no row exists', async () => {
   const r = await store.readStaleResult({ tenantKey: 'igc', competitionKey: 'mens-league', occurrenceId: 'wk18', scoring: 'gross' })
   assert.equal(r, null)
 })
+
+test('live scoring cache stays within the 60-second freshness contract', async () => {
+  const rows = new Map<string, CacheRow>()
+  const store = makeLiveCacheStore(rows)
+  const started = Date.now()
+  await store.writeCachedResult(
+    { tenantKey: 'igc', competitionKey: 'mens-league', occurrenceId: 'wk22', scoring: 'net' },
+    { resultStatus: 'live' } as any,
+  )
+  const cached = rows.get('results:igc:mens-league:wk22:net')!
+  const lifetimeMs = Date.parse(cached.expires_at) - started
+  assert.ok(lifetimeMs > 59_000 && lifetimeMs <= 61_000, `unexpected live cache lifetime ${lifetimeMs}ms`)
+})
+
+test('published tee sheets can be cached longer without sharing the score cache key', async () => {
+  const rows = new Map<string, CacheRow>()
+  const store = makeLiveCacheStore(rows)
+  const args = { tenantKey: 'igc', competitionKey: 'mens-league', occurrenceId: 'wk22' }
+  const started = Date.now()
+  await store.writeCachedTeeSheet(args, [{ pairing_group: { id: 'group-1' } }], 300)
+  const cached = rows.get('tee-sheet:igc:mens-league:wk22')!
+  assert.ok(cached, 'tee-sheet payload uses its own occurrence-scoped key')
+  const lifetimeMs = Date.parse(cached.expires_at) - started
+  assert.ok(lifetimeMs > 299_000 && lifetimeMs <= 301_000, `unexpected tee-sheet cache lifetime ${lifetimeMs}ms`)
+})

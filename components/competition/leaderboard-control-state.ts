@@ -5,6 +5,7 @@ export interface LeaderboardControlState {
   scoring: ScoringMode
   grouping: string
   placedOnly: boolean
+  favoritesOnly: boolean
 }
 
 export type LeaderboardControlAction =
@@ -12,6 +13,7 @@ export type LeaderboardControlAction =
   | { type: 'select-scoring'; scoring: ScoringMode }
   | { type: 'select-grouping'; grouping: string }
   | { type: 'select-placed-only'; placedOnly: boolean }
+  | { type: 'select-favorites-only'; favoritesOnly: boolean }
   | { type: 'clear-filters'; defaultScoring: ScoringMode }
 
 // Each control owns one orthogonal dimension. In particular, changing scoring
@@ -29,16 +31,18 @@ export function leaderboardControlReducer(
       return { ...state, grouping: action.grouping }
     case 'select-placed-only':
       return { ...state, placedOnly: action.placedOnly }
+    case 'select-favorites-only':
+      return { ...state, favoritesOnly: action.favoritesOnly }
     case 'clear-filters':
-      return { ...state, scoring: action.defaultScoring, grouping: 'all', placedOnly: false }
+      return { ...state, scoring: action.defaultScoring, grouping: 'all', placedOnly: false, favoritesOnly: false }
   }
 }
 
 export function hasActiveLeaderboardFilters(
-  state: Pick<LeaderboardControlState, 'scoring' | 'grouping' | 'placedOnly'>,
+  state: Pick<LeaderboardControlState, 'scoring' | 'grouping' | 'placedOnly' | 'favoritesOnly'>,
   defaultScoring: ScoringMode,
 ): boolean {
-  return state.scoring !== defaultScoring || state.grouping !== 'all' || state.placedOnly
+  return state.scoring !== defaultScoring || state.grouping !== 'all' || state.placedOnly || state.favoritesOnly
 }
 
 // Projected and official flights intentionally share canonical keys, so a

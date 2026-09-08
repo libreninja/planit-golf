@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { filterLeaderboardByGrouping, filterLeaderboardByPlacement } from '../components/competition/leaderboard-filter.ts'
+import { filterLeaderboardByFavorites, filterLeaderboardByGrouping, filterLeaderboardByPlacement } from '../components/competition/leaderboard-filter.ts'
 import type { Leaderboard, ResultEntry } from '../lib/competition/types.ts'
 
 function lb(entries: { key: string; flight: string | null }[]): Leaderboard {
@@ -92,6 +92,28 @@ test('Hide unranked hides non-awarded scored entries in Net', () => {
   const l = lb([{ key: 'placed', flight: 'Flight 2' }, { key: 'phantom', flight: 'Flight 2' }])
   l.entries[0].positionLabel = 'T3'
   assert.deepEqual(filterLeaderboardByPlacement(l, true)!.entries.map((entry) => entry.key), ['placed'])
+})
+
+test('favorites lens uses canonical private follow state and preserves source order', () => {
+  const board = lb([
+    { key: 'leader', flight: 'Flight 1' },
+    { key: 'favorite', flight: 'Flight 1' },
+    { key: 'unresolved', flight: 'Flight 1' },
+  ])
+  board.scorecards = board.entries.map((item) => ({
+    key: item.key, memberCardId: `mc-${item.key}`, name: item.name,
+    netTotal: null, grossTotal: null, toParNet: null, toParGross: null,
+    holesCompleted: 0, scorecardStatus: 'no_holes', isLive: false, holes: [],
+  }))
+  const followState = { signedIn: true, followedGolferIds: ['golfer-favorite', 'unknown'], selfGolferIds: [] }
+  assert.deepEqual(
+    filterLeaderboardByFavorites(board, true, { 'mc-favorite': 'golfer-favorite' }, followState)!.entries.map((item) => item.key),
+    ['favorite'],
+  )
+  assert.deepEqual(
+    filterLeaderboardByFavorites(board, false, { 'mc-favorite': 'golfer-favorite' }, followState)!.entries.map((item) => item.key),
+    ['leader', 'favorite', 'unresolved'],
+  )
 })
 
 test('Hide unranked composes with official and projected Flight N scopes', () => {
