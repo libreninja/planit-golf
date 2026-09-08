@@ -26,8 +26,13 @@ import {
 } from '@/lib/competition/adapters/golfgenius/server-readers'
 import { defaultOccurrenceId, latestNonFutureWeeks } from '@/lib/competition/adapters/golfgenius/mapping'
 import type { LiveResponse, ResultStatus, ScoringMode } from '@/lib/competition/types'
-import { availableLeaderboardOccurrences, latestResultsOccurrenceId } from './occurrence-availability'
+import {
+  availableLeaderboardOccurrences,
+  availableWeeklyOccurrences,
+  latestResultsOccurrenceId,
+} from './occurrence-availability'
 import { getMensLeaderboardPlayerState } from '@/lib/players/data'
+import { getMensWeeklyTeeSheet } from '@/lib/competition/weekly-tee-sheet-data'
 
 // Today's calendar date (YYYY-MM-DD) in the league timezone — used to identify
 // the play-day occurrence ("Tuesday's event") for the initial-selection rule.
@@ -114,6 +119,7 @@ export async function StandingsWorkspaceServer({
   const todayOccurrence = allOccurrences.find((o) => o.date === todayDate) ?? null
   const todayId = todayOccurrence?.id ?? null
   const todayHasPostedGolf = todayId ? await resolveHasPostedGolf(competitionKey, Number(todayId)) : false
+  const requestedOccurrenceId = urlState.occurrenceId
 
   // For TODAY's event, also consult the LIVE path (GG) for posted golf — the
   // direct scorecard evidence that golf is happening right now — but ONLY when
@@ -124,7 +130,11 @@ export async function StandingsWorkspaceServer({
   // is reused as the live initial when today is selected. Skipped only when GG
   // is unreachable (no API key) — DB evidence alone suffices there.
   const ggConfigured = !!process.env.GOLF_GENIUS_API_KEY
-  const todayLive = (todayId && ggConfigured && config.capabilities.supportsLiveResults)
+  // A deep link to another selected week does not need an unrelated live read
+  // for today's occurrence. Besides avoiding wasted upstream work, this keeps
+  // selected-week lifecycle resolution isolated to that occurrence.
+  const needsTodayLive = !requestedOccurrenceId || requestedOccurrenceId === todayId
+  const todayLive = (todayId && needsTodayLive && ggConfigured && config.capabilities.supportsLiveResults)
     ? await getLiveResults({ competitionKey, occurrenceId: todayId, scoring, nowIso })
     : null
   const todayLiveHasGolf = !!(todayLive?.leaderboard?.scorecards.some((c) => c.holesCompleted > 0))
@@ -138,12 +148,14 @@ export async function StandingsWorkspaceServer({
   const liveScoredOccurrenceIds = new Set(
     todayId && (todayHasPostedGolf || todayLiveHasGolf) ? [todayId] : [],
   )
-  const occurrences = availableLeaderboardOccurrences(allOccurrences, {
+  const occurrenceEvidence = {
     hasResults,
     liveScoredOccurrenceIds,
-  })
+  }
+  const occurrences = competitionKey === 'mens-league'
+    ? availableWeeklyOccurrences(allOccurrences, occurrenceEvidence)
+    : availableLeaderboardOccurrences(allOccurrences, occurrenceEvidence)
 
-  const requestedOccurrenceId = urlState.occurrenceId
   const requestedIsAvailable = !!requestedOccurrenceId
     && occurrences.some((occurrence) => occurrence.id === requestedOccurrenceId)
 
@@ -199,6 +211,24 @@ export async function StandingsWorkspaceServer({
   const pollUrl = useLivePath && selected
     ? `/api/competition/live?competition=${encodeURIComponent(competitionKey)}&occurrence=${encodeURIComponent(selected.id)}`
     : null
+
+  // Pairings are occurrence-scoped, just like results. Resolve them for the
+  // selected Men's League week only while no final/live scoring state is
+  // already authoritative. The client still gives live/final precedence if a
+  // poll advances the stage after this server render.
+  const scoringStageIsAuthoritative = dec.initialIsHistoricalFinal
+    || (selected?.id === todayId && (
+      todayLive?.resultStatus === 'live' || todayLive?.resultStatus === 'final'
+    ))
+  const teeSheet = competitionKey === 'mens-league' && selected && !scoringStageIsAuthoritative
+    ? await getMensWeeklyTeeSheet(selected.id)
+    : competitionKey === 'mens-league'
+      ? {
+          occurrence: null,
+          groups: [],
+          status: selected ? 'not_published' as const : 'no_occurrence' as const,
+        }
+      : null
 
   // ---- P1-2: preload BOTH scoring datasets for instant Gross/Net toggle ----
   // Finalized/historical weeks: fetch every scoring from the DB (cheap RLS
@@ -275,6 +305,7 @@ export async function StandingsWorkspaceServer({
         initialIsHistoricalFinal: dec.initialIsHistoricalFinal,
         awaitingOfficialFlights,
         useLivePath,
+        teeSheet,
       }}
     />
   )

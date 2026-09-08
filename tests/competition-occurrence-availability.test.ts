@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   availableLeaderboardOccurrences,
+  availableWeeklyOccurrences,
   latestResultsOccurrenceId,
 } from '../components/competition/occurrence-availability.ts'
 import { occurrenceNavNeighbors } from '../components/competition/occurrence-nav-neighbors.ts'
@@ -27,7 +28,15 @@ const occurrences = [
   occurrence('23', '2026-09-15'),
 ]
 
-test('future and unscored rounds are absent from leaderboard navigation', () => {
+test('regular future and unscored rounds remain available to the Weekly lifecycle', () => {
+  const visible = availableWeeklyOccurrences(occurrences, {
+    hasResults: new Set(['20', '21']),
+    liveScoredOccurrenceIds: new Set(),
+  })
+  assert.deepEqual(visible.map((item) => item.id), ['20', '21', '22', '23'])
+})
+
+test('non-Men’s leaderboard navigation retains its scored/live-only contract', () => {
   const visible = availableLeaderboardOccurrences(occurrences, {
     hasResults: new Set(['20', '21']),
     liveScoredOccurrenceIds: new Set(),
@@ -35,21 +44,31 @@ test('future and unscored rounds are absent from leaderboard navigation', () => 
   assert.deepEqual(visible.map((item) => item.id), ['20', '21'])
 })
 
-test('current live occurrence enters navigation only once scoring exists', () => {
-  const visible = availableLeaderboardOccurrences(occurrences, {
+test('current live occurrence remains in Weekly navigation', () => {
+  const visible = availableWeeklyOccurrences(occurrences, {
     hasResults: new Set(['20']),
     liveScoredOccurrenceIds: new Set(['21']),
   })
-  assert.deepEqual(visible.map((item) => item.id), ['20', '21'])
+  assert.deepEqual(visible.map((item) => item.id), ['20', '21', '22', '23'])
 })
 
-test('previous/next traverses scored/live occurrences and skips unscored schedule entries', () => {
-  const visible = availableLeaderboardOccurrences(occurrences, {
+test('previous/next traverses scheduled Weekly occurrences', () => {
+  const visible = availableWeeklyOccurrences(occurrences, {
     hasResults: new Set(['20', '22']),
     liveScoredOccurrenceIds: new Set(),
   })
-  assert.equal(occurrenceNavNeighbors(visible, '20').next?.id, '22')
-  assert.equal(occurrenceNavNeighbors(visible, '22').prev?.id, '20')
+  assert.equal(occurrenceNavNeighbors(visible, '20').next?.id, '21')
+  assert.equal(occurrenceNavNeighbors(visible, '22').prev?.id, '21')
+})
+
+test('unscored special occurrences stay out of Weekly while scored specials remain compatible', () => {
+  const special = { ...occurrence('101', '2026-08-17'), number: 101 }
+  assert.deepEqual(availableWeeklyOccurrences([...occurrences, special], {
+    hasResults: new Set(), liveScoredOccurrenceIds: new Set(),
+  }).map((item) => item.id), ['20', '21', '22', '23'])
+  assert.equal(availableWeeklyOccurrences([...occurrences, special], {
+    hasResults: new Set(['101']), liveScoredOccurrenceIds: new Set(),
+  }).at(-1)?.id, '101')
 })
 
 test('Latest Results targets a current scored round when available', () => {

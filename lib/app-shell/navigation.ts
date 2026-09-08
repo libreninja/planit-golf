@@ -39,7 +39,7 @@ export function buildBreadcrumb(pathname: string): Crumb[] {
   if (pathname === '/igc') return [{ label: 'Interbay Golf Club' }]
   if (pathname === '/igc/league') return [{ label: 'Interbay', href: '/igc' }, { label: 'Leagues' }]
   if (pathname === '/igc/mens-league') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }]
-  if (pathname === '/igc/mens-league/tee-sheet') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Tee Sheet' }]
+  if (pathname === '/igc/mens-league/tee-sheet') return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League" }]
   if (/^\/players\/[^/]+\/performance$/.test(pathname)) {
     const golferId = pathname.split('/')[2]
     return [{ label: 'Interbay', href: '/igc' }, { label: "Men's League", href: '/igc/mens-league' }, { label: 'Player detail', href: `/players/${golferId}` }, { label: 'Performance' }]

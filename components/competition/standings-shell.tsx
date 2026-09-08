@@ -30,6 +30,7 @@ import { StandingsWorkspace } from './standings-workspace'
 import { leaderboardControlReducer } from './leaderboard-control-state'
 import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interaction'
 import { MensLeagueLocalNavigation } from '@/components/igc/mens-league-local-navigation'
+import type { WeeklyTeeSheetData } from '@/lib/competition/weekly-tee-sheet'
 
 export interface StandingsShellProps {
   competitionKey: string
@@ -57,6 +58,7 @@ export interface StandingsShellProps {
     // true when the selected occurrence renders via the live path — the shell
     // prefetches the non-selected scoring's live URL in that case only.
     useLivePath: boolean
+    teeSheet: WeeklyTeeSheetData | null
   }
 }
 
@@ -158,6 +160,7 @@ export function StandingsShell(props: StandingsShellProps) {
           pollUrl={props.weekly.pollUrl}
           initialIsHistoricalFinal={props.weekly.initialIsHistoricalFinal}
           awaitingOfficialFlights={props.weekly.awaitingOfficialFlights}
+          teeSheet={props.weekly.teeSheet}
           onSelectScoring={onSelectScoring}
           onSelectGrouping={(nextGrouping) => dispatch({ type: 'select-grouping', grouping: nextGrouping })}
           onSelectPlacedOnly={onSelectPlacedOnly}

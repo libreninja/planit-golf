@@ -18,6 +18,9 @@ import { occurrenceContextLabel } from './occurrence-context'
 import { isOccurrenceNavigationPending, selectedOccurrenceContextId } from './occurrence-loading'
 import { LeaderboardClearFilters } from './leaderboard-clear-filters'
 import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interaction'
+import type { WeeklyTeeSheetData } from '@/lib/competition/weekly-tee-sheet'
+import { resolveWeeklyStage, weeklyStageUsesLeaderboardControls } from './weekly-stage'
+import { WeeklyUpcoming } from './weekly-upcoming'
 
 export interface StandingsWorkspaceProps {
   competitionKey: string
@@ -37,6 +40,7 @@ export interface StandingsWorkspaceProps {
   pollUrl: string | null
   initialIsHistoricalFinal: boolean
   awaitingOfficialFlights?: boolean
+  teeSheet: WeeklyTeeSheetData | null
   // P1-2: scoring is controlled by the shell (instant client toggle, no server
   // navigation). The workspace reports a scoring click up to the shell, which
   // updates state + history.replaceState while this component stays mounted.
@@ -149,7 +153,19 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     : occurrence?.resultStatus === 'not_started' && responseStatus === 'unknown'
       ? 'not_started'
       : responseStatus
-  const occurrenceLabel = occurrenceContextLabel(occurrence?.label ?? 'Leaderboard', resultStatus)
+  const mensWeeklyLifecycle = props.competitionKey === 'mens-league' && props.teeSheet !== null
+  const weeklyStage = mensWeeklyLifecycle
+    ? resolveWeeklyStage({
+        resultStatus,
+        historicalFinal: props.initialIsHistoricalFinal,
+        teeSheetStatus: props.teeSheet!.status,
+      })
+    : null
+  const leaderboardStage = !mensWeeklyLifecycle || weeklyStageUsesLeaderboardControls(weeklyStage!)
+  const navigationStatus = weeklyStage === 'upcoming' || weeklyStage === 'pairings'
+    ? 'not_started'
+    : resultStatus
+  const occurrenceLabel = occurrenceContextLabel(occurrence?.label ?? 'Weekly', navigationStatus)
   // Flight availability/provenance belongs to the loaded response. Omit it
   // during navigation rather than pairing the new date with the old round's
   // membership state.
@@ -162,8 +178,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     : null
   const controlSummary = [
     occurrenceLabel,
-    props.scoring.charAt(0).toUpperCase() + props.scoring.slice(1),
-    groupingSummary,
+    leaderboardStage ? props.scoring.charAt(0).toUpperCase() + props.scoring.slice(1) : null,
+    leaderboardStage ? groupingSummary : null,
   ].filter(Boolean).join(' · ')
   const filtersActive = hasActiveLeaderboardFilters({
     scoring: props.scoring,
@@ -175,9 +191,11 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     <section className="space-y-4">
       <LeaderboardControlPanel summary={controlSummary}>
         <div className="flex flex-col gap-2">
-          <div className="flex justify-end">
-            <LeaderboardClearFilters active={filtersActive} onClear={props.onClearFilters} />
-          </div>
+          {leaderboardStage ? (
+            <div className="flex justify-end">
+              <LeaderboardClearFilters active={filtersActive} onClear={props.onClearFilters} />
+            </div>
+          ) : null}
           <div className="flex min-w-0 items-center">
             {props.capabilities.supportsEventNavigation && (
               <OccurrenceNav
@@ -190,33 +208,37 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
               />
             )}
           </div>
-          <div className="flex w-full min-w-0 flex-nowrap items-center gap-2">
-            <ScoringToggle
-              modes={props.capabilities.scoring.modes.map((m) => ({ key: m, label: m }))}
-              selected={props.scoring}
-              onSelect={(m) => props.onSelectScoring(m as ScoringMode)}
-            />
-            {hasFlightFilter && (
-              <GroupingFilter
-                groupings={{ kind: 'multi', groupings: flightMembership.groupings, defaultAll: true }}
-                selected={effectiveGrouping}
-                onSelect={onSelectGrouping}
-              />
-            )}
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              aria-pressed={props.placedOnly}
-              onClick={() => props.onSelectPlacedOnly(!props.placedOnly)}
-              className={props.placedOnly
-                ? 'inline-flex min-w-[7.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-foreground bg-foreground px-2 py-1 text-xs font-medium text-background'
-                : 'inline-flex min-w-[7.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground'}
-            >
-              <EyeOff aria-hidden="true" className="h-3.5 w-3.5" />
-              Hide unranked
-            </button>
-          </div>
+          {leaderboardStage ? (
+            <>
+              <div className="flex w-full min-w-0 flex-nowrap items-center gap-2">
+                <ScoringToggle
+                  modes={props.capabilities.scoring.modes.map((m) => ({ key: m, label: m }))}
+                  selected={props.scoring}
+                  onSelect={(m) => props.onSelectScoring(m as ScoringMode)}
+                />
+                {hasFlightFilter && (
+                  <GroupingFilter
+                    groupings={{ kind: 'multi', groupings: flightMembership.groupings, defaultAll: true }}
+                    selected={effectiveGrouping}
+                    onSelect={onSelectGrouping}
+                  />
+                )}
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  aria-pressed={props.placedOnly}
+                  onClick={() => props.onSelectPlacedOnly(!props.placedOnly)}
+                  className={props.placedOnly
+                    ? 'inline-flex min-w-[7.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-foreground bg-foreground px-2 py-1 text-xs font-medium text-background'
+                    : 'inline-flex min-w-[7.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground'}
+                >
+                  <EyeOff aria-hidden="true" className="h-3.5 w-3.5" />
+                  Hide unranked
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
       </LeaderboardControlPanel>
 
@@ -224,20 +246,36 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
         <LoadingSkeleton />
       ) : isInitialEmpty && refreshing ? (
         <LoadingSkeleton />
+      ) : mensWeeklyLifecycle && (weeklyStage === 'pairings' || weeklyStage === 'upcoming') ? (
+        <WeeklyUpcoming
+          teeSheet={props.teeSheet!}
+          golferIdsByMemberCard={props.golferIdsByMemberCard}
+          playerFollowState={props.playerFollowState}
+          returnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
+        />
+      ) : mensWeeklyLifecycle && weeklyStage === 'unavailable' ? (
+        <UnavailableState message="Weekly details are temporarily unavailable. Please try again shortly." />
       ) : eventFormat === 'team' && discoveryState === 'discovered' ? (
         <TeamEventState label={props.occurrences.find((o) => o.id === props.selectedOccurrenceId)?.label ?? ''} />
       ) : displayLb ? (
-        <Leaderboard
-          leaderboard={displayLb}
-          showFlight={showFlight}
-          colorizeFlights={colorizeFlights}
-          projectedFlights={flightMembership.status === 'projected'}
-          golferIdsByMemberCard={props.golferIdsByMemberCard}
-          playerFollowState={props.playerFollowState}
-          playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
-          showForYou={props.selectedOccurrenceId === props.latestResultsOccurrenceId && (resultStatus === 'live' || resultStatus === 'final')}
-          forYouLeaderboard={orderedLb}
-        />
+        <div className="space-y-2">
+          {mensWeeklyLifecycle ? (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+              {weeklyStage === 'live' ? 'Live' : 'Final'}
+            </p>
+          ) : null}
+          <Leaderboard
+            leaderboard={displayLb}
+            showFlight={showFlight}
+            colorizeFlights={colorizeFlights}
+            projectedFlights={flightMembership.status === 'projected'}
+            golferIdsByMemberCard={props.golferIdsByMemberCard}
+            playerFollowState={props.playerFollowState}
+            playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
+            showForYou={props.selectedOccurrenceId === props.latestResultsOccurrenceId && (resultStatus === 'live' || resultStatus === 'final')}
+            forYouLeaderboard={orderedLb}
+          />
+        </div>
       ) : showingLastKnown ? (
         <UnavailableState message="Live results are temporarily unavailable. Showing the last known standings." onRetry={() => void refresh()} retrying={refreshing} />
       ) : (

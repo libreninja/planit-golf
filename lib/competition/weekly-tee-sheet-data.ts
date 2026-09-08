@@ -4,41 +4,18 @@ import { createClient } from '@/lib/supabase/server'
 import { makeGolfGeniusRequestOptional } from '@/lib/gg/client'
 import {
   normalizeWeeklyTeeSheet,
-  selectCurrentWeeklyTeeSheetOccurrence,
   type WeeklyOccurrenceRow,
-  type WeeklyTeeSheetGroup,
+  type WeeklyTeeSheetData,
 } from './weekly-tee-sheet'
 
-export interface CurrentWeeklyTeeSheet {
-  occurrence: WeeklyOccurrenceRow | null
-  groups: WeeklyTeeSheetGroup[]
-  status: 'published' | 'not_published' | 'unavailable' | 'no_occurrence'
-}
-
-function todayInPacific(now: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(now)
-}
-
-export async function getCurrentMensWeeklyTeeSheet(now = new Date()): Promise<CurrentWeeklyTeeSheet> {
-  const supabase = await createClient()
-  const today = todayInPacific(now)
-  const { data, error } = await supabase
-    .from('igc_league_events')
-    .select('week_number, event_name, event_date, gg_event_id, gg_round_id')
-    .eq('league_key', 'mens')
-    .gte('event_date', today)
-    .lt('week_number', 100)
-    .order('event_date', { ascending: true })
-    .limit(8)
-
-  if (error) return { occurrence: null, groups: [], status: 'unavailable' }
-  const occurrence = selectCurrentWeeklyTeeSheetOccurrence((data ?? []) as WeeklyOccurrenceRow[], today)
+async function resolveTeeSheet(
+  occurrence: WeeklyOccurrenceRow | null,
+): Promise<WeeklyTeeSheetData> {
   if (!occurrence) return { occurrence: null, groups: [], status: 'no_occurrence' }
-  if (!occurrence.gg_event_id || !occurrence.gg_round_id || !process.env.GOLF_GENIUS_API_KEY) {
+  if (!occurrence.gg_event_id || !occurrence.gg_round_id) {
     return { occurrence, groups: [], status: 'not_published' }
   }
+  if (!process.env.GOLF_GENIUS_API_KEY) return { occurrence, groups: [], status: 'unavailable' }
 
   try {
     const raw = await makeGolfGeniusRequestOptional({
@@ -49,4 +26,23 @@ export async function getCurrentMensWeeklyTeeSheet(now = new Date()): Promise<Cu
   } catch {
     return { occurrence, groups: [], status: 'unavailable' }
   }
+}
+
+export async function getMensWeeklyTeeSheet(
+  occurrenceId: string,
+): Promise<WeeklyTeeSheetData> {
+  const weekNumber = Number(occurrenceId)
+  if (!Number.isFinite(weekNumber)) {
+    return { occurrence: null, groups: [], status: 'no_occurrence' }
+  }
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('igc_league_events')
+    .select('week_number, event_name, event_date, gg_event_id, gg_round_id')
+    .eq('league_key', 'mens')
+    .eq('week_number', weekNumber)
+    .maybeSingle()
+
+  if (error) return { occurrence: null, groups: [], status: 'unavailable' }
+  return resolveTeeSheet((data as WeeklyOccurrenceRow | null) ?? null)
 }

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   MENS_LEAGUE_DESTINATIONS,
   isMensLeagueDestinationActive,
+  mensLeagueTeeSheetCompatibilityHref,
 } from '../lib/igc/mens-league-navigation.ts'
 import { buildBreadcrumb, buildNav, computeActiveHref } from '../lib/app-shell/navigation.ts'
 import { normalizeUrlState } from '../components/competition/url-state.ts'
@@ -23,13 +24,12 @@ const publicUser: AppShellUser = {
   isAdmin: false,
 }
 
-test('Men’s League local navigation exposes the three destination links', () => {
+test('Men’s League local navigation exposes Weekly then Season only', () => {
   assert.deepEqual(
     MENS_LEAGUE_DESTINATIONS.map(({ key, label, href }) => ({ key, label, href })),
     [
-      { key: 'season', label: 'Season', href: '/igc/mens-league?view=season' },
       { key: 'weekly', label: 'Weekly', href: '/igc/mens-league?view=weekly' },
-      { key: 'tee-sheet', label: 'Tee Sheet', href: '/igc/mens-league/tee-sheet' },
+      { key: 'season', label: 'Season', href: '/igc/mens-league?view=season' },
     ],
   )
 })
@@ -48,6 +48,8 @@ test('exactly the selected local destination is current', () => {
   assert.match(markup, /href=\{destination\.href\}/)
   assert.match(markup, /aria-current=\{active \? 'page' : undefined\}/)
   assert.match(markup, /aria-label="Men's League"/)
+  assert.match(markup, /grid-cols-2/)
+  assert.doesNotMatch(markup, /Tee Sheet/)
 })
 
 test('Weekly owns leaderboard controls while Season renders without a filter panel', () => {
@@ -65,12 +67,16 @@ test('Weekly owns leaderboard controls while Season renders without a filter pan
   assert.match(weekly, /<LeaderboardClearFilters/)
 })
 
-test('Tee Sheet uses league navigation and retains its own personalized view control', () => {
+test('the former Tee Sheet route redirects into Weekly and preserves deep-link context', () => {
   const page = readFileSync(new URL('../app/igc/mens-league/tee-sheet/page.tsx', import.meta.url), 'utf8')
   const teeSheet = readFileSync(new URL('../components/competition/weekly-tee-sheet.tsx', import.meta.url), 'utf8')
 
-  assert.match(page, /<MensLeagueLocalNavigation activeDestination="tee-sheet"/)
-  assert.doesNotMatch(page, /Back to standings/)
+  assert.match(page, /redirect\(mensLeagueTeeSheetCompatibilityHref\(await searchParams\)\)/)
+  assert.doesNotMatch(page, /WeeklyTeeSheet|MensLeagueLocalNavigation/)
+  assert.equal(
+    mensLeagueTeeSheetCompatibilityHref({ week: '23', view: 'season', source: 'saved' }),
+    '/igc/mens-league?week=23&view=weekly&source=saved',
+  )
   assert.match(teeSheet, /aria-label="Tee sheet view"/)
   assert.match(teeSheet, /For you/)
   assert.match(teeSheet, /Full tee sheet/)
@@ -84,14 +90,14 @@ test('global navigation omits Tee Sheet and Standings is not active on its route
   assert.notEqual(computeActiveHref('/igc/mens-league/tee-sheet', nav), '/igc/mens-league')
 })
 
-test('Men’s League breadcrumbs stop at the league while Tee Sheet adds one leaf', () => {
+test('Men’s League breadcrumbs stay at the league level, including during compatibility redirect', () => {
   assert.deepEqual(
     buildBreadcrumb('/igc/mens-league').map((crumb) => crumb.label),
     ['Interbay', "Men's League"],
   )
   assert.deepEqual(
     buildBreadcrumb('/igc/mens-league/tee-sheet').map((crumb) => crumb.label),
-    ['Interbay', "Men's League", 'Tee Sheet'],
+    ['Interbay', "Men's League"],
   )
 })
 

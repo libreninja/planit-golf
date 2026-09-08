@@ -5,14 +5,27 @@ export interface OccurrenceAvailabilityEvidence {
   liveScoredOccurrenceIds: Set<string>
 }
 
-// Leaderboard navigation is intentionally narrower than the league schedule:
-// only occurrences with stored scoring or meaningful current live scoring.
 export function availableLeaderboardOccurrences(
   occurrences: Occurrence[],
   evidence: OccurrenceAvailabilityEvidence,
 ): Occurrence[] {
   return occurrences.filter((occurrence) => (
     evidence.hasResults.has(occurrence.id)
+    || evidence.liveScoredOccurrenceIds.has(occurrence.id)
+  ))
+}
+
+// Weekly owns the selected occurrence's whole lifecycle. Regular league weeks
+// therefore remain navigable before scores exist so they can show an honest
+// upcoming/pairings state. Special occurrences retain the prior rule because
+// they have their own primary product destination.
+export function availableWeeklyOccurrences(
+  occurrences: Occurrence[],
+  evidence: OccurrenceAvailabilityEvidence,
+): Occurrence[] {
+  return occurrences.filter((occurrence) => (
+    (occurrence.number !== null && occurrence.number < 100)
+    || evidence.hasResults.has(occurrence.id)
     || evidence.liveScoredOccurrenceIds.has(occurrence.id)
   ))
 }

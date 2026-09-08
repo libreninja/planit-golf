@@ -19,7 +19,7 @@ export function MensLeagueLocalNavigation({
 }) {
   const onClick = (
     event: MouseEvent<HTMLAnchorElement>,
-    view: 'season' | 'weekly' | null,
+    view: 'season' | 'weekly',
   ) => {
     if (!view || !onSelectStandingsView) return
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
@@ -35,7 +35,7 @@ export function MensLeagueLocalNavigation({
     <header className="space-y-2.5">
       <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">Men&apos;s League</h1>
       <nav aria-label="Men's League">
-        <div className="grid w-full grid-cols-3 border-b border-border">
+        <div className="grid w-full grid-cols-2 border-b border-border">
           {MENS_LEAGUE_DESTINATIONS.map((destination) => {
             const active = isMensLeagueDestinationActive(destination.key, activeDestination)
             return (

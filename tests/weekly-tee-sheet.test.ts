@@ -4,7 +4,6 @@ import {
   normalizeWeeklyTeeSheet,
   initialTeeSheetView,
   personalizeTeeSheetGroups,
-  selectCurrentWeeklyTeeSheetOccurrence,
 } from '../lib/competition/weekly-tee-sheet.ts'
 
 const raw = [
@@ -78,13 +77,4 @@ test('following still personalizes without a trustworthy self identity', () => {
   assert.deepEqual(result.personalizedGroups.map((group) => group.id), ['earlier-follow'])
   assert.equal(result.personalizedGroups[0]?.containsSelf, false)
   assert.equal(result.personalizedGroups[0]?.players.length, 2)
-})
-
-test('current tee-sheet selection uses the next regular occurrence and excludes specials', () => {
-  const selected = selectCurrentWeeklyTeeSheetOccurrence([
-    { week_number: 101, event_name: 'Special', event_date: '2026-09-06', gg_event_id: 's', gg_round_id: 's' },
-    { week_number: 23, event_name: 'Later', event_date: '2026-09-15', gg_event_id: 'b', gg_round_id: 'b' },
-    { week_number: 22, event_name: 'Next', event_date: '2026-09-08', gg_event_id: 'a', gg_round_id: 'a' },
-  ], '2026-09-05')
-  assert.equal(selected?.week_number, 22)
 })

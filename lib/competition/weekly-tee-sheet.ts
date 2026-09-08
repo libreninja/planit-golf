@@ -150,12 +150,10 @@ export interface WeeklyOccurrenceRow {
   gg_round_id: string | null
 }
 
-export function selectCurrentWeeklyTeeSheetOccurrence(
-  rows: WeeklyOccurrenceRow[],
-  today: string,
-): WeeklyOccurrenceRow | null {
-  return [...rows]
-    .filter((row) => row.week_number < 100 && !!row.event_date && row.event_date >= today)
-    .sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? '') || a.week_number - b.week_number)[0]
-    ?? null
+export type WeeklyTeeSheetStatus = 'published' | 'not_published' | 'unavailable' | 'no_occurrence'
+
+export interface WeeklyTeeSheetData {
+  occurrence: WeeklyOccurrenceRow | null
+  groups: WeeklyTeeSheetGroup[]
+  status: WeeklyTeeSheetStatus
 }

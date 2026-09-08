@@ -87,7 +87,7 @@ export function isShellVisible(pathname: string): boolean {
 // active style — hierarchy is conveyed only by indentation/typography. The
 // active item is the single matching link with the longest href. Links match
 // nested paths by default; an explicitly exact entry (Men's Standings) does not
-// claim a separate local destination such as the Tee Sheet.
+// claim compatibility paths such as the former standalone Tee Sheet URL.
 // Conventional sidebar menuing. Destinations are rectangular rows (modest
 // corner radius), full sidebar width, with restrained vertical rhythm. The
 // active row is marked by a subtle background PLUS a thin left-edge accent bar
