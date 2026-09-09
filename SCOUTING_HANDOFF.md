@@ -1,5 +1,7 @@
 # Seattle Cup Scouting MVP — Session Handoff
 
+> **Historical handoff.** Its rollout procedure is superseded by [AGENTS.md](AGENTS.md) and [docs/DELIVERY.md](docs/DELIVERY.md) for current delivery policy. Preserve the details below as project history, not routine release instructions.
+
 Repo-local handoff for the next Claude Code session. Read this first. Current as of 2026-07-28.
 
 ## 1. Product goal

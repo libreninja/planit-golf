@@ -16,11 +16,13 @@ test.describe('public smoke', () => {
     await expect(page.getByRole('link', { name: 'Reset password' })).toBeVisible()
   })
 
-  test('home redirects anonymous users to login', async ({ page }) => {
+  test('home renders the anonymous landing page', async ({ page }) => {
     await page.goto('/')
 
-    await expect(page).toHaveURL(/\/login$/)
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole('heading', { name: 'planit.golf' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Create account' })).toBeVisible()
   })
 
   test('admin redirects anonymous users to login', async ({ page }) => {

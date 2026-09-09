@@ -12,6 +12,8 @@
     "test:smoke": "playwright test",
     "test:smoke:headed": "playwright test --headed",
     "test:unit": "node --test tests/*.test.ts",
+    "integration:preflight": "node scripts/fast-integration-preflight.mjs",
+    "integration:deployment": "node scripts/wait-for-production-deployment.mjs",
     "supabase": "node scripts/run-supabase.mjs",
     "sync:members:dry": "node scripts/sync-members.mjs --dry-run",
     "sync:members": "node scripts/sync-members.mjs",
