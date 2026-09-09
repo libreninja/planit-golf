@@ -53,6 +53,26 @@ test('slow Player Detail and Performance transitions acknowledge navigation imme
   assert.equal(performance.match(/pendingClassName="bg-background text-foreground shadow-sm"/g)?.length, 2)
 })
 
+test('entity return links keep arrow and label in one compact navigation control', () => {
+  for (const source of [landing, performance]) {
+    assert.match(source, /className="inline-flex max-w-full whitespace-nowrap/)
+    assert.match(source, /contentClassName="inline-flex max-w-full min-w-0 items-center gap-1 whitespace-nowrap"/)
+    assert.match(source, /ArrowLeft className="h-4 w-4 shrink-0"/)
+  }
+  assert.match(landing, /<span className="truncate">Back to leaderboard<\/span>/)
+  assert.match(performance, /<span className="truncate">Back to player<\/span>/)
+})
+
+test('Performance reuses canonical compact Follow state beside First Last identity', () => {
+  assert.match(performance, /displayPersonName\(data\.displayName\)/)
+  assert.match(performance, /<div className="flex min-w-0 items-center gap-1">[\s\S]*<h1[\s\S]*<FollowControl/)
+  assert.match(performance, /golferId=\{data\.golferId\}/)
+  assert.match(performance, /signedIn=\{data\.viewer\.signedIn\}/)
+  assert.match(performance, /isSelf=\{data\.viewer\.isSelf\}/)
+  assert.match(performance, /initialFollowing=\{data\.viewer\.isFollowing\}/)
+  assert.doesNotMatch(performance, />Follow</)
+})
+
 test('implemented hole-relative analysis records a fail-closed comparable-course contract', () => {
   assert.match(identityBoundary, /must be checked against the same source evidence and explicitly added/)
   assert.match(identityBoundary, /matching hole ordinals alone is never sufficient/)

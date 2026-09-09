@@ -6,6 +6,7 @@
 
 import type { Leaderboard } from '../../lib/competition/types.ts'
 import type { LeaderboardFollowState } from '../../lib/players/leaderboard-interaction.ts'
+import { displayedPlayerNameMatches } from '../../lib/players/player-search.ts'
 
 export function filterLeaderboardByGrouping(
   leaderboard: Leaderboard | null,
@@ -57,5 +58,19 @@ export function filterLeaderboardByFavorites(
       const golferId = memberCardId ? golferIdsByMemberCard[memberCardId] : null
       return !!golferId && followed.has(golferId)
     }),
+  }
+}
+
+// Search is presentation-only and runs over the already-loaded authoritative
+// rows. It selects displayed First Last names without reordering entries or
+// touching the scorecards/member-card provenance used for player identity.
+export function filterLeaderboardByPlayerName(
+  leaderboard: Leaderboard | null,
+  query: string,
+): Leaderboard | null {
+  if (!leaderboard || !query.trim()) return leaderboard
+  return {
+    ...leaderboard,
+    entries: leaderboard.entries.filter((entry) => displayedPlayerNameMatches(entry.name, query)),
   }
 }

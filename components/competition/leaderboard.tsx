@@ -12,6 +12,7 @@ import {
 } from "@/lib/players/leaderboard-interaction";
 import type { WeeklyTeeSheetData } from "@/lib/competition/weekly-tee-sheet";
 import { weeklyParticipationForCard } from "./leaderboard-participation";
+import { NoPlayersMatch } from "./player-search";
 
 // showFlight renders a Flight column (POS / PLAYER / FLIGHT / …) for the Men's
 // Overall view. A specific flight makes the column redundant; women's is single
@@ -27,6 +28,8 @@ export function Leaderboard({
   playerReturnTo,
   teeSheet = null,
   favoritesOnly = false,
+  searchActive = false,
+  onClearSearch,
 }: {
   leaderboard: Leaderboard;
   showFlight?: boolean;
@@ -37,9 +40,12 @@ export function Leaderboard({
   playerReturnTo?: string;
   teeSheet?: WeeklyTeeSheetData | null;
   favoritesOnly?: boolean;
+  searchActive?: boolean;
+  onClearSearch?: () => void;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   if (leaderboard.entries.length === 0) {
+    if (searchActive && onClearSearch) return <NoPlayersMatch onClear={onClearSearch} />;
     return <p className="text-sm text-muted-foreground">{favoritesOnly ? 'None of your favorites are in this view.' : 'No results available for this round.'}</p>;
   }
   const isGross = leaderboard.scoringMode === "gross";

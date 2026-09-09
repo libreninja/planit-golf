@@ -3,7 +3,7 @@ import { LeagueStandingsView } from '@/components/igc/league-standings-view'
 export const dynamic = 'force-dynamic'
 
 interface MensStandingsProps {
-  searchParams: Promise<{ week?: string; view?: string; scoring?: string; grouping?: string; favorites?: string }>
+  searchParams: Promise<{ week?: string; view?: string; scoring?: string; grouping?: string; placed?: string; favorites?: string; q?: string }>
 }
 
 // Men's League standings — a direct route, peer to /igc/womens-league. There

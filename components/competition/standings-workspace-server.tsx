@@ -290,6 +290,7 @@ export async function StandingsWorkspaceServer({
       defaultScoring={defaultScoring}
       initialPlacedOnly={urlState.placedOnly}
       initialFavoritesOnly={urlState.favoritesOnly}
+      initialSearchQuery={params.get('q') ?? ''}
       scoringModes={scoringModes}
       seasonRows={seasonRows}
       golferIdsByMemberCard={playerState.golferIdsByMemberCard}

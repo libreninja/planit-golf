@@ -16,7 +16,7 @@
 // different data; the workspace builds those URLs preserving the current
 // scoring/view (see standings-workspace.tsx).
 
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import type {
   LiveResponse,
   OccurrenceCapabilities,
@@ -40,6 +40,7 @@ export interface StandingsShellProps {
   defaultScoring: ScoringMode
   initialPlacedOnly: boolean
   initialFavoritesOnly: boolean
+  initialSearchQuery: string
   scoringModes: ScoringMode[]
   // null when the competition has no 'season' view (e.g. women's).
   seasonRows: SeasonPointsRow[] | null
@@ -73,10 +74,11 @@ export function StandingsShell(props: StandingsShellProps) {
     favoritesOnly: props.initialFavoritesOnly,
   })
   const { view, scoring, grouping, placedOnly, favoritesOnly } = controls
+  const [searchQuery, setSearchQuery] = useState(props.initialSearchQuery)
 
   // Update the URL without navigating — keeps refresh/bookmark correct while
   // the toggle itself is an instant client state change.
-  const updateUrl = (next: { view?: View; scoring?: ScoringMode; grouping?: string; placedOnly?: boolean; favoritesOnly?: boolean }) => {
+  const updateUrl = (next: { view?: View; scoring?: ScoringMode; grouping?: string; placedOnly?: boolean; favoritesOnly?: boolean; searchQuery?: string }) => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     if (next.view) url.searchParams.set('view', next.view)
@@ -86,6 +88,10 @@ export function StandingsShell(props: StandingsShellProps) {
     if (next.placedOnly === false) url.searchParams.delete('placed')
     if (next.favoritesOnly === true) url.searchParams.set('favorites', 'only')
     if (next.favoritesOnly === false) url.searchParams.delete('favorites')
+    if (next.searchQuery !== undefined) {
+      if (next.searchQuery.trim()) url.searchParams.set('q', next.searchQuery)
+      else url.searchParams.delete('q')
+    }
     window.history.replaceState(null, '', `${url.pathname}${url.search}`)
   }
 
@@ -114,10 +120,16 @@ export function StandingsShell(props: StandingsShellProps) {
     updateUrl({ favoritesOnly: nextFavoritesOnly })
   }
 
+  const onSearchQueryChange = (nextSearchQuery: string) => {
+    setSearchQuery(nextSearchQuery)
+    updateUrl({ searchQuery: nextSearchQuery })
+  }
+
   const onClearFilters = () => {
     dispatch({ type: 'clear-filters', defaultScoring: props.defaultScoring })
+    setSearchQuery('')
     writeScoringPref(props.competitionKey, props.defaultScoring, window.localStorage)
-    updateUrl({ scoring: props.defaultScoring, grouping: 'all', placedOnly: false, favoritesOnly: false })
+    updateUrl({ scoring: props.defaultScoring, grouping: 'all', placedOnly: false, favoritesOnly: false, searchQuery: '' })
   }
 
   // P1-2 (live): prefetch the OTHER scoring's live URL so the first Gross/Net
@@ -142,7 +154,7 @@ export function StandingsShell(props: StandingsShellProps) {
   const weeklyInitial = props.weekly.initialByScoring[scoring] ?? null
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-3">
       {props.competitionKey === 'mens-league' ? (
         <MensLeagueLocalNavigation
           activeDestination={showSeason ? 'season' : 'weekly'}
@@ -164,6 +176,7 @@ export function StandingsShell(props: StandingsShellProps) {
           grouping={grouping}
           placedOnly={placedOnly}
           favoritesOnly={favoritesOnly}
+          searchQuery={searchQuery}
           defaultScoring={props.defaultScoring}
           golferIdsByMemberCard={props.golferIdsByMemberCard}
           playerFollowState={props.playerFollowState}
@@ -178,6 +191,7 @@ export function StandingsShell(props: StandingsShellProps) {
           onSelectGrouping={(nextGrouping) => dispatch({ type: 'select-grouping', grouping: nextGrouping })}
           onSelectPlacedOnly={onSelectPlacedOnly}
           onSelectFavoritesOnly={onSelectFavoritesOnly}
+          onSearchQueryChange={onSearchQueryChange}
           onClearFilters={onClearFilters}
         />
       )}

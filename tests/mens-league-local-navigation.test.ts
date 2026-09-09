@@ -50,6 +50,7 @@ test('exactly the selected local destination is current', () => {
   assert.match(markup, /aria-label="Men's League"/)
   assert.match(markup, /grid-cols-2/)
   assert.doesNotMatch(markup, /Tee Sheet/)
+  assert.doesNotMatch(markup, /<h1/)
 })
 
 test('Weekly owns leaderboard controls while Season renders without a filter panel', () => {
@@ -93,12 +94,20 @@ test('global navigation omits Tee Sheet and Standings is not active on its route
 test('Men’s League breadcrumbs stay at the league level, including during compatibility redirect', () => {
   assert.deepEqual(
     buildBreadcrumb('/igc/mens-league').map((crumb) => crumb.label),
-    ['Interbay', "Men's League"],
+    ['Interbay Golf Club', "Men's League"],
   )
   assert.deepEqual(
     buildBreadcrumb('/igc/mens-league/tee-sheet').map((crumb) => crumb.label),
-    ['Interbay', "Men's League"],
+    ['Interbay Golf Club', "Men's League"],
   )
+})
+
+test('Men’s League uses the compact full club context without a redundant page heading', () => {
+  const shell = readFileSync(new URL('../components/app-shell/app-shell.tsx', import.meta.url), 'utf8')
+  const local = readFileSync(new URL('../components/igc/mens-league-local-navigation.tsx', import.meta.url), 'utf8')
+  assert.match(shell, /crumbs\.length === 2 && crumbs\[0\]\.label === 'Interbay Golf Club'/)
+  assert.match(shell, /join\(' · '\)/)
+  assert.doesNotMatch(local, /Men&apos;s League<\/h1>/)
 })
 
 test('existing standings deep-link query state remains accepted', () => {

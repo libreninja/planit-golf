@@ -197,14 +197,16 @@ function Breadcrumb({ pathname }: { pathname: string }) {
   )
 }
 
-// Compact current-context label for the mobile second header row. Drops the
-// leading club crumb (already implied by the rail) and joins the rest with " · ",
-// e.g. [Interbay, Seattle Cup, Scouting] -> "Seattle Cup · Scouting". This is a
-// presentation-only reduction of the desktop breadcrumb; it is not navigation
-// (no links) so existing nav behavior is unchanged.
+// Compact current-context label for the mobile second header row. The two-level
+// league context keeps the full club + league identity; deeper routes drop the
+// leading club crumb to stay compact. This is a presentation-only reduction of
+// the desktop breadcrumb, not navigation.
 function compactContext(crumbs: Crumb[]): string {
   if (crumbs.length === 0) return ''
   if (crumbs.length === 1) return crumbs[0].label
+  if (crumbs.length === 2 && crumbs[0].label === 'Interbay Golf Club') {
+    return crumbs.map((c) => c.label).join(' · ')
+  }
   return crumbs.slice(1).map((c) => c.label).join(' · ')
 }
 
@@ -425,7 +427,12 @@ export function AppShell({ user, children }: { user: AppShellUser; children: Rea
           ) : null}
         </div>
 
-        <main className="mx-auto w-full max-w-5xl px-4 pb-10 pt-8">{children}</main>
+        <main className={pathname === '/igc/mens-league'
+          ? 'mx-auto w-full max-w-6xl px-4 pb-10 pt-3 sm:pt-4'
+          : 'mx-auto w-full max-w-5xl px-4 pb-10 pt-8'}
+        >
+          {children}
+        </main>
       </div>
     </div>
   )

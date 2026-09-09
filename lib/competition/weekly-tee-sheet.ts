@@ -1,4 +1,5 @@
 import type { LeaderboardFollowState } from '../players/leaderboard-interaction.ts'
+import { displayedPlayerNameMatches } from '../players/player-search.ts'
 
 export interface WeeklyTeeSheetPlayer {
   sourceName: string
@@ -136,6 +137,23 @@ export function personalizeTeeSheetGroups(input: {
   const own = fullGroups.filter((group) => group.containsSelf)
   const followed = fullGroups.filter((group) => !group.containsSelf && group.containsFollowing)
   return { fullGroups, personalizedGroups: [...own, ...followed] }
+}
+
+// Preserve tee-time group context while selecting only locally loaded players
+// whose displayed First Last name matches. Source identity fields are retained.
+export function filterWeeklyTeeSheetByPlayerName(
+  groups: WeeklyTeeSheetGroup[],
+  query: string,
+): WeeklyTeeSheetGroup[] {
+  if (!query.trim()) return groups
+  return groups.flatMap((group) => {
+    const players = group.players.filter((player) => displayedPlayerNameMatches({
+      sourceName: player.sourceName,
+      firstName: player.firstName,
+      lastName: player.lastName,
+    }, query))
+    return players.length > 0 ? [{ ...group, players }] : []
+  })
 }
 
 export function initialTeeSheetView(personalizedGroupCount: number): 'for-you' | 'full' {

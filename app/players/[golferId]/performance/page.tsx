@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { PendingLink } from '@/components/navigation/pending-link'
+import { FollowControl } from '@/components/players/follow-control'
 import { getMensPlayerDetail } from '@/lib/players/data'
 import { playerDetailHref, playerPerformanceHref, safeInternalReturnTo } from '@/lib/players/links'
 import { displayPersonFirstName, displayPersonName } from '@/lib/players/person-name'
@@ -120,12 +121,26 @@ export default async function PlayerPerformancePage({
 
   return (
     <article className="mx-auto max-w-2xl space-y-5 sm:space-y-6">
-      <PendingLink href={returnTo} pendingLabel="Returning…" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to player
+      <PendingLink
+        href={returnTo}
+        pendingLabel="Returning…"
+        className="inline-flex max-w-full whitespace-nowrap text-sm text-muted-foreground hover:text-foreground"
+        contentClassName="inline-flex max-w-full min-w-0 items-center gap-1 whitespace-nowrap"
+      >
+        <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">Back to player</span>
       </PendingLink>
 
       <header className="min-w-0">
-        <h1 title={displayName} className="truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{displayName}</h1>
+        <div className="flex min-w-0 items-center gap-1">
+          <h1 title={displayName} className="min-w-0 truncate whitespace-nowrap text-[clamp(1.5rem,7vw,2rem)] font-semibold leading-none">{displayName}</h1>
+          <FollowControl
+            golferId={data.golferId}
+            signedIn={data.viewer.signedIn}
+            isSelf={data.viewer.isSelf}
+            initialFollowing={data.viewer.isFollowing}
+          />
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">Interbay performance</p>
       </header>
 
