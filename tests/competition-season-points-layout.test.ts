@@ -16,12 +16,22 @@ test('Season standings reserve a readable mobile player column without hiding da
     source.match(/sm:grid-cols-\[3rem_minmax\(0,1fr\)_6rem_5rem_5rem\]/g)?.length,
     2,
   )
+  assert.equal(
+    source.match(/lg:grid-cols-\[4rem_minmax\(16rem,1fr\)_7rem_6rem_6rem\]/g)?.length,
+    2,
+  )
   assert.match(source, /gap-1[\s\S]*px-2[\s\S]*sm:gap-2[\s\S]*sm:px-3/)
   assert.match(source, /<div className="truncate">/)
   assert.doesNotMatch(source, /overflow-x-auto|overflow-x-scroll/)
   for (const label of ['Pos', 'Player', 'Points', 'Prev', 'Played']) {
     assert.match(source, new RegExp(`>${label}<`))
   }
+})
+
+test('Season uses the wider Men’s League desktop container while Player absorbs remaining width', () => {
+  const shell = readFileSync(new URL('../components/app-shell/app-shell.tsx', import.meta.url), 'utf8')
+  assert.match(shell, /pathname === '\/igc\/mens-league'[\s\S]*max-w-6xl/)
+  assert.match(source, /lg:grid-cols-\[4rem_minmax\(16rem,1fr\)_7rem_6rem_6rem\]/)
 })
 
 test('Season header uses compact mobile type and restores the desktop treatment', () => {

@@ -10,7 +10,12 @@ import { GroupingFilter } from './grouping-filter'
 import { Leaderboard } from './leaderboard'
 import { LoadingSkeleton, UnavailableState, TeamEventState } from './states'
 import { useLivePoll } from './use-live-poll'
-import { filterLeaderboardByFavorites, filterLeaderboardByGrouping, filterLeaderboardByPlacement } from './leaderboard-filter'
+import {
+  filterLeaderboardByFavorites,
+  filterLeaderboardByGrouping,
+  filterLeaderboardByPlacement,
+  filterLeaderboardByPlayerName,
+} from './leaderboard-filter'
 import { sortEntriesBySelectedScore } from './leaderboard-sort'
 import { LeaderboardControlPanel } from './leaderboard-control-panel'
 import { hasActiveLeaderboardFilters, resolveGroupingSelection } from './leaderboard-control-state'
@@ -22,6 +27,8 @@ import type { WeeklyTeeSheetData } from '@/lib/competition/weekly-tee-sheet'
 import { resolveWeeklyStage, weeklyStageUsesLeaderboardControls } from './weekly-stage'
 import { WeeklyUpcoming } from './weekly-upcoming'
 import { FOLLOW_STATE_EVENT, type FollowStateEventDetail } from '@/lib/players/follow-state-event'
+import { PlayerSearch } from './player-search'
+import { filterWeeklyTeeSheetByPlayerName } from '@/lib/competition/weekly-tee-sheet'
 
 export interface StandingsWorkspaceProps {
   competitionKey: string
@@ -34,6 +41,7 @@ export interface StandingsWorkspaceProps {
   grouping: string | null
   placedOnly: boolean
   favoritesOnly: boolean
+  searchQuery: string
   defaultScoring: ScoringMode
   golferIdsByMemberCard: Record<string, string>
   playerFollowState: LeaderboardFollowState
@@ -51,6 +59,7 @@ export interface StandingsWorkspaceProps {
   onSelectGrouping: (grouping: string) => void
   onSelectPlacedOnly: (placedOnly: boolean) => void
   onSelectFavoritesOnly: (favoritesOnly: boolean) => void
+  onSearchQueryChange: (query: string) => void
   onClearFilters: () => void
 }
 
@@ -101,6 +110,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     else next.delete('placed')
     if (props.favoritesOnly) next.set('favorites', 'only')
     else next.delete('favorites')
+    if (props.searchQuery.trim()) next.set('q', props.searchQuery)
+    else next.delete('q')
     return `${pathname}?${next.toString()}`
   }
   const onSelectWeek = (id: string) => {
@@ -146,9 +157,14 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     : null
   const groupedLb = filterLeaderboardByGrouping(orderedLb, effectiveGrouping, flightMembership.status)
   const filteredLb = filterLeaderboardByPlacement(groupedLb, props.placedOnly)
-  const displayLb = filterLeaderboardByFavorites(
+  const followedLb = filterLeaderboardByFavorites(
     filteredLb, props.favoritesOnly, props.golferIdsByMemberCard, effectiveFollowState,
   )
+  const displayLb = filterLeaderboardByPlayerName(followedLb, props.searchQuery)
+  const searchActive = props.searchQuery.trim().length > 0
+  const searchedTeeSheet = props.teeSheet && searchActive
+    ? { ...props.teeSheet, groups: filterWeeklyTeeSheetByPlayerName(props.teeSheet.groups, props.searchQuery) }
+    : props.teeSheet
   // Render the flight column only for Men's Overall; a specific flight makes
   // it redundant and women's is single Overall.
   const showFlight = effectiveGrouping === 'all' && hasFlightFilter
@@ -204,7 +220,7 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
     leaderboardStage ? props.scoring.charAt(0).toUpperCase() + props.scoring.slice(1) : null,
     leaderboardStage ? groupingSummary : null,
   ].filter(Boolean).join(' · ')
-  const filtersActive = hasActiveLeaderboardFilters({
+  const filtersActive = searchActive || hasActiveLeaderboardFilters({
     scoring: props.scoring,
     grouping,
     placedOnly: props.placedOnly,
@@ -212,14 +228,17 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
   }, props.defaultScoring)
 
   return (
-    <section className="space-y-4">
-      <LeaderboardControlPanel summary={controlSummary}>
+    <section className="space-y-3">
+      {props.competitionKey === 'mens-league' ? (
+        <PlayerSearch value={props.searchQuery} onChange={props.onSearchQueryChange} />
+      ) : null}
+      <LeaderboardControlPanel
+        summary={controlSummary}
+        action={leaderboardStage ? (
+          <LeaderboardClearFilters active={filtersActive} onClear={props.onClearFilters} />
+        ) : null}
+      >
         <div className="flex flex-col gap-2">
-          {leaderboardStage ? (
-            <div className="flex justify-end">
-              <LeaderboardClearFilters active={filtersActive} onClear={props.onClearFilters} />
-            </div>
-          ) : null}
           <div className="flex min-w-0 items-center">
             {props.capabilities.supportsEventNavigation && (
               <OccurrenceNav
@@ -288,10 +307,12 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
         <LoadingSkeleton />
       ) : mensWeeklyLifecycle && (weeklyStage === 'pairings' || weeklyStage === 'upcoming') ? (
         <WeeklyUpcoming
-          teeSheet={props.teeSheet!}
+          teeSheet={searchedTeeSheet!}
           golferIdsByMemberCard={props.golferIdsByMemberCard}
           playerFollowState={effectiveFollowState}
           returnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
+          searchActive={searchActive}
+          onClearSearch={() => props.onSearchQueryChange('')}
         />
       ) : mensWeeklyLifecycle && weeklyStage === 'unavailable' ? (
         <UnavailableState message="Weekly details are temporarily unavailable. Please try again shortly." />
@@ -314,6 +335,8 @@ export function StandingsWorkspace(props: StandingsWorkspaceProps) {
             playerReturnTo={props.selectedOccurrenceId ? weekUrlFor(props.selectedOccurrenceId) : pathname}
             teeSheet={props.teeSheet}
             favoritesOnly={props.favoritesOnly}
+            searchActive={searchActive}
+            onClearSearch={() => props.onSearchQueryChange('')}
           />
         </div>
       ) : showingLastKnown ? (

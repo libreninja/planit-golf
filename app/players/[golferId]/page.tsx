@@ -214,8 +214,14 @@ export default async function PlayerDetailPage({ params, searchParams }: {
 
   return (
     <article className="mx-auto max-w-2xl space-y-5 sm:space-y-6">
-      <PendingLink href={returnTo} pendingLabel="Returning…" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to leaderboard
+      <PendingLink
+        href={returnTo}
+        pendingLabel="Returning…"
+        className="inline-flex max-w-full whitespace-nowrap text-sm text-muted-foreground hover:text-foreground"
+        contentClassName="inline-flex max-w-full min-w-0 items-center gap-1 whitespace-nowrap"
+      >
+        <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">Back to leaderboard</span>
       </PendingLink>
 
       <header className="flex min-w-0 items-center gap-1">

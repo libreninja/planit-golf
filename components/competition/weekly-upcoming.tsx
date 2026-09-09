@@ -3,17 +3,22 @@
 import { WeeklyTeeSheet } from './weekly-tee-sheet'
 import type { WeeklyTeeSheetData } from '@/lib/competition/weekly-tee-sheet'
 import type { LeaderboardFollowState } from '@/lib/players/leaderboard-interaction'
+import { NoPlayersMatch } from './player-search'
 
 export function WeeklyUpcoming({
   teeSheet,
   golferIdsByMemberCard,
   playerFollowState,
   returnTo,
+  searchActive,
+  onClearSearch,
 }: {
   teeSheet: WeeklyTeeSheetData
   golferIdsByMemberCard: Record<string, string>
   playerFollowState: LeaderboardFollowState
   returnTo: string
+  searchActive: boolean
+  onClearSearch: () => void
 }) {
   const published = teeSheet.status === 'published'
 
@@ -26,7 +31,9 @@ export function WeeklyUpcoming({
         </p>
       </header>
 
-      {published ? (
+      {published && searchActive && teeSheet.groups.length === 0 ? (
+        <NoPlayersMatch onClear={onClearSearch} />
+      ) : published ? (
         <WeeklyTeeSheet
           groups={teeSheet.groups}
           golferIdsByMemberCard={golferIdsByMemberCard}
