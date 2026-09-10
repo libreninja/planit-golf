@@ -20,10 +20,11 @@ SELECT ('50000000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
   ('40000000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, 'confirmed'
 FROM generate_series(1, 6) n;
 INSERT INTO public.event_rounds (id, event_edition_id, round_number, name, course_name, starts_on, status,
-  counts_toward_competition, score_authority, golf_genius_round_id)
+  purpose, counts_toward_competition, score_authority, golf_genius_round_id)
 SELECT ('20000000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
   '10000000-0000-4000-8000-000000000001', n, name,
   'Wine Valley (synthetic nine-hole fixture)', DATE '2026-09-25' + ((n - 1) / 2), 'open',
+  CASE WHEN included THEN 'competition' ELSE 'replay' END,
   included, 'planit', 'fixture-upstream-round-' || n
 FROM (VALUES (1, 'Friday AM (p)replay', false), (2, 'Friday PM competition', true),
   (3, 'Saturday AM competition', true), (4, 'Saturday PM replay', false)) AS rounds(n, name, included);
@@ -35,8 +36,8 @@ SELECT ('30000000-0000-4000-8000-' || lpad(round_number::text, 12, '0'))::uuid,
   (starts_on + CASE WHEN round_number IN (1, 3) THEN TIME '08:00' ELSE TIME '13:15' END)
     AT TIME ZONE 'America/Los_Angeles', 1
 FROM public.event_rounds;
-INSERT INTO public.event_round_participants (event_edition_id, round_id, group_id, participant_id)
-SELECT g.event_edition_id, g.round_id, g.id, p.id
+INSERT INTO public.event_round_participants (event_edition_id, round_id, group_id, participant_id, competition_eligible)
+SELECT g.event_edition_id, g.round_id, g.id, p.id, r.counts_toward_competition
 FROM public.event_round_groups g JOIN public.event_participants p ON p.event_edition_id = g.event_edition_id
 JOIN public.event_rounds r ON r.id = g.round_id
 WHERE p.id IN ('50000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000002',

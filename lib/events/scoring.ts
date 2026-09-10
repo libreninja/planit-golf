@@ -43,19 +43,32 @@ export interface EventScoringState {
     visibility: 'public' | 'club_members' | 'invite_only'
     startsOn: string | null; endsOn: string | null; locationName: string | null
     golfGeniusEventId: string | null
+    golfGeniusPortalId?: string | null
   }
   participants: Array<{
     id: string; golferId: string | null; name: string | null
     type: 'player' | 'spectator' | 'organizer' | null
     status: 'invited' | 'registered' | 'confirmed' | 'cancelled' | null
+    golfGeniusRosterId?: string | null
+    golfGeniusMemberCardId?: string | null
+    golfGeniusDisplayName?: string | null
   }>
   rounds: Array<{
     id: string; number: number; name: string; courseName: string; startsOn: string
     status: 'draft' | 'open' | 'closed'
+    purpose?: 'replay' | 'competition'
+    golfGeniusStatus?: string | null
     countsTowardCompetition: boolean
     scoreAuthority: 'planit' | 'golf_genius'
     golfGeniusRoundId: string | null
+    golfGeniusCourseId?: string | null
     participantIds: string[]
+    participations?: Array<{
+      participantId: string
+      groupId: string | null
+      competitionEligible: boolean
+      golfGeniusPlayerRoundId: string | null
+    }>
     holes: Array<{ hole: number; par: number }>
     groups: Array<{
       id: string; name: string; startsAt: string | null; startingHole: number | null
@@ -133,7 +146,11 @@ export function createEventScoringService(db: Pick<SupabaseClient, 'rpc'>) {
 // provisional gross standings, not official results or net/handicap scoring.
 export function projectEventGrossStandings(state: EventScoringState) {
   const rounds = state.rounds.filter((round) => round.scoreAuthority === 'planit').map((round) => {
-    const memberIds = new Set(round.participantIds)
+    const memberIds = new Set(round.participations
+      ? round.participations
+        .filter((membership) => !round.countsTowardCompetition || membership.competitionEligible)
+        .map((membership) => membership.participantId)
+      : round.participantIds)
     const cards: Scorecard[] = state.participants
       .filter((p) => memberIds.has(p.id) && p.golferId !== null && p.type === 'player'
         && (p.status === 'registered' || p.status === 'confirmed'))
