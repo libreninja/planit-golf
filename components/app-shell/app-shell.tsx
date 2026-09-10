@@ -35,6 +35,7 @@ import { buildBreadcrumb, buildNav, computeActiveHref, type Crumb } from '@/lib/
 
 // Routes that do NOT get the shell. Matched by exact path or path-prefix.
 const HIDDEN_PREFIXES = [
+  '/scorecard',
   '/login',
   '/signup',
   '/forgot-password',

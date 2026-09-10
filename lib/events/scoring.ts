@@ -101,19 +101,23 @@ function requireUuid(value: string) {
 // before PostgreSQL/PostgREST can coerce e.g. a fractional stroke to an integer.
 export function createEventScoringService(db: Pick<SupabaseClient, 'rpc'>) {
   return {
-    async recordGrossScore(command: RecordGrossScore, recorder: ScoreRecorder): Promise<ScoreReceipt> {
+    async recordGrossScore(command: RecordGrossScore, recorder: ScoreRecorder | { participantAccessHash: string }): Promise<ScoreReceipt> {
       for (const id of [command.eventEditionId, command.roundId, command.groupId,
         command.participantId, command.requestId]) requireUuid(id)
+      const participantAccess = 'participantAccessHash' in recorder
+      if (participantAccess && !/^[0-9a-f]{64}$/.test(recorder.participantAccessHash)) {
+        throw new EventScoringError('P1010', 'Scorecard link unavailable')
+      }
       if (!Number.isInteger(command.hole) || command.hole < 1 || command.hole > 18
         || !Number.isInteger(command.gross) || command.gross < 1 || command.gross > 99
         || !Number.isInteger(command.expectedRevision) || command.expectedRevision < 0
         || command.expectedRevision >= 2147483647
-        || typeof recorder.actorRef !== 'string' || !recorder.actorRef.trim()
+        || (!participantAccess && (typeof recorder.actorRef !== 'string' || !recorder.actorRef.trim()
         || recorder.actorRef.length > 200
-        || !['manual', 'voice', 'import'].includes(recorder.source)) {
+        || !['manual', 'voice', 'import'].includes(recorder.source)))) {
         throw new EventScoringError('22023', 'Invalid score input')
       }
-      const { data, error } = await db.rpc('record_event_gross_score', {
+      const { data, error } = await db.rpc(participantAccess ? 'record_participant_gross_score' : 'record_event_gross_score', {
         p_event_edition_id: command.eventEditionId,
         p_round_id: command.roundId,
         p_group_id: command.groupId,
@@ -122,8 +126,8 @@ export function createEventScoringService(db: Pick<SupabaseClient, 'rpc'>) {
         p_gross: command.gross,
         p_expected_revision: command.expectedRevision,
         p_request_id: command.requestId,
-        p_actor_ref: recorder.actorRef,
-        p_source: recorder.source,
+        ...(participantAccess ? { p_token_hash: recorder.participantAccessHash }
+          : { p_actor_ref: recorder.actorRef, p_source: recorder.source }),
       })
       if (error) throw new EventScoringError(error.code, error.message)
       if (!data) throw new EventScoringError('unavailable', 'Scoring operation returned no receipt')

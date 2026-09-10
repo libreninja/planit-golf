@@ -153,7 +153,7 @@ function is the sole application write path. A database owner can still perform
 administrative SQL, as with existing schema. Actor/source are supplied by the
 trusted application caller: they are provenance, not authorization credentials.
 Future signed-link/auth adapters must verify authority and derive actor/source
-before invoking this service. No HTTP scoring route is exposed today.
+before invoking this service. The participant adapter is now documented in [wine-valley-participant-scorecard.md](wine-valley-participant-scorecard.md).
 
 The read RPC uses one SQL snapshot. It deliberately includes private operational
 context and provenance; do not send it wholesale to a public route. Public event
@@ -261,9 +261,9 @@ ephemeral and is removed when stopped.
   rounds explicitly use Planit score authority for future locally recorded gross
   scores; this does not migrate, overwrite or publish GG tournament results.
 
-Best next session: build the smallest manual mobile scorecard for a selected
-real group on this read/write boundary, with scoped, expiring and revocable
-access established before any Seve, voice or SMS work.
+The participant scorecard slice is implemented and locally demonstrated in
+[wine-valley-participant-scorecard.md](wine-valley-participant-scorecard.md).
+The next session is its narrow GUARDED staging rehearsal on a real phone.
 
 Delivery remains GUARDED because of the participant/schema and function-grant
 changes. Apply the migration only after approval. Roll back application exposure
