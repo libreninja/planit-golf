@@ -1,0 +1,1083 @@
+{
+  "capturedAt": "2026-09-10",
+  "event": {
+    "eventId": "13048548030221936456",
+    "portalId": "gd6ebm",
+    "name": "WINE VALLEY FALL 2026",
+    "startDate": "2026-09-25",
+    "endDate": "2026-09-26",
+    "locationName": "Wine Valley Golf Club",
+    "year": 2026,
+    "seriesSlug": "wine-valley",
+    "seriesName": "Wine Valley",
+    "editionSlug": "fall-2026"
+  },
+  "roster": [
+    {
+      "rosterId": "13048562246395913799",
+      "memberCardId": "2925267413723276873",
+      "displayName": "Josh Benner"
+    },
+    {
+      "rosterId": "13048564464176096850",
+      "memberCardId": "11289750871795066802",
+      "displayName": "Landree Bower"
+    },
+    {
+      "rosterId": "13051509944593966658",
+      "memberCardId": "9416671210323863202",
+      "displayName": "John Casey"
+    },
+    {
+      "rosterId": "13048560124245861946",
+      "memberCardId": "2925267440768149235",
+      "displayName": "Jeffrey Delma"
+    },
+    {
+      "rosterId": "13048559696460408375",
+      "memberCardId": "10968682049690429261",
+      "displayName": "Sean Dowling"
+    },
+    {
+      "rosterId": "13048561467362666050",
+      "memberCardId": "9758713956771325458",
+      "displayName": "Bill Gustaveson"
+    },
+    {
+      "rosterId": "13048564193257612880",
+      "memberCardId": "11425833801717147567",
+      "displayName": "Lisa Gustaveson"
+    },
+    {
+      "rosterId": "13048560967804282431",
+      "memberCardId": "3021599104510748479",
+      "displayName": "Eric Hanson"
+    },
+    {
+      "rosterId": "13048560448985654844",
+      "memberCardId": "5129097492989765513",
+      "displayName": "Jim Harkins"
+    },
+    {
+      "rosterId": "13048561754051733060",
+      "memberCardId": "9758713942208701969",
+      "displayName": "Patrick Hill"
+    },
+    {
+      "rosterId": "13048563776276686414",
+      "memberCardId": "2925267416407631448",
+      "displayName": "Doug Kaimakis"
+    },
+    {
+      "rosterId": "13048561588326393411",
+      "memberCardId": "4303388449483810416",
+      "displayName": "Chad Lynch"
+    },
+    {
+      "rosterId": "13048562836316382795",
+      "memberCardId": "10715110867730458516",
+      "displayName": "Michael Maione"
+    },
+    {
+      "rosterId": "13048559601803355702",
+      "memberCardId": "2925267424192259721",
+      "displayName": "Chris Martino"
+    },
+    {
+      "rosterId": "13048562577611712073",
+      "memberCardId": "2925267429225424553",
+      "displayName": "Henry Mills"
+    },
+    {
+      "rosterId": "13048562736760383050",
+      "memberCardId": "11451958357678647286",
+      "displayName": "Darrell Mirsky"
+    },
+    {
+      "rosterId": "13048685866459883142",
+      "memberCardId": "13048685922294458144",
+      "displayName": "Sarah Munson"
+    },
+    {
+      "rosterId": "13048685072293586565",
+      "memberCardId": "9353352766161970760",
+      "displayName": "Tucker Munson"
+    },
+    {
+      "rosterId": "13048560066867783225",
+      "memberCardId": "2925267417649145439",
+      "displayName": "Steve Nelson"
+    },
+    {
+      "rosterId": "13048563634676983373",
+      "memberCardId": "2925267437244933852",
+      "displayName": "Ray Polakovic"
+    },
+    {
+      "rosterId": "13048559925536515640",
+      "memberCardId": "2925267421776340601",
+      "displayName": "Nathan Preskey"
+    },
+    {
+      "rosterId": "13048562362729129544",
+      "memberCardId": "2905548104189109794",
+      "displayName": "Michael Prittie"
+    },
+    {
+      "rosterId": "13048560614945875517",
+      "memberCardId": "2925267414864127566",
+      "displayName": "Jason Robinson"
+    },
+    {
+      "rosterId": "13048561140441835072",
+      "memberCardId": "2925267445700650771",
+      "displayName": "Jason Schumaker"
+    },
+    {
+      "rosterId": "13048563128139277900",
+      "memberCardId": "10590133908970432175",
+      "displayName": "Simon Serwold"
+    },
+    {
+      "rosterId": "13048561888772777541",
+      "memberCardId": "2925267424997566093",
+      "displayName": "Luke Sulpizio"
+    },
+    {
+      "rosterId": "13048564344453883473",
+      "memberCardId": "7625031393654892435",
+      "displayName": "Natalie Sulpizio"
+    },
+    {
+      "rosterId": "13048560279200228923",
+      "memberCardId": "2925267432715085503",
+      "displayName": "Ken Taylor"
+    },
+    {
+      "rosterId": "13048559364976174645",
+      "memberCardId": "2925267441741227769",
+      "displayName": "Christopher Togawa"
+    },
+    {
+      "rosterId": "13048564063334852175",
+      "memberCardId": "7344548184451999312",
+      "displayName": "Sarah Togawa"
+    },
+    {
+      "rosterId": "13048561252983400001",
+      "memberCardId": "6433845826530863067",
+      "displayName": "James Truckle"
+    },
+    {
+      "rosterId": "13048560745103517246",
+      "memberCardId": "2925267431473571512",
+      "displayName": "Noah Van Loen"
+    },
+    {
+      "rosterId": "13048562083187156550",
+      "memberCardId": "4682986210686166757",
+      "displayName": "Eric Wheatcraft"
+    }
+  ],
+  "rounds": [
+    {
+      "roundId": "13048553133414835886",
+      "number": 1,
+      "name": "FRIDAY MORNING Pre-Play",
+      "date": "2026-09-25",
+      "status": "not started",
+      "purpose": "replay",
+      "countsTowardCompetition": false,
+      "scoreAuthority": "planit",
+      "course": {
+        "courseId": "11696114107768923922",
+        "name": "Wine Valley Golf Club - 2025",
+        "holes": [
+          {
+            "hole": 1,
+            "par": 4
+          },
+          {
+            "hole": 2,
+            "par": 4
+          },
+          {
+            "hole": 3,
+            "par": 5
+          },
+          {
+            "hole": 4,
+            "par": 4
+          },
+          {
+            "hole": 5,
+            "par": 4
+          },
+          {
+            "hole": 6,
+            "par": 3
+          },
+          {
+            "hole": 7,
+            "par": 5
+          },
+          {
+            "hole": 8,
+            "par": 3
+          },
+          {
+            "hole": 9,
+            "par": 4
+          },
+          {
+            "hole": 10,
+            "par": 5
+          },
+          {
+            "hole": 11,
+            "par": 3
+          },
+          {
+            "hole": 12,
+            "par": 4
+          },
+          {
+            "hole": 13,
+            "par": 4
+          },
+          {
+            "hole": 14,
+            "par": 3
+          },
+          {
+            "hole": 15,
+            "par": 5
+          },
+          {
+            "hole": 16,
+            "par": 3
+          },
+          {
+            "hole": 17,
+            "par": 4
+          },
+          {
+            "hole": 18,
+            "par": 5
+          }
+        ]
+      },
+      "groups": [
+        {
+          "groupId": "13048585055725708806",
+          "name": "7:30 AM",
+          "teeTime": "7:30 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048585057000777223",
+          "name": "7:40 AM",
+          "teeTime": "7:40 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048585057638311432",
+          "name": "7:50 AM",
+          "teeTime": "7:50 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048591252289775115",
+          "name": "8:00 AM",
+          "teeTime": "8:00 AM",
+          "startingHole": 1
+        }
+      ],
+      "participations": [
+        {
+          "rosterId": "13048562577611712073",
+          "playerRoundId": "13048562980264896374",
+          "groupId": "13048585055725708806"
+        },
+        {
+          "rosterId": "13048560745103517246",
+          "playerRoundId": "13048561145542109002",
+          "groupId": "13048585055725708806"
+        },
+        {
+          "rosterId": "13048563128139277900",
+          "playerRoundId": "13048563530691798914",
+          "groupId": "13048585055725708806"
+        },
+        {
+          "rosterId": "13048562083187156550",
+          "playerRoundId": "13048562484296836970",
+          "groupId": "13048585057000777223"
+        },
+        {
+          "rosterId": "13048560614945875517",
+          "playerRoundId": "13048561017800386374",
+          "groupId": "13048585057000777223"
+        },
+        {
+          "rosterId": "13048559925536515640",
+          "playerRoundId": "13048560327250175794",
+          "groupId": "13048585057000777223"
+        },
+        {
+          "rosterId": "13048560124245861946",
+          "playerRoundId": "13048560525456205626",
+          "groupId": "13048585057638311432"
+        },
+        {
+          "rosterId": "13048563776276686414",
+          "playerRoundId": "13048564175842862986",
+          "groupId": "13048585057638311432"
+        },
+        {
+          "rosterId": "13048561888772777541",
+          "playerRoundId": "13048562291962832742",
+          "groupId": "13048585057638311432"
+        },
+        {
+          "rosterId": "13048560967804282431",
+          "playerRoundId": "13048561368779745102",
+          "groupId": "13048591252289775115"
+        },
+        {
+          "rosterId": "13048561588326393411",
+          "playerRoundId": "13048561991583557470",
+          "groupId": "13048591252289775115"
+        },
+        {
+          "rosterId": "13051509944593966658",
+          "playerRoundId": "13051510346139854542",
+          "groupId": "13048591252289775115"
+        }
+      ]
+    },
+    {
+      "roundId": "13048553139957950127",
+      "number": 2,
+      "name": "FRIDAY AFTERNOON ROUND 1",
+      "date": "2026-09-25",
+      "status": "not started",
+      "purpose": "competition",
+      "countsTowardCompetition": true,
+      "scoreAuthority": "planit",
+      "course": {
+        "courseId": "11696114107768923922",
+        "name": "Wine Valley Golf Club - 2025",
+        "holes": [
+          {
+            "hole": 1,
+            "par": 4
+          },
+          {
+            "hole": 2,
+            "par": 4
+          },
+          {
+            "hole": 3,
+            "par": 5
+          },
+          {
+            "hole": 4,
+            "par": 4
+          },
+          {
+            "hole": 5,
+            "par": 4
+          },
+          {
+            "hole": 6,
+            "par": 3
+          },
+          {
+            "hole": 7,
+            "par": 5
+          },
+          {
+            "hole": 8,
+            "par": 3
+          },
+          {
+            "hole": 9,
+            "par": 4
+          },
+          {
+            "hole": 10,
+            "par": 5
+          },
+          {
+            "hole": 11,
+            "par": 3
+          },
+          {
+            "hole": 12,
+            "par": 4
+          },
+          {
+            "hole": 13,
+            "par": 4
+          },
+          {
+            "hole": 14,
+            "par": 3
+          },
+          {
+            "hole": 15,
+            "par": 5
+          },
+          {
+            "hole": 16,
+            "par": 3
+          },
+          {
+            "hole": 17,
+            "par": 4
+          },
+          {
+            "hole": 18,
+            "par": 5
+          }
+        ]
+      },
+      "groups": [
+        {
+          "groupId": "13048595300564887052",
+          "name": "12:30 PM",
+          "teeTime": "12:30 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048595301940618765",
+          "name": "12:40 PM",
+          "teeTime": "12:40 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048595302712370702",
+          "name": "12:50 PM",
+          "teeTime": "12:50 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048595303551231503",
+          "name": "1:00 PM",
+          "teeTime": "1:00 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048595304423646736",
+          "name": "1:10 PM",
+          "teeTime": "1:10 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048595305228953105",
+          "name": "1:20 PM",
+          "teeTime": "1:20 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048595306168477202",
+          "name": "1:30 PM",
+          "teeTime": "1:30 PM",
+          "startingHole": 1
+        }
+      ],
+      "participations": [
+        {
+          "rosterId": "13048562246395913799",
+          "playerRoundId": "13048562646465406831",
+          "groupId": "13048595300564887052"
+        },
+        {
+          "rosterId": "13048562736760383050",
+          "playerRoundId": "13048563137970726779",
+          "groupId": "13048595300564887052"
+        },
+        {
+          "rosterId": "13048559696460408375",
+          "playerRoundId": "13048560097268098863",
+          "groupId": "13048595300564887052"
+        },
+        {
+          "rosterId": "13048561467362666050",
+          "playerRoundId": "13048561870384949083",
+          "groupId": "13048595300564887052"
+        },
+        {
+          "rosterId": "13048560967804282431",
+          "playerRoundId": "13048561368846853967",
+          "groupId": "13048595301940618765"
+        },
+        {
+          "rosterId": "13048560448985654844",
+          "playerRoundId": "13048560850363770691",
+          "groupId": "13048595301940618765"
+        },
+        {
+          "rosterId": "13048561754051733060",
+          "playerRoundId": "13048562154792314723",
+          "groupId": "13048595301940618765"
+        },
+        {
+          "rosterId": "13048563776276686414",
+          "playerRoundId": "13048564175943526283",
+          "groupId": "13048595301940618765"
+        },
+        {
+          "rosterId": "13048561588326393411",
+          "playerRoundId": "13048561991583557471",
+          "groupId": "13048595302712370702"
+        },
+        {
+          "rosterId": "13048562836316382795",
+          "playerRoundId": "13048563236620756863",
+          "groupId": "13048595302712370702"
+        },
+        {
+          "rosterId": "13048559601803355702",
+          "playerRoundId": "13048560003852560171",
+          "groupId": "13048595302712370702"
+        },
+        {
+          "rosterId": "13048562577611712073",
+          "playerRoundId": "13048562980264896375",
+          "groupId": "13048595302712370702"
+        },
+        {
+          "rosterId": "13048560124245861946",
+          "playerRoundId": "13048560525489760059",
+          "groupId": "13048595303551231503"
+        },
+        {
+          "rosterId": "13048559925536515640",
+          "playerRoundId": "13048560327283730227",
+          "groupId": "13048595303551231503"
+        },
+        {
+          "rosterId": "13048560279200228923",
+          "playerRoundId": "13048560682558056255",
+          "groupId": "13048595303551231503"
+        },
+        {
+          "rosterId": "13048560066867783225",
+          "playerRoundId": "13048560467776137015",
+          "groupId": "13048595303551231503"
+        },
+        {
+          "rosterId": "13048559364976174645",
+          "playerRoundId": "13048559769105753895",
+          "groupId": "13048595304423646736"
+        },
+        {
+          "rosterId": "13048562362729129544",
+          "playerRoundId": "13048562764006582131",
+          "groupId": "13048595304423646736"
+        },
+        {
+          "rosterId": "13048561140441835072",
+          "playerRoundId": "13048561542256158547",
+          "groupId": "13048595304423646736"
+        },
+        {
+          "rosterId": "13048561252983400001",
+          "playerRoundId": "13048561655603029847",
+          "groupId": "13048595304423646736"
+        },
+        {
+          "rosterId": "13048563128139277900",
+          "playerRoundId": "13048563530725353347",
+          "groupId": "13048595305228953105"
+        },
+        {
+          "rosterId": "13048562083187156550",
+          "playerRoundId": "13048562484330391403",
+          "groupId": "13048595305228953105"
+        },
+        {
+          "rosterId": "13048560614945875517",
+          "playerRoundId": "13048561017833940807",
+          "groupId": "13048595305228953105"
+        },
+        {
+          "rosterId": "13048685072293586565",
+          "playerRoundId": "13048685473604593628",
+          "groupId": "13048595305228953105"
+        },
+        {
+          "rosterId": "13048560745103517246",
+          "playerRoundId": "13048561145575663435",
+          "groupId": "13048595306168477202"
+        },
+        {
+          "rosterId": "13048563634676983373",
+          "playerRoundId": "13048564034511595399",
+          "groupId": "13048595306168477202"
+        },
+        {
+          "rosterId": "13048561888772777541",
+          "playerRoundId": "13048562292029941607",
+          "groupId": "13048595306168477202"
+        },
+        {
+          "rosterId": "13051509944593966658",
+          "playerRoundId": "13051510346139854543",
+          "groupId": "13048595306168477202"
+        }
+      ]
+    },
+    {
+      "roundId": "13048553145729312432",
+      "number": 3,
+      "name": "SATURDAY MORNING ROUND 2",
+      "date": "2026-09-26",
+      "status": "not started",
+      "purpose": "competition",
+      "countsTowardCompetition": true,
+      "scoreAuthority": "planit",
+      "course": {
+        "courseId": "11696114107768923922",
+        "name": "Wine Valley Golf Club - 2025",
+        "holes": [
+          {
+            "hole": 1,
+            "par": 4
+          },
+          {
+            "hole": 2,
+            "par": 4
+          },
+          {
+            "hole": 3,
+            "par": 5
+          },
+          {
+            "hole": 4,
+            "par": 4
+          },
+          {
+            "hole": 5,
+            "par": 4
+          },
+          {
+            "hole": 6,
+            "par": 3
+          },
+          {
+            "hole": 7,
+            "par": 5
+          },
+          {
+            "hole": 8,
+            "par": 3
+          },
+          {
+            "hole": 9,
+            "par": 4
+          },
+          {
+            "hole": 10,
+            "par": 5
+          },
+          {
+            "hole": 11,
+            "par": 3
+          },
+          {
+            "hole": 12,
+            "par": 4
+          },
+          {
+            "hole": 13,
+            "par": 4
+          },
+          {
+            "hole": 14,
+            "par": 3
+          },
+          {
+            "hole": 15,
+            "par": 5
+          },
+          {
+            "hole": 16,
+            "par": 3
+          },
+          {
+            "hole": 17,
+            "par": 4
+          },
+          {
+            "hole": 18,
+            "par": 5
+          }
+        ]
+      },
+      "groups": [
+        {
+          "groupId": "13048601893775894037",
+          "name": "8:30 AM",
+          "teeTime": "8:30 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601895151625750",
+          "name": "8:40 AM",
+          "teeTime": "8:40 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601895990486551",
+          "name": "8:50 AM",
+          "teeTime": "8:50 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601896762238488",
+          "name": "9:00 AM",
+          "teeTime": "9:00 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601897533990425",
+          "name": "9:10 AM",
+          "teeTime": "9:10 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601898305742362",
+          "name": "9:20 AM",
+          "teeTime": "9:20 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601899111048731",
+          "name": "9:30 AM",
+          "teeTime": "9:30 AM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048601899849246236",
+          "name": "9:40 AM",
+          "teeTime": "9:40 AM",
+          "startingHole": 1
+        }
+      ],
+      "participations": [
+        {
+          "rosterId": "13048562246395913799",
+          "playerRoundId": "13048562646465406832",
+          "groupId": "13048601893775894037"
+        },
+        {
+          "rosterId": "13048560124245861946",
+          "playerRoundId": "13048560525489760060",
+          "groupId": "13048601893775894037"
+        },
+        {
+          "rosterId": "13048559696460408375",
+          "playerRoundId": "13048560097301653296",
+          "groupId": "13048601893775894037"
+        },
+        {
+          "rosterId": "13048561467362666050",
+          "playerRoundId": "13048561870384949084",
+          "groupId": "13048601893775894037"
+        },
+        {
+          "rosterId": "13048560967804282431",
+          "playerRoundId": "13048561368846853968",
+          "groupId": "13048601895151625750"
+        },
+        {
+          "rosterId": "13048560448985654844",
+          "playerRoundId": "13048560850363770692",
+          "groupId": "13048601895151625750"
+        },
+        {
+          "rosterId": "13048561754051733060",
+          "playerRoundId": "13048562154792314724",
+          "groupId": "13048601895151625750"
+        },
+        {
+          "rosterId": "13048563776276686414",
+          "playerRoundId": "13048564175943526284",
+          "groupId": "13048601895151625750"
+        },
+        {
+          "rosterId": "13048561588326393411",
+          "playerRoundId": "13048561991583557472",
+          "groupId": "13048601895990486551"
+        },
+        {
+          "rosterId": "13048562836316382795",
+          "playerRoundId": "13048563236620756864",
+          "groupId": "13048601895990486551"
+        },
+        {
+          "rosterId": "13048559601803355702",
+          "playerRoundId": "13048560003886114604",
+          "groupId": "13048601895990486551"
+        },
+        {
+          "rosterId": "13048562577611712073",
+          "playerRoundId": "13048562980264896376",
+          "groupId": "13048601895990486551"
+        },
+        {
+          "rosterId": "13048562736760383050",
+          "playerRoundId": "13048563137970726780",
+          "groupId": "13048601896762238488"
+        },
+        {
+          "rosterId": "13048560066867783225",
+          "playerRoundId": "13048560467809691448",
+          "groupId": "13048601896762238488"
+        },
+        {
+          "rosterId": "13048563634676983373",
+          "playerRoundId": "13048564034545149832",
+          "groupId": "13048601896762238488"
+        },
+        {
+          "rosterId": "13048559925536515640",
+          "playerRoundId": "13048560327283730228",
+          "groupId": "13048601896762238488"
+        },
+        {
+          "rosterId": "13048562362729129544",
+          "playerRoundId": "13048562764006582132",
+          "groupId": "13048601897533990425"
+        },
+        {
+          "rosterId": "13048560614945875517",
+          "playerRoundId": "13048561017833940808",
+          "groupId": "13048601897533990425"
+        },
+        {
+          "rosterId": "13048561140441835072",
+          "playerRoundId": "13048561542256158548",
+          "groupId": "13048601897533990425"
+        },
+        {
+          "rosterId": "13048563128139277900",
+          "playerRoundId": "13048563530725353348",
+          "groupId": "13048601897533990425"
+        },
+        {
+          "rosterId": "13048561888772777541",
+          "playerRoundId": "13048562292097050472",
+          "groupId": "13048601898305742362"
+        },
+        {
+          "rosterId": "13048560279200228923",
+          "playerRoundId": "13048560682558056256",
+          "groupId": "13048601898305742362"
+        },
+        {
+          "rosterId": "13048559364976174645",
+          "playerRoundId": "13048559769105753896",
+          "groupId": "13048601898305742362"
+        },
+        {
+          "rosterId": "13048561252983400001",
+          "playerRoundId": "13048561655636584280",
+          "groupId": "13048601898305742362"
+        },
+        {
+          "rosterId": "13048560745103517246",
+          "playerRoundId": "13048561145575663436",
+          "groupId": "13048601899111048731"
+        },
+        {
+          "rosterId": "13048562083187156550",
+          "playerRoundId": "13048562484330391404",
+          "groupId": "13048601899111048731"
+        },
+        {
+          "rosterId": "13048685072293586565",
+          "playerRoundId": "13048685473604593629",
+          "groupId": "13048601899111048731"
+        },
+        {
+          "rosterId": "13048685866459883142",
+          "playerRoundId": "13048686269045958625",
+          "groupId": "13048601899111048731"
+        },
+        {
+          "rosterId": "13048564464176096850",
+          "playerRoundId": "13048564865084450716",
+          "groupId": "13048601899849246236"
+        },
+        {
+          "rosterId": "13048564193257612880",
+          "playerRoundId": "13048564598796478356",
+          "groupId": "13048601899849246236"
+        },
+        {
+          "rosterId": "13048564344453883473",
+          "playerRoundId": "13048564744724703128",
+          "groupId": "13048601899849246236"
+        },
+        {
+          "rosterId": "13048564063334852175",
+          "playerRoundId": "13048564468672391056",
+          "groupId": "13048601899849246236"
+        },
+        {
+          "rosterId": "13051509944593966658",
+          "playerRoundId": "13051510346173408976",
+          "groupId": null
+        }
+      ]
+    },
+    {
+      "roundId": "13048553151567783601",
+      "number": 4,
+      "name": "SATURDAY AFTERNOON Re-Play",
+      "date": "2026-09-26",
+      "status": "not started",
+      "purpose": "replay",
+      "countsTowardCompetition": false,
+      "scoreAuthority": "planit",
+      "course": {
+        "courseId": "11696114107768923922",
+        "name": "Wine Valley Golf Club - 2025",
+        "holes": [
+          {
+            "hole": 1,
+            "par": 4
+          },
+          {
+            "hole": 2,
+            "par": 4
+          },
+          {
+            "hole": 3,
+            "par": 5
+          },
+          {
+            "hole": 4,
+            "par": 4
+          },
+          {
+            "hole": 5,
+            "par": 4
+          },
+          {
+            "hole": 6,
+            "par": 3
+          },
+          {
+            "hole": 7,
+            "par": 5
+          },
+          {
+            "hole": 8,
+            "par": 3
+          },
+          {
+            "hole": 9,
+            "par": 4
+          },
+          {
+            "hole": 10,
+            "par": 5
+          },
+          {
+            "hole": 11,
+            "par": 3
+          },
+          {
+            "hole": 12,
+            "par": 4
+          },
+          {
+            "hole": 13,
+            "par": 4
+          },
+          {
+            "hole": 14,
+            "par": 3
+          },
+          {
+            "hole": 15,
+            "par": 5
+          },
+          {
+            "hole": 16,
+            "par": 3
+          },
+          {
+            "hole": 17,
+            "par": 4
+          },
+          {
+            "hole": 18,
+            "par": 5
+          }
+        ]
+      },
+      "groups": [
+        {
+          "groupId": "13048589371429643785",
+          "name": "2:00 PM",
+          "teeTime": "2:00 PM",
+          "startingHole": 1
+        },
+        {
+          "groupId": "13048589372704712202",
+          "name": "2:10 PM",
+          "teeTime": "2:10 PM",
+          "startingHole": 1
+        }
+      ],
+      "participations": [
+        {
+          "rosterId": "13048562083187156550",
+          "playerRoundId": "13048562484330391405",
+          "groupId": "13048589371429643785"
+        },
+        {
+          "rosterId": "13048560745103517246",
+          "playerRoundId": "13048561145575663437",
+          "groupId": "13048589371429643785"
+        },
+        {
+          "rosterId": "13048560614945875517",
+          "playerRoundId": "13048561017833940809",
+          "groupId": "13048589371429643785"
+        },
+        {
+          "rosterId": "13048561888772777541",
+          "playerRoundId": "13048562292164159337",
+          "groupId": "13048589371429643785"
+        },
+        {
+          "rosterId": "13048561252983400001",
+          "playerRoundId": "13048561655636584281",
+          "groupId": "13048589372704712202"
+        },
+        {
+          "rosterId": "13048562246395913799",
+          "playerRoundId": "13048562646498961265",
+          "groupId": "13048589372704712202"
+        },
+        {
+          "rosterId": "13048561140441835072",
+          "playerRoundId": "13048561542256158549",
+          "groupId": "13048589372704712202"
+        },
+        {
+          "rosterId": "13048563634676983373",
+          "playerRoundId": "13048564034578704265",
+          "groupId": "13048589372704712202"
+        }
+      ]
+    }
+  ]
+}

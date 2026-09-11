@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
@@ -28,11 +29,12 @@ export default async function RootLayout({
   // top bar, account menu) renders on every authenticated route. This makes
   // the whole app dynamic, which is the intended trade for a member app that
   // is never statically served to anonymous traffic.
-  const user = await getAppShellUser();
+  const participantPage = (await headers()).get('x-planit-participant-page') === '1';
+  const user = participantPage ? null : await getAppShellUser();
   return (
     <html lang="en">
       <body className={`${inter.variable} ${fraunces.variable}`}>
-        <AppShell user={user}>{children}</AppShell>
+        {user ? <AppShell user={user}>{children}</AppShell> : children}
       </body>
     </html>
   );
