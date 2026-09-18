@@ -11,7 +11,9 @@ import { allCompetitionConfigs, getCompetitionConfig } from '../registry.ts'
 import { selectReconciliationCandidates, type CandidateEvent } from './candidates.ts'
 import { canonicalFlight, FLIGHT_KEYS } from '../projected-flights.ts'
 import { normalizeTournament } from '../adapters/golfgenius/normalize.ts'
+import { storedAwardsAreComplete, type AwardResult } from './awards.ts'
 import { isDurableCurrent } from '../durable-current.ts'
+import type { GGClient } from '../adapters/golfgenius/discovery.ts'
 import type { ResolvedOccurrence, ResultEntry } from '../types.ts'
 
 export interface ReconcileSummary {
@@ -33,7 +35,7 @@ export interface ReconcileSummary {
 // takes that `resolved` — the discovery→import handoff uses real resolved IDs,
 // never placeholders (Corrections 4 & 6).
 export interface ReconcileOps {
-  listEvents(competitionKey: string): Promise<CandidateEvent[]>
+  listEvents(competitionKey: string, weeks?: number[]): Promise<CandidateEvent[]>
   discoverAndPersist(competitionKey: string, week: number, nowIso: string): Promise<{
     resolved: ResolvedOccurrence
     officialFlightMembershipAvailable?: boolean
@@ -138,7 +140,7 @@ export interface ReconcileCompetitionInput {
 
 export async function reconcileCompetition(input: ReconcileCompetitionInput): Promise<ReconcileSummary> {
   const summary: ReconcileSummary = { competition: input.competitionKey, discovered: 0, imported: 0, skipped: 0, staleSkipped: 0, seasonPointsRebuilds: 0, errors: [], stoppedForBudget: false }
-  const ops = input.ops ?? (await defaultOps())
+  const ops = input.ops ?? (await createReconcileOps())
 
   // Precreate configured special-occurrence rows (Club Championship 101/102)
   // BEFORE listing candidates so they appear in this run. Best-effort: a failure
@@ -189,8 +191,8 @@ export async function reconcileCompetition(input: ReconcileCompetitionInput): Pr
 // the render reads GG and writes the results to the DB so every later view reads
 // from disk. Reuses the SAME classification + discover→import→rebuild sequence as
 // the daily cron, gated for ONE occurrence:
-//   - durable_imported_at set (already imported) → skip (steady state: a
-//     finalized round is never re-read; covers the 5 days/week nothing's pending).
+//   - durable scores, official membership and configured awards captured → skip.
+//     Missing flights or awards remain eligible after score finality.
 //   - discovered within STALENESS_MS → skip (staleness gate: a round is re-read
 //     from GG at most once per minute; overlap-safe across simultaneous viewers).
 //   - otherwise → discover; if GG now marks it completed → import + rebuild the
@@ -213,13 +215,13 @@ export async function reconcileOccurrenceOnDemand(
   ops?: ReconcileOps,
 ): Promise<OnDemandReconcileResult> {
   try {
-    const o = ops ?? (await defaultOps())
+    const o = ops ?? (await createReconcileOps())
     // Ensure configured special-occurrence rows (Club Championship 101/102)
     // exist as candidates, mirroring reconcileCompetition. Best-effort.
     if (o.precreateSpecialOccurrences) {
       try { await o.precreateSpecialOccurrences(competitionKey) } catch { /* next run retries */ }
     }
-    const events = await o.listEvents(competitionKey)
+    const events = await o.listEvents(competitionKey, [weekNumber])
     const candidates = selectReconciliationCandidates(events, nowIso)
     const c = candidates.find((x) => x.week_number === weekNumber)
     if (!c) return { action: 'skipped-absent' }
@@ -243,18 +245,21 @@ export async function reconcileOccurrenceOnDemand(
 // modules to the service client. Built lazily so the module imports cleanly
 // in tests that inject ops. The discovery→import handoff passes the real
 // ResolvedOccurrence (no placeholders — Corrections 4 & 6).
-async function defaultOps(): Promise<ReconcileOps> {
+export async function createReconcileOps(deps: { supabase?: any; ggClient?: GGClient } = {}): Promise<ReconcileOps> {
   const { createServiceClient } = await import('../../supabase/service.ts')
   const { makeGolfGeniusRequestOptional } = await import('../../gg/client.ts')
   const { discoverAndPersistEventClassification } = await import('./discover.ts')
   const { importOccurrence } = await import('./import.ts')
   const { rebuildSeasonPoints } = await import('./season-points.ts')
   const { precreateSpecialOccurrences } = await import('./precreate.ts')
-  const supabase = createServiceClient()
+  const supabase = deps.supabase ?? createServiceClient()
   // 404-tolerant client: a missing tournament .json ("not found yet") resolves
   // to null instead of throwing, per discovery's ERROR CONTRACT. This is what
   // stops unfinalized rounds from surfacing as `wk{N}: ... 404` reconcile errors.
-  const ggClient = (async (endpoint: string) => makeGolfGeniusRequestOptional({ endpoint })) as any
+  const ggClient = deps.ggClient ?? ((async (endpoint: string) => makeGolfGeniusRequestOptional({ endpoint })) as GGClient)
+  // Defer the importer's durable stamp until the season snapshot succeeds.
+  // A failed rebuild must leave the occurrence eligible for the same retry.
+  const pendingDurable = new Map<string, () => Promise<unknown>>()
   return {
     async precreateSpecialOccurrences(competitionKey) {
       // Check-then-insert (ON CONFLICT DO NOTHING semantically): never clobber an
@@ -275,24 +280,29 @@ async function defaultOps(): Promise<ReconcileOps> {
       }
       return precreateSpecialOccurrences(competitionKey, db)
     },
-    async listEvents(competitionKey) {
+    async listEvents(competitionKey, weeks) {
       const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
-      const { data, error: eventsError } = await supabase.from('igc_league_events')
+      let eventQuery = supabase.from('igc_league_events')
         .select('week_number, event_date, event_format, discovery_state, source_finalized_at, source_version, durable_source_version, durable_imported_at, discovered_at')
         .eq('league_key', leagueKey).order('week_number', { ascending: false }).limit(200)
+      if (weeks) eventQuery = eventQuery.in('week_number', weeks)
+      const { data, error: eventsError } = await eventQuery
       if (eventsError) throw new Error(`igc_league_events candidate read: ${eventsError.message}`)
-      // A position-1 result is a compact existence marker for stored named
-      // flight membership: at most a few rows per finalized occurrence rather
-      // than every player result. Canonicalization remains Planit-domain logic;
-      // the legacy flights_finalized column is intentionally not consulted.
+      if (!data?.length) return []
+      const eventWeeks = data.map((row: any) => Number(row.week_number))
+      // Read placement/award evidence together. First-place rows prove official
+      // membership; points recipients also require durable season entries.
+      // The legacy flights_finalized column is intentionally not consulted.
+      const config = getCompetitionConfig(competitionKey)
+      const awardRowsByWeek = new Map<number, AwardResult[]>()
+      const seasonMembersByWeek = new Map<number, Set<string>>()
       const officialMarkersByWeek = new Map<number, OfficialFlightMarker[]>()
       if (competitionKey === 'mens-league') {
         const pageSize = 1000
         for (let from = 0; ; from += pageSize) {
           const { data: placed, error } = await supabase.from('igc_league_results')
-            .select('week_number, competition, flight_name, synced_at, member_card_id')
-            .eq('league_key', leagueKey)
-            .eq('flight_position', 1)
+            .select('week_number, competition, flight_name, synced_at, member_card_id, flight_position, points, purse')
+            .eq('league_key', leagueKey).in('week_number', eventWeeks)
             .order('week_number', { ascending: true })
             .order('competition', { ascending: true })
             .order('member_card_id', { ascending: true })
@@ -301,10 +311,28 @@ async function defaultOps(): Promise<ReconcileOps> {
           for (const row of placed ?? []) {
             const week = Number(row.week_number)
             const markers = officialMarkersByWeek.get(week) ?? []
-            markers.push({ competition: row.competition, flight_name: row.flight_name, synced_at: row.synced_at })
+            if (row.flight_position === 1) markers.push({ competition: row.competition, flight_name: row.flight_name, synced_at: row.synced_at })
+            const awards = awardRowsByWeek.get(week) ?? []
+            awards.push(row)
+            awardRowsByWeek.set(week, awards)
             officialMarkersByWeek.set(week, markers)
           }
           if ((placed ?? []).length < pageSize) break
+        }
+      }
+      if (config?.adapterConfig.awards) {
+        const pageSize = 1000
+        for (let from = 0; ; from += pageSize) {
+          const { data: entries, error } = await supabase.from('igc_league_season_point_entries')
+            .select('week_number, member_card_id').eq('league_key', leagueKey).in('week_number', eventWeeks)
+            .order('week_number').order('member_card_id').range(from, from + pageSize - 1)
+          if (error) throw new Error(`season-point award evidence read: ${error.message}`)
+          for (const row of entries ?? []) {
+            const members = seasonMembersByWeek.get(Number(row.week_number)) ?? new Set<string>()
+            members.add(row.member_card_id)
+            seasonMembersByWeek.set(Number(row.week_number), members)
+          }
+          if ((entries ?? []).length < pageSize) break
         }
       }
       const specialWeeks = new Set(
@@ -317,7 +345,16 @@ async function defaultOps(): Promise<ReconcileOps> {
           durableSourceVersion: e.durable_source_version ?? null,
           durableImportedAt: e.durable_imported_at ?? null,
         })
+        const awardsPolicy = config?.adapterConfig.specialOccurrences?.find((spec) => spec.weekNumber === Number(e.week_number))?.awards
+          ?? config?.adapterConfig.awards
         return {
+          awaiting_awards: !!awardsPolicy && e.event_format === 'individual'
+            && !storedAwardsAreComplete(
+              awardRowsByWeek.get(Number(e.week_number)) ?? [],
+              seasonMembersByWeek.get(Number(e.week_number)) ?? new Set(),
+              e.durable_imported_at,
+              awardsPolicy,
+            ),
           week_number: e.week_number, event_date: e.event_date,
           event_format: e.event_format, discovery_state: e.discovery_state,
           upstream_status: e.source_finalized_at ? 'completed' : null,
@@ -381,10 +418,19 @@ async function defaultOps(): Promise<ReconcileOps> {
     async importOccurrence(competitionKey, week, nowIso, resolved) {
       const config = (await import('../registry.ts')).getCompetitionConfig(competitionKey)!
       // `resolved` carries the ids discovery already resolved — NO placeholders.
-      await importOccurrence({ competitionKey, resolved, adapterConfig: config.adapterConfig, ggClient, db: importDb(supabase, competitionKey), nowIso })
+      const db = importDb(supabase, competitionKey)
+      await importOccurrence({ competitionKey, resolved, adapterConfig: config.adapterConfig, ggClient, db: {
+        ...db,
+        async setDurableImported(importedWeek, atIso, sourceVersion) {
+          pendingDurable.set(competitionKey, () => db.setDurableImported(importedWeek, atIso, sourceVersion))
+          return { ok: true }
+        },
+      }, nowIso })
     },
     async rebuildSeasonPoints(competitionKey) {
       await rebuildSeasonPoints({ competitionKey, deps: seasonDeps(supabase, competitionKey) })
+      await pendingDurable.get(competitionKey)?.()
+      pendingDurable.delete(competitionKey)
     },
   }
 }
@@ -393,11 +439,12 @@ function classifyDb(supabase: any, competitionKey: string) {
   const leagueKey = competitionKey === 'mens-league' ? 'mens' : 'womens'
   return {
     async updateClassification(w: any) {
-      await supabase.from('igc_league_events').update({
+      const { error } = await supabase.from('igc_league_events').update({
         event_format: w.event_format, discovery_state: w.discovery_state,
         discovered_at: w.discovered_at, source_finalized_at: w.source_finalized_at,
         source_version: w.source_version, status: w.status,
       }).eq('league_key', leagueKey).eq('week_number', w.week_number)
+      if (error) throw new Error(`classification update wk${w.week_number}: ${error.message}`)
       return { ok: true }
     },
   }
@@ -563,7 +610,7 @@ function seasonDeps(supabase: any, competitionKey: string) {
     let from = 0
     while (true) {
       const r = await supabase.from(table).select(cols).match(eq).range(from, from + PAGE - 1)
-      if (r.error) return rows
+      if (r.error) throw new Error(`${table} season rebuild read: ${r.error.message}`)
       rows.push(...(r.data ?? []))
       if ((r.data ?? []).length < PAGE) return rows
       from += PAGE
@@ -604,12 +651,14 @@ function seasonDeps(supabase: any, competitionKey: string) {
       return m
     },
     async readNames() {
-      const { data } = await supabase.from('igc_league_members').select('member_card_id, name').eq('league_key', leagueKey)
+      const { data, error } = await supabase.from('igc_league_members').select('member_card_id, name').eq('league_key', leagueKey)
+      if (error) throw new Error(`season names read: ${error.message}`)
       return new Map<string, string | null>((data ?? []).map((r: any) => [r.member_card_id, r.name ?? null] as [string, string | null]))
     },
     async replaceSnapshot(rows: any[]) {
       // Wholesale delete + replace (no stale rows).
-      await supabase.from('igc_league_season_points').delete().eq('league_key', leagueKey)
+      const { error } = await supabase.from('igc_league_season_points').delete().eq('league_key', leagueKey)
+      if (error) throw new Error(`season snapshot delete: ${error.message}`)
       if (rows.length) {
         const payload = rows.map((r) => ({
           league_key: leagueKey, member_card_id: r.member_card_id, player_name: r.player_name,
@@ -617,11 +666,13 @@ function seasonDeps(supabase: any, competitionKey: string) {
           events_played: r.events_played, wins: r.wins, points_behind: r.points_behind,
           synced_at: new Date().toISOString(),
         }))
-        await supabase.from('igc_league_season_points').insert(payload)
+        const { error: insertError } = await supabase.from('igc_league_season_points').insert(payload)
+        if (insertError) throw new Error(`season snapshot insert: ${insertError.message}`)
       }
     },
     async deleteSnapshot() {
-      await supabase.from('igc_league_season_points').delete().eq('league_key', leagueKey)
+      const { error } = await supabase.from('igc_league_season_points').delete().eq('league_key', leagueKey)
+      if (error) throw new Error(`season snapshot delete: ${error.message}`)
       return null
     },
   }
