@@ -89,7 +89,13 @@ export interface OccurrenceCapabilities extends CompetitionCapabilities {
 
 // Adapter config is opaque to shared code; only the adapter reads it.
 // Carries GG ids + secrets — SERVER-ONLY, never sent to client components.
+export interface ReconciliationAwards {
+  // Points and authoritative season entries are required; cash is optional.
+  purse: boolean
+}
+
 export interface GolfGeniusAdapterConfig {
+  awards?: ReconciliationAwards
   seasonId: string
   categoryId: string
   seasonPointsCategoryId?: string
@@ -115,6 +121,7 @@ export interface GolfGeniusAdapterConfig {
 // rounds). `championshipKey` groups rounds into one aggregate competition;
 // `championshipRound` orders them within it. Server-only.
 export interface SpecialOccurrence {
+  awards?: ReconciliationAwards
   weekNumber: number                 // storage id (101/102), never user-visible
   label: string                      // user-facing nav label
   date: string                       // ISO date — active window + byDateWindow fallback

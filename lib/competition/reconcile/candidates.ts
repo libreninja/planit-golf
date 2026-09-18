@@ -37,13 +37,15 @@ export interface CandidateEvent {
   // flight membership is still unavailable. Optional so other competitions
   // and legacy callers retain their existing behavior.
   awaiting_official_flights?: boolean
+  // Independent from score finality and flight membership.
+  awaiting_awards?: boolean
   // Last time discovery read this occurrence from GG (igc_league_events
   // .discovered_at, refreshed on every discoverAndPersist). Optional: legacy
   // callers / tests that omit it are never gated (absent → always process).
   discovered_at?: string | null
 }
 
-export type CandidateKind = 'active' | 'played-awaiting-finalization' | 'upstream-finalized' | 'awaiting-official-flights' | 'unknown-unresolved' | 'old-current' | 'stale'
+export type CandidateKind = 'active' | 'played-awaiting-finalization' | 'upstream-finalized' | 'awaiting-official-flights' | 'unknown-unresolved' | 'awaiting-awards' | 'old-current' | 'stale'
 export type CandidateAction = 'discover' | 'import' | 'skip'
 
 export interface Candidate {
@@ -64,6 +66,9 @@ function classifyEvent(e: CandidateEvent): Candidate {
 
   if (ups === 'completed' && e.durable_imported_at && e.awaiting_official_flights) {
     return { week_number: e.week_number, kind: 'awaiting-official-flights', action: 'discover' as const }
+  }
+  if (ups === 'completed' && e.durable_imported_at && e.awaiting_awards) {
+    return { week_number: e.week_number, kind: 'awaiting-awards', action: 'discover' }
   }
   if (ups === 'completed' && e.durable_imported_at) {
     return { week_number: e.week_number, kind: 'old-current', action: 'skip' as const }

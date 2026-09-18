@@ -5,6 +5,7 @@ export const mensLeagueConfig: CompetitionConfig = {
   label: "Men's League",
   adapter: 'golfgenius',
   adapterConfig: {
+    awards: { purse: true },
     seasonId: process.env.IGC_MENS_SEASON_ID || '',
     categoryId: process.env.IGC_MENS_CATEGORY_ID || '',
     seasonPointsCategoryId: process.env.IGC_MENS_POINTS_CATEGORY_ID || '',
@@ -24,6 +25,7 @@ export const mensLeagueConfig: CompetitionConfig = {
     specialOccurrences: [
       {
         weekNumber: 101,
+        awards: { purse: false },
         label: 'Club Championship - Round 1',
         date: '2026-08-17',
         ggEventId: '12263651301715371717',
