@@ -9,6 +9,8 @@
 // Player identity (entry.name) is rendered by the component itself — it is
 // primary and never derived here. This module owns only the numeric strip.
 
+import { scorecardRoundHoles, WEEKLY_ROUND_HOLES } from '../../lib/igc/weekly-results-helpers.ts'
+
 import type {
   Scorecard as ScorecardT,
   ResultEntry,
@@ -21,11 +23,10 @@ export function formatToPar(n: number | null): string {
   return n > 0 ? `+${n}` : `${n}`
 }
 
-// Live rounds show "thru N"; a finalized card with any holes played shows "F".
-// A finalized card with no holes played (rare) shows "—".
-export function formatThru(holesCompleted: number, isLive: boolean): string {
-  if (!isLive) return holesCompleted > 0 ? 'F' : '—'
-  return `thru ${holesCompleted}`
+// Completion belongs to the player's round, regardless of event status.
+export function formatThru(holesCompleted: number, requiredHoles = WEEKLY_ROUND_HOLES): string {
+  if (holesCompleted <= 0) return '—'
+  return requiredHoles > 0 && holesCompleted >= requiredHoles ? 'F' : `thru ${holesCompleted}`
 }
 
 export function formatPoints(n: number | null): string {
@@ -49,13 +50,11 @@ export interface MobileStat {
 // The five labeled stats shown beneath a player's name on the portrait mobile
 // leaderboard strip. The score (Gross/Net) label and value follow the selected
 // scoring mode — the core invariant: the number a golfer sees must match the
-// Gross/Net toggle they selected. `isPlayerLive` is per-card liveness
-// (live result status AND this card is live); a finalized card shows "F".
+// Gross/Net toggle they selected. THRU uses only player round progress.
 export function buildMobileStats(
   entry: ResultEntry,
   card: ScorecardT | null,
   scoringMode: ScoringMode,
-  isPlayerLive: boolean,
 ): MobileStat[] {
   const isGross = scoringMode === 'gross'
   const toPar = isGross ? card?.toParGross ?? null : card?.toParNet ?? null
@@ -65,7 +64,7 @@ export function buildMobileStats(
     { label: 'Pos', value: entry.positionLabel ?? '—' },
     { label: 'To Par', value: formatToPar(toPar), valueClass: toParClass(toPar) },
     { label: isGross ? 'Gross' : 'Net', value: total === null ? '—' : String(total) },
-    { label: 'Thru', value: formatThru(holesCompleted, isPlayerLive) },
+    { label: 'Thru', value: formatThru(holesCompleted, scorecardRoundHoles(card)) },
     { label: 'Points', value: formatPoints(entry.points) },
   ]
 }

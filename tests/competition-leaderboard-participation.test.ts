@@ -40,3 +40,8 @@ test('authoritative DNS and WD dispositions win over generic no-score state', ()
   assert.equal(weeklyParticipationForCard(card({ scorecardStatus: 'no_show' }), teeSheet).kind, 'dns')
   assert.equal(weeklyParticipationForCard(card({ scorecardStatus: 'withdrawn' }), teeSheet).kind, 'wd')
 })
+
+test('participation never calls a four-hole card finished, regardless of its old live flag', () => {
+  assert.equal(weeklyParticipationForCard(card({ holesCompleted: 4, isLive: false }), null).kind, 'live')
+  assert.equal(weeklyParticipationForCard(card({ holesCompleted: 9, isLive: true }), null).kind, 'finished')
+})

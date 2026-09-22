@@ -171,3 +171,37 @@ test('single-mode live discovery never advertises the other tournament score as 
     assert.equal(card.holes[0].net, scoringMode === 'net' ? 3 : null)
   }
 })
+
+for (const league of ['mens', 'womens'] as const) {
+  for (const scoringMode of ['gross', 'net'] as const) {
+    test(`${league} ${scoringMode}: live discovery keeps four-hole leaders partial`, async () => {
+      const payload = { event: { status: 'in_progress', scopes: [{ name: 'Flight 3', aggregates: [{
+        name: 'Geballe, Abe', member_cards: [{ member_card_id_str: 'abe' }],
+        gross_scores: [5, 4, 4, 5, ...Array(14).fill(null)],
+        net_scores: [5, 4, 4, 5, ...Array(14).fill(null)],
+        to_par_gross: [1, 1, 1, 2, ...Array(14).fill(null)],
+        to_par_net: [1, 1, 1, 2, ...Array(14).fill(null)],
+        totals: { gross_scores: { total: 18 }, net_scores: { total: 18 },
+          to_par_gross: { total: 5 }, to_par_net: { total: 5 } },
+        scorecard_statuses: [{ status: 'partial' }],
+      }] }] } }
+      const gg = fakeGg({
+        events: [{ id: 'E', name: `${league} League`, category_id: 'C' }],
+        rounds: [{ id: 'R1', is_points_round: true, position: 18 }],
+        tournaments: [{ event: { id: 'g1', name: 'Gross Regular Season' } }, { event: { id: 'n1', name: 'Net Regular Season' } }],
+        results: { g1: payload, n1: payload },
+      })
+      const input = baseInput({ ggClient: gg.fn, competitionKey: `${league}-league`, scoringMode })
+      input.adapterConfig.eventFilter = league
+      const result = await discoverOccurrence(input)
+      const card = result.leaderboard?.scorecards[0]
+      assert.ok(card)
+      assert.equal(result.resultStatus, 'live')
+      assert.equal(card.holesCompleted, 4)
+      assert.equal(card.holes.length, 9)
+      assert.equal(card.isLive, true)
+      assert.equal(scoringMode === 'gross' ? card.grossTotal : card.netTotal, 18)
+      assert.equal(scoringMode === 'gross' ? card.toParGross : card.toParNet, 5)
+    })
+  }
+}

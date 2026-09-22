@@ -20,6 +20,7 @@ import {
   formatPoints,
   toParClass,
 } from "./leaderboard-format";
+import { scorecardRoundHoles } from "@/lib/igc/weekly-results-helpers";
 import { displayPersonName } from "@/lib/players/person-name";
 
 // One labeled stat for the portrait mobile stat strip. The value sits
@@ -49,7 +50,6 @@ export function ScorecardRow({
   entry,
   card,
   scoringMode,
-  live,
   isOpen,
   onToggle,
   showFlight = false,
@@ -78,7 +78,6 @@ export function ScorecardRow({
   const toPar = isGross ? card?.toParGross ?? null : card?.toParNet ?? null;
   const total = isGross ? card?.grossTotal ?? null : card?.netTotal ?? null;
   const holesCompleted = card?.holesCompleted ?? 0;
-  const isPlayerLive = live && !!card?.isLive;
   // P1-3: subtle per-flight tint + badge for finalized Men's multi-flight views.
   // null for non-numeric/unflighted rows → those rows stay neutral.
   const color = colorizeFlights ? flightColor(entry.flight) : null;
@@ -147,7 +146,7 @@ export function ScorecardRow({
           </div>
           {participationLabel ? <p className="mt-1 truncate text-[11px] text-muted-foreground">{participationLabel}</p> : null}
           <div className="mt-1.5 grid grid-cols-5 gap-1">
-            {buildMobileStats(entry, card, scoringMode, isPlayerLive).map((s) => (
+            {buildMobileStats(entry, card, scoringMode).map((s) => (
               <MobileStat key={s.label} label={s.label} value={s.value} valueClass={s.valueClass} />
             ))}
           </div>
@@ -206,7 +205,7 @@ export function ScorecardRow({
             {formatToPar(toPar)}
           </span>
           <span className="text-right tabular-nums text-muted-foreground">
-            {formatThru(holesCompleted, isPlayerLive)}
+            {formatThru(holesCompleted, scorecardRoundHoles(card))}
           </span>
           <span className="text-right tabular-nums text-muted-foreground">
             {total ?? "—"}

@@ -97,39 +97,31 @@ export function isPartialRound(holesCompleted: number, totalHoles: number): bool
   return holesCompleted > 0 && holesCompleted < totalHoles;
 }
 
-// The round's real hole count, derived from the cards themselves: the largest
-// leading non-null prefix any player reached. On a finished card holesCompleted
-// equals the course length, so the max across the field is the round's actual
-// hole count (9 for an Interbay league round, 18 for a full course). GG returns
-// 18-slot arrays padded with trailing nulls for shorter rounds and does not
-// expose an explicit course hole count on the results payload, so this is the
-// strongest available source. It is exact for every completed round and for
-// live rounds once any player has finished; it is a safe fallback otherwise.
-export function roundHoleCount<T extends { holesCompleted: number }>(cards: T[]): number {
-  return cards.reduce((m, c) => Math.max(m, c.holesCompleted), 0);
+// All current Interbay Weekly occurrences (Men's, Women's and each Club
+// Championship round) require nine holes. Progress is never course-length
+// evidence. A caller for another format must supply its required hole count.
+export const WEEKLY_ROUND_HOLES = 9;
+
+export function scorecardRoundHoles(card: { holes: HoleScore[] } | null): number {
+  return Math.max(WEEKLY_ROUND_HOLES, card?.holes.length ?? 0);
 }
 
-// Canonical hole-count trim, shared by the generic competition path (server
-// readers + live discovery) and the legacy weekly-results path so there is ONE
-// implementation. Removes trailing null holes so every scorecard carries ONLY
-// the holes that belong to the occurrence: a 9-hole round renders 9 holes (not
-// 18 with trailing empties), an 18-hole round renders 18. This fixes the
-// scorecard SHAPE (card.holes is the round's real length) — it is not a JSX
-// hide. Mutates the cards in place (they are freshly built per request).
-//
-// `recomputeLive`: re-derive isLive against the real course length. Pass true
-// for the live path (a finished 9-hole card becomes "F", not "thru 9"); pass
-// false for historical/final cards so finished cards stay "F" (isLive already
-// false). Totals (netTotal/grossTotal/toPar*) are GG-provided and stored
-// separately, so trimming the holes array never changes them.
+// Shared by live and historical readers. Keep the legacy reader flag for
+// call compatibility, but event/reader finality cannot complete a partial card.
+// Totals are upstream facts and remain unchanged. Include unplayed holes so
+// the expanded card and THRU compare progress against the same round length.
 export function trimScorecardsToRoundHoles<T extends { holes: HoleScore[]; holesCompleted: number; isLive: boolean }>(
   cards: T[],
-  recomputeLive: boolean,
+  _recomputeLive: boolean,
+  requiredHoles = WEEKLY_ROUND_HOLES,
 ): void {
-  const roundHoles = roundHoleCount(cards);
-  if (roundHoles <= 0) return;
   for (const c of cards) {
-    if (c.holes.length > roundHoles) c.holes = c.holes.slice(0, roundHoles);
-    if (recomputeLive) c.isLive = isPartialRound(c.holesCompleted, roundHoles);
+    const holes = c.holes.slice(0, requiredHoles);
+    while (holes.length < requiredHoles) {
+      holes.push({ hole: holes.length + 1, par: null, gross: null, net: null,
+        toPar: null, toParGross: null, cumulativeToPar: null });
+    }
+    c.holes = holes;
+    c.isLive = isPartialRound(c.holesCompleted, requiredHoles);
   }
 }
