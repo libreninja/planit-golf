@@ -196,6 +196,9 @@ export interface ResolvedOccurrence {
 }
 
 export interface HoleScore {
+  // Supplemental Weekly facts; older/non-Weekly producers may omit them.
+  actualStrokes?: number | null
+  handicapStrokes?: number | null
   hole: number
   par: number | null
   gross: number | null
