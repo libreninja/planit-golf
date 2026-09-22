@@ -42,9 +42,26 @@ for (const width of [1440, 390]) {
               const shapeBox = await score.boundingBox()
               const dotBox = await dots.boundingBox()
               expect(dotBox!.x - (shapeBox!.x + shapeBox!.width)).toBeCloseTo(1, 0)
-              expect(Math.abs(dotBox!.y + dotBox!.height / 2 - (shapeBox!.y + shapeBox!.height / 2))).toBeLessThan(1)
+              expect(Math.abs(dotBox!.y + dotBox!.height / 2 - shapeBox!.y)).toBeLessThan(1)
+              expect(await dots.evaluate(node => getComputedStyle(node).position)).toBe('absolute')
+              const unitBox = await score.locator('..').boundingBox()
+              expect(unitBox).toEqual(shapeBox)
+              const cellBox = await score.locator('xpath=ancestor::td').boundingBox()
+              expect(Math.abs(shapeBox!.x + shapeBox!.width / 2 - (cellBox!.x + cellBox!.width / 2))).toBeLessThan(1)
             } else await expect(dots).toHaveCount(0)
           }
+          expect(await card.evaluate(element => {
+            const boxes = () => Array.from(element.querySelectorAll('tr, th, td, [data-score-hole]'), node => {
+              const { x, y, width, height } = node.getBoundingClientRect()
+              return { x, y, width, height }
+            })
+            const before = boxes()
+            const dots = element.querySelectorAll<HTMLElement>('[data-handicap-hole]')
+            dots.forEach(dot => { dot.style.display = 'none' })
+            const after = boxes()
+            dots.forEach(dot => { dot.style.removeProperty('display') })
+            return JSON.stringify(before) === JSON.stringify(after)
+          })).toBe(true)
         } else {
           await expect(card.locator('[data-handicap-hole]')).toHaveCount(0)
         }
