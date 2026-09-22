@@ -1,3 +1,4 @@
+import { isPartialRound, scorecardRoundHoles } from '../../lib/igc/weekly-results-helpers.ts'
 import type { Scorecard } from '../../lib/competition/types.ts'
 import type { WeeklyTeeSheetData } from '../../lib/competition/weekly-tee-sheet.ts'
 
@@ -29,7 +30,7 @@ export function weeklyParticipationForCard(
     return { kind: 'dns', label: 'Did not start (DNS)', teeTime: null }
   }
   if (card && card.holesCompleted > 0) {
-    return card.isLive
+    return isPartialRound(card.holesCompleted, scorecardRoundHoles(card))
       ? { kind: 'live', label: `Live · thru ${card.holesCompleted}`, teeTime: null }
       : { kind: 'finished', label: 'Finished', teeTime: null }
   }

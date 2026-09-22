@@ -40,7 +40,7 @@ function card(over: Partial<Scorecard> = {}): Scorecard {
 }
 
 test('buildMobileStats: gross mode labels the score Gross and uses grossTotal', () => {
-  const stats = buildMobileStats(entry(), card(), 'gross', false)
+  const stats = buildMobileStats(entry(), card(), 'gross')
   assert.equal(stats[2].label, 'Gross')
   assert.equal(stats[2].value, '27')
   // to-par mirrors gross selection
@@ -48,42 +48,42 @@ test('buildMobileStats: gross mode labels the score Gross and uses grossTotal', 
 })
 
 test('buildMobileStats: net mode labels the score Net and uses netTotal', () => {
-  const stats = buildMobileStats(entry(), card(), 'net', false)
+  const stats = buildMobileStats(entry(), card(), 'net')
   assert.equal(stats[2].label, 'Net')
   assert.equal(stats[2].value, '31')
   assert.equal(stats[1].value, '+3')
 })
 
 test('buildMobileStats: strip order is Pos, To Par, score, Thru, Points', () => {
-  const stats = buildMobileStats(entry(), card(), 'gross', false)
+  const stats = buildMobileStats(entry(), card(), 'gross')
   assert.deepEqual(stats.map((s) => s.label), ['Pos', 'To Par', 'Gross', 'Thru', 'Points'])
 })
 
 test('buildMobileStats: finalized card shows Thru = F', () => {
-  const stats = buildMobileStats(entry(), card({ isLive: false }), 'gross', false)
+  const stats = buildMobileStats(entry(), card({ isLive: false }), 'gross')
   assert.equal(stats[3].value, 'F')
 })
 
 test('buildMobileStats: live card shows Thru = thru N', () => {
-  const stats = buildMobileStats(entry(), card({ holesCompleted: 7, isLive: true }), 'gross', true)
+  const stats = buildMobileStats(entry(), card({ holesCompleted: 7, isLive: true }), 'gross')
   assert.equal(stats[3].value, 'thru 7')
 })
 
 test('buildMobileStats: unflighted/women\'s entry (null flight) still produces a full strip', () => {
-  const stats = buildMobileStats(entry({ flight: null }), card(), 'gross', false)
+  const stats = buildMobileStats(entry({ flight: null }), card(), 'gross')
   assert.equal(stats.length, 5)
   assert.equal(stats[0].value, 'T1')
 })
 
 test('buildMobileStats: missing card still renders placeholders, not crashes', () => {
-  const stats = buildMobileStats(entry(), null, 'gross', false)
+  const stats = buildMobileStats(entry(), null, 'gross')
   assert.equal(stats[1].value, '—') // to par
   assert.equal(stats[2].value, '—') // total
   assert.equal(stats[3].value, '—') // thru (no holes completed)
 })
 
 test('buildMobileStats: position label falls back to — when null', () => {
-  const stats = buildMobileStats(entry({ positionLabel: null }), card(), 'gross', false)
+  const stats = buildMobileStats(entry({ positionLabel: null }), card(), 'gross')
   assert.equal(stats[0].value, '—')
 })
 
@@ -95,9 +95,9 @@ test('formatToPar: E at 0, +n positive, -n negative, — null', () => {
 })
 
 test('formatThru: live uses thru N; finalized with holes shows F; finalized no holes shows —', () => {
-  assert.equal(formatThru(3, true), 'thru 3')
-  assert.equal(formatThru(9, false), 'F')
-  assert.equal(formatThru(0, false), '—')
+  assert.equal(formatThru(3, 9), 'thru 3')
+  assert.equal(formatThru(9, 9), 'F')
+  assert.equal(formatThru(0, 9), '—')
 })
 
 test('formatPoints: integer plain, decimal trimmed, — null', () => {
@@ -112,4 +112,21 @@ test('toParClass: neutral at null/0, emerald under par, rose over par', () => {
   assert.equal(toParClass(0), 'text-muted-foreground')
   assert.equal(toParClass(-1), 'text-emerald-600 dark:text-emerald-400')
   assert.equal(toParClass(3), 'text-rose-600 dark:text-rose-400')
+})
+for (const isLive of [true, false]) {
+  test(`Abe's four-hole Gross 18 / +5 displays thru 4 even when isLive=${isLive}`, () => {
+    const partial = card({ holesCompleted: 4, grossTotal: 18, toParGross: 5, isLive })
+    const stats = buildMobileStats(entry(), partial, 'gross')
+    assert.equal(stats[1].value, '+5')
+    assert.equal(stats[2].value, '18')
+    assert.equal(stats[3].value, 'thru 4')
+    assert.equal(formatThru(partial.holesCompleted, 9), 'thru 4')
+  })
+}
+
+test('F requires every required hole, with or without a score total', () => {
+  for (let holes = 0; holes < 9; holes++) assert.notEqual(formatThru(holes, 9), 'F')
+  assert.equal(formatThru(9, 9), 'F')
+  assert.equal(formatThru(9, 18), 'thru 9')
+  assert.equal(formatThru(18, 18), 'F')
 })

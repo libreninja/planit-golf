@@ -1,5 +1,7 @@
 "use client";
 
+import { formatThru } from "@/components/competition/leaderboard-format";
+import { scorecardRoundHoles } from "@/lib/igc/weekly-results-helpers";
 import { useMemo, useCallback, useEffect, useState } from "react";
 import type {
   WeeklyRoundResult,
@@ -40,11 +42,6 @@ function formatToPar(n: number | null): string {
   if (n === null) return "—";
   if (n === 0) return "E";
   return n > 0 ? `+${n}` : `${n}`;
-}
-
-function formatThru(holesCompleted: number, isLive: boolean): string {
-  if (!isLive) return holesCompleted > 0 ? "F" : "—";
-  return `thru ${holesCompleted}`;
 }
 
 function formatPoints(n: number | null): string {
@@ -319,7 +316,6 @@ function PlayerRow({
   entry,
   card,
   competition,
-  live,
   isOpen,
   onToggle,
 }: {
@@ -336,7 +332,6 @@ function PlayerRow({
   const toPar = isGross ? card?.toParGross ?? null : card?.toParNet ?? null;
   const total = isGross ? card?.grossTotal ?? null : card?.netTotal ?? null;
   const holesCompleted = card?.holesCompleted ?? 0;
-  const isPlayerLive = live && !!card?.isLive;
 
   return (
     <div>
@@ -358,7 +353,7 @@ function PlayerRow({
           {formatToPar(toPar)}
         </span>
         <span className="text-right tabular-nums text-muted-foreground">
-          {formatThru(holesCompleted, isPlayerLive)}
+          {formatThru(holesCompleted, scorecardRoundHoles(card))}
         </span>
         <span className="text-right tabular-nums text-muted-foreground">
           {total ?? "—"}

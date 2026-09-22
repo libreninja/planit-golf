@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { normalizeTournament, type GGResultsFixture } from '../lib/competition/adapters/golfgenius/normalize.ts'
-import { buildHoles, trimScorecardsToRoundHoles, roundHoleCount, isPartialRound } from '../lib/igc/weekly-results-helpers.ts'
+import { buildHoles, trimScorecardsToRoundHoles, isPartialRound } from '../lib/igc/weekly-results-helpers.ts'
 
 // A 9-hole Interbay league round as GG returns it: 18-slot arrays with the
 // back nine padded to null. Holes 1–9 carry real gross/net/to-par; 10–18 are
@@ -69,7 +69,7 @@ test('18-hole occurrence still renders all 18 holes', () => {
   const { gross, net, toParNet, toParGross } = eighteenHoleArrays()
   const holes = buildHoles(gross, net, toParNet, toParGross)
   const card = { holes, holesCompleted: 18, isLive: false }
-  trimScorecardsToRoundHoles([card], false)
+  trimScorecardsToRoundHoles([card], false, 18)
   assert.equal(card.holes.length, 18, 'no holes trimmed for a full 18-hole round')
 })
 
@@ -138,8 +138,7 @@ test('live recompute: finished 9-hole card is NOT live (reads "F", not "thru 9")
 test('live recompute: in-progress 9-hole card stays live against real course', () => {
   const { gross, net, toParNet, toParGross } = nineHoleArrays()
   const holes = buildHoles(gross, net, toParNet, toParGross)
-  // The course length derives from the field's max-completed card, so include
-  // a finished leader (9) alongside an in-progress player (5). roundHoles=9,
+  // A finished player (9) alongside an in-progress player (5). roundHoles=9,
   // the in-progress card trims to 9 and stays live (5 < 9 → "thru 5").
   const finished = { holes: holes.slice(), holesCompleted: 9, isLive: false }
   const inProgress = { holes: holes.slice(), holesCompleted: 5, isLive: true }
@@ -149,7 +148,7 @@ test('live recompute: in-progress 9-hole card stays live against real course', (
   assert.equal(finished.isLive, false, '9 == 9 → finished → "F"')
 })
 
-test('roundHoleCount = max holesCompleted across the field (course length)', () => {
+test('Weekly round length is nine regardless of field progress', () => {
   const { gross, net, toParNet, toParGross } = nineHoleArrays()
   const holes = buildHoles(gross, net, toParNet, toParGross)
   const field = [
@@ -157,7 +156,6 @@ test('roundHoleCount = max holesCompleted across the field (course length)', () 
     { holes: holes.slice(), holesCompleted: 7, isLive: true },    // in progress
     { holes: holes.slice(), holesCompleted: 5, isLive: true },     // in progress
   ]
-  assert.equal(roundHoleCount(field), 9, 'leader determines the round hole count')
   trimScorecardsToRoundHoles(field, true)
   assert.equal(field[1].holes.length, 9)
   assert.equal(field[1].isLive, true, '7 < 9 → live')
@@ -246,6 +244,55 @@ test('an 18-hole occurrence (future format) is not over-trimmed to 9', () => {
   const { gross, net, toParNet, toParGross } = eighteenHoleArrays()
   const holes = buildHoles(gross, net, toParNet, toParGross)
   const card = { holes, holesCompleted: 18, isLive: false }
-  trimScorecardsToRoundHoles([card], false)
+  trimScorecardsToRoundHoles([card], false, 18)
   assert.equal(card.holes.length, 18, '18-hole round keeps all 18 holes — no 9-hole assumption')
+})
+// Regression: the furthest player is NOT evidence of the round's length.
+// Both league readers and both scoring modes use this same shaping helper.
+for (const scoring of ['gross', 'net'] as const) {
+  for (const liveReader of [true, false]) {
+    test(`${scoring} ${liveReader ? 'live' : 'historical'}: four scored holes never finish a nine-hole round`, () => {
+      const fixture: GGResultsFixture = {
+        event: { scopes: [{ name: 'Flight 3', aggregates: ['Geballe, Abe', 'Peredo, Esteban'].map((name) => ({
+          name,
+          member_cards: [{ member_card_id_str: name }],
+          gross_scores: [5, 4, 4, 5, ...Array(14).fill(null)],
+          net_scores: [5, 4, 4, 5, ...Array(14).fill(null)],
+          to_par_gross: [1, 1, 1, 2, ...Array(14).fill(null)],
+          to_par_net: [1, 1, 1, 2, ...Array(14).fill(null)],
+          totals: { gross_scores: { total: 18 }, net_scores: { total: 18 },
+            to_par_gross: { total: 5 }, to_par_net: { total: 5 } },
+          scorecard_statuses: [{ status: 'partial' }],
+        })) }] },
+      }
+      const cards = [...normalizeTournament(fixture, scoring).scorecards.values()]
+      // Historical readers previously initialized every card as final.
+      if (!liveReader) cards.forEach((card) => { card.isLive = false })
+      trimScorecardsToRoundHoles(cards, liveReader)
+      for (const card of cards) {
+        assert.equal(card.holesCompleted, 4)
+        assert.equal(card.isLive, true)
+        assert.equal(card.holes.length, 9)
+        assert.deepEqual(card.holes.map((hole) => hole.gross), [5, 4, 4, 5, null, null, null, null, null])
+        assert.equal(card.grossTotal, 18)
+        assert.equal(card.toParGross, 5)
+      }
+    })
+  }
+}
+
+test('empty and mixed-progress fields retain nine holes without a finished leader', () => {
+  const cards = [0, 1, 4, 8].map((holesCompleted) => ({
+    holes: buildHoles(Array(holesCompleted).fill(4), null, null, null), holesCompleted, isLive: false,
+  }))
+  trimScorecardsToRoundHoles(cards, true)
+  assert.deepEqual(cards.map((card) => card.holes.length), [9, 9, 9, 9])
+  assert.deepEqual(cards.map((card) => card.isLive), [false, true, true, true])
+})
+
+test('an explicitly eighteen-hole round remains partial through nine', () => {
+  const card = { holes: buildHoles(Array(9).fill(4), null, null, null), holesCompleted: 9, isLive: false }
+  trimScorecardsToRoundHoles([card], false, 18)
+  assert.equal(card.holes.length, 18)
+  assert.equal(card.isLive, true)
 })
