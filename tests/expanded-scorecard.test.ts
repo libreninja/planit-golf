@@ -56,7 +56,7 @@ test('multiple dots and unknown allocations remain distinct from zero and Gross'
   card.holes[0].handicapStrokes = 4
   card.holes[1].handicapStrokes = null
   const html = render(card)
-  assert.match(html, /data-handicap-hole="1"[^>]*>(<span>•<\/span>){4}<\/span>/)
+  assert.match(html, /data-handicap-hole="1"[^>]*>(<span[^>]*>•<\/span>){4}<\/span>/)
   assert.match(html, /data-handicap-hole="2"[^>]*>\?<\/span>/)
   assert.doesNotMatch(html, /data-handicap-hole="3"/)
   assert.match(html, /handicap allocation unknown/)

@@ -51,7 +51,7 @@ export function ExpandedScorecard({ card }: { card: ScorecardContext; narrate?: 
                 <th scope="row" className="py-2 pl-1 text-left font-medium">Score</th>
                 {holes.map(hole => (
                   <td key={hole.hole} className="py-1.5">
-                    <span className="inline-flex items-center gap-px align-middle">
+                    <span className="relative inline-flex align-middle">
                       <span
                         aria-label={`Hole ${hole.hole}: ${hole.strokes === null ? 'actual score unavailable' : `${hole.strokes} actual strokes`}${hole.toPar === null ? '' : `, ${card.label} ${markNames[hole.mark]}`}${card.showHandicap ? `, ${hole.handicapStrokes === null ? 'handicap allocation unknown' : `${hole.handicapStrokes} handicap strokes`}` : ''}`}
                         data-score-hole={hole.hole}
@@ -59,8 +59,8 @@ export function ExpandedScorecard({ card }: { card: ScorecardContext; narrate?: 
                         className={`flex h-[22px] items-center justify-center font-semibold leading-none sm:h-7 ${hole.mark === 'plain' || hole.strokes === null ? 'min-w-3' : `w-[22px] sm:w-7 ${markClasses[hole.mark]}`}`}
                       >{hole.strokes ?? ''}</span>
                       {card.showHandicap && hole.handicapStrokes !== 0 && (
-                        <span aria-hidden data-handicap-hole={hole.hole} className="flex flex-col text-[9px] leading-[4px] text-muted-foreground">
-                          {hole.handicapStrokes === null ? '?' : Array.from({ length: hole.handicapStrokes }, (_, index) => <span key={index}>•</span>)}
+                        <span aria-hidden data-handicap-hole={hole.hole} className="absolute left-full top-0 ml-px flex -translate-y-1/2 flex-col gap-px text-[9px] leading-[4px] text-muted-foreground">
+                          {hole.handicapStrokes === null ? '?' : Array.from({ length: hole.handicapStrokes }, (_, index) => <span key={index} className="h-0.5 w-0.5 rounded-full bg-current text-[0px]">•</span>)}
                         </span>
                       )}
                     </span>
