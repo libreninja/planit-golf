@@ -1,5 +1,8 @@
 "use client";
 
+import { buildScorecardContext } from "@/components/competition/scorecard-context";
+import { ExpandedScorecard } from "@/components/competition/expanded-scorecard";
+
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -216,39 +219,7 @@ export function ScorecardRow({
           )}
         </div>
       </div>
-      {isOpen && hasHoles && card && <Scorecard card={card} />}
-    </div>
-  );
-}
-
-function Scorecard({ card }: { card: ScorecardT }) {
-  return (
-    <div className="border-t border-border bg-muted/20 px-3 py-3">
-      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>Net <span className="font-semibold text-foreground tabular-nums">{card.netTotal ?? "—"}</span> ({formatToPar(card.toParNet)})</span>
-        <span>Gross <span className="font-semibold text-foreground tabular-nums">{card.grossTotal ?? "—"}</span> ({formatToPar(card.toParGross)})</span>
-      </div>
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {card.holes.map((h) => {
-          const isPlayed = h.gross !== null || h.net !== null;
-          return (
-            <div
-              key={h.hole}
-              className={[
-                "min-w-[3.25rem] shrink-0 rounded-md border px-1.5 py-1 text-center text-[11px] leading-tight",
-                isPlayed ? "border-border bg-background" : "border-dashed border-border/60 bg-transparent text-muted-foreground/50",
-              ].join(" ")}
-            >
-              <div className="text-muted-foreground">{h.hole}</div>
-              <div className="tabular-nums text-muted-foreground/80">par {h.par ?? "—"}</div>
-              <div className="tabular-nums font-semibold">{h.gross ?? "—"}</div>
-              <div className={`tabular-nums ${toParClass(h.toPar)}`}>
-                {h.net !== null ? (h.toPar === null ? h.net : h.toPar === 0 ? "E" : h.toPar > 0 ? `+${h.toPar}` : `${h.toPar}`) : "—"}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {isOpen && hasHoles && card && <ExpandedScorecard card={buildScorecardContext(card, scoringMode)} />}
     </div>
   );
 }
