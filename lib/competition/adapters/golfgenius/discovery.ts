@@ -26,6 +26,7 @@
 // status, and the source finalization timestamp + version token. The caller
 // passes `resolved` straight into importOccurrence (Task 19B).
 
+import { authoritativeScorecard } from '../../authoritative-scorecard.ts'
 import { classifyEventFormat, nameKind, type DiscoveredTournament } from '../../classify.ts'
 import { normalizeTournament } from './normalize.ts'
 import { trimScorecardsToRoundHoles } from '../../../igc/weekly-results-helpers.ts'
@@ -328,7 +329,12 @@ export async function discoverOccurrence(input: DiscoverInput): Promise<Discover
     scoringMode,
     grouping: null,
     entries,
-    scorecards: [...norm.scorecards.values()],
+    // Only the fetched tournament's scoring mode is authoritative. Combined
+    // readers assemble the other mode from its own response.
+    scorecards: [...norm.scorecards.values()].map((card) => authoritativeScorecard(
+      scoringMode === 'gross' ? card : null,
+      scoringMode === 'net' ? card : null,
+    )!),
     resultStatus,
     durableCurrent: false,
   }

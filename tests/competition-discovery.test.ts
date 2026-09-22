@@ -150,3 +150,24 @@ test('genuine upstream failure THROWS (not swallowed) so stale-while-error can c
     'a thrown GG error must propagate, not be swallowed into pending/failed',
   )
 })
+
+
+test('single-mode live discovery never advertises the other tournament score as authoritative', async () => {
+  for (const scoringMode of ['gross', 'net']) {
+    const aggregate = { name: 'Kevin', member_cards: [{ member_card_id_str: 'k' }],
+      gross_scores: [4], net_scores: [3], to_par_gross: [1], to_par_net: [0],
+      totals: { gross_scores: { out: 4 }, net_scores: { out: 3 } } }
+    const gg = fakeGg({
+      events: [{ id: 'E', name: 'Mens League', category_id: 'C' }],
+      rounds: [{ id: 'R1', name: 'Round 18', is_points_round: true, position: 18, date: '2026-07-28' }],
+      tournaments: [{ event: { id: 'g1', name: 'Gross' } }, { event: { id: 'n1', name: 'Net' } }],
+      results: Object.fromEntries(['g1', 'n1'].map((id) => [id, { event: { scopes: [{ aggregates: [aggregate] }] } }])),
+    })
+    const result = await discoverOccurrence(baseInput({ scoringMode, ggClient: gg.fn }))
+    const card = result.leaderboard!.scorecards[0]
+    assert.equal(card.grossTotal, scoringMode === 'gross' ? 4 : null)
+    assert.equal(card.netTotal, scoringMode === 'net' ? 3 : null)
+    assert.equal(card.holes[0].gross, scoringMode === 'gross' ? 4 : null)
+    assert.equal(card.holes[0].net, scoringMode === 'net' ? 3 : null)
+  }
+})

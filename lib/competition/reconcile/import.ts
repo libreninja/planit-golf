@@ -14,7 +14,8 @@
 
 import { parsePosition, parseIntOrNull, countBirdiesDoubles } from './gg-helpers.ts'
 import { normalizeTournament } from '../adapters/golfgenius/normalize.ts'
-import type { GolfGeniusAdapterConfig, ResolvedOccurrence } from '../types.ts'
+import { authoritativeScorecard } from '../authoritative-scorecard.ts'
+import type { GolfGeniusAdapterConfig, ResolvedOccurrence, Scorecard } from '../types.ts'
 import type { GGClient } from '../adapters/golfgenius/discovery.ts'
 
 export interface ImportDb {
@@ -82,14 +83,11 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     parData = coursesData?.courses?.[0]?.tees?.[0]?.hole_data?.par || []
   } catch { /* par data not critical */ }
 
-  // One perf row per player (unique on league_key, week_number, player_name —
-  // parity with the original sync's onConflict). Scorecard facts are identical
-  // across the gross + net tournaments for a player (same round); the
-  // competition-specific placement fields (flight_name, position_label,
-  // flight_position, points, purse) reflect the NET tournament, because the
-  // original sync upserted per-aggregate with net processed last → net wins.
-  // We replicate that by overwriting placement fields on the net pass.
+  // One combined performance per player; score facts belong to their source
+  // tournament. Legacy performance placement/awards remain Net-last, while
+  // results retain both independent competitions.
   const perfByKey = new Map<string, Record<string, unknown>>()
+  const cardsByName = new Map<string, { gross?: Scorecard; net?: Scorecard }>()
   const resultRows: Record<string, unknown>[] = []
   const seasonPointsCum = new Map<string, number>()
   const importedCompetitions: Array<'gross' | 'net'> = []
@@ -103,6 +101,12 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     for (const [flightName, entries] of norm.entriesByFlight) {
       for (const e of entries) {
         const card = norm.scorecards.get(e.key)
+        if (card) {
+          if (card.name !== e.name) throw new Error(`Ambiguous scorecard identity: ${e.name}`)
+          const sources = cardsByName.get(e.name) ?? {}
+          sources[competition] = card
+          cardsByName.set(e.name, sources)
+        }
         // Result row (per-competition placement) — parity with original sync.
         resultRows.push({
           league_key: leagueKey, week_number: weekNumber, event_id: eventId,
@@ -129,9 +133,6 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
           existing.weekly_position = parsePosition(e.positionLabel) ?? 9999
           continue
         }
-        const grossScores = card ? card.holes.map((h) => h.gross) : []
-        const netScores = card ? card.holes.map((h) => h.net) : []
-        const { birdies, doubleBogeys } = countBirdiesDoubles(netScores, parData)
         perfByKey.set(key, {
           league_key: leagueKey, week_number: weekNumber, event_id: eventId,
           player_name: e.name, member_card_id: card?.memberCardId ?? null,
@@ -139,21 +140,10 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
           position_label: e.positionLabel,
           flight_position: parsePosition(e.positionLabel),
           points: e.points,
-          gross_scores: grossScores,
-          to_par_net: card ? card.holes.map((h) => h.toPar) : [],
-          to_par_gross: card ? card.holes.map((h) => h.toParGross) : [],
-          net_total: card ? parseIntOrNull(card.netTotal) : null,
-          gross_total: card ? parseIntOrNull(card.grossTotal) : null,
-          to_par_net_total: card ? parseIntOrNull(card.toParNet) : null,
-          to_par_gross_total: card ? parseIntOrNull(card.toParGross) : null,
           purse: e.purse,
-          holes_completed: card ? card.holesCompleted : 0,
-          scorecard_status: card ? card.scorecardStatus : null,
           event_name: eventNameFinal,
           event_date: eventDateFinal,
-          double_bogeys: doubleBogeys, birdies: birdies,
           weekly_position: parsePosition(e.positionLabel) ?? 9999,
-          net_scores: netScores,
         })
       }
     }
@@ -169,6 +159,25 @@ export async function importOccurrence(input: ImportInput): Promise<ImportSummar
     }
   }
 
+  for (const [name, performance] of perfByKey) {
+    const sources = cardsByName.get(name)
+    const card = authoritativeScorecard(sources?.gross, sources?.net)
+    const netScores = card?.holes.map((hole) => hole.net) ?? []
+    const { birdies, doubleBogeys } = countBirdiesDoubles(netScores, parData)
+    Object.assign(performance, {
+      gross_scores: card?.holes.map((hole) => hole.gross) ?? [],
+      net_scores: netScores,
+      to_par_net: card?.holes.map((hole) => hole.toPar) ?? [],
+      to_par_gross: card?.holes.map((hole) => hole.toParGross) ?? [],
+      net_total: parseIntOrNull(card?.netTotal),
+      gross_total: parseIntOrNull(card?.grossTotal),
+      to_par_net_total: parseIntOrNull(card?.toParNet),
+      to_par_gross_total: parseIntOrNull(card?.toParGross),
+      holes_completed: card?.holesCompleted ?? 0,
+      scorecard_status: card?.scorecardStatus ?? null,
+      birdies, double_bogeys: doubleBogeys,
+    })
+  }
   const perfRows = [...perfByKey.values()]
   // INVARIANT: a completed/finalized round MUST produce performance rows. Zero
   // rows means import built nothing (normalize produced no entries, or the GG

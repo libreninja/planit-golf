@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { unstable_cache } from 'next/cache'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
+import { authoritativeScorecard } from '../competition/authoritative-scorecard.ts'
 import { getLiveResults } from '@/lib/competition/live'
 import { IGC_MENS_2026_SCOPE } from './identity'
 import {
@@ -368,9 +369,10 @@ export async function getMensPlayerDetail(
           getLiveResults({ competitionKey: 'mens-league', occurrenceId: String(selectedEvent.week), scoring: 'gross', nowIso }),
           getLiveResults({ competitionKey: 'mens-league', occurrenceId: String(selectedEvent.week), scoring: 'net', nowIso }),
         ])
-        const liveCard = grossLive.leaderboard?.scorecards.find((card) => card.memberCardId === memberCardId)
-          ?? netLive.leaderboard?.scorecards.find((card) => card.memberCardId === memberCardId)
-          ?? null
+        const liveCard = authoritativeScorecard(
+          grossLive.leaderboard?.scorecards.find((card) => card.memberCardId === memberCardId),
+          netLive.leaderboard?.scorecards.find((card) => card.memberCardId === memberCardId),
+        )
         if (liveCard) {
           const state: PlayerPerformanceFact['state'] = grossLive.resultStatus === 'live' || netLive.resultStatus === 'live'
             ? 'live'

@@ -12,9 +12,8 @@
 //
 // Golf Genius models a league round as TWO individual tournaments — Gross and
 // Net — each scoped by flight (men's: Flight 1/2/3; women's: single Overall
-// field). The SAME player appears in both with a byte-identical scorecard; only
-// the placement (position/points/purse) differs. So the UI shows BOTH
-// competitions per flight but expands ONE shared scorecard per player.
+// field). Each tournament supplies its own authoritative scoring mode and
+// placement/awards. The shared expanded card combines those independent facts.
 //
 // Completed rounds read from the persisted tables above; an in-progress round
 // (event_date is today) is fetched live from BOTH GG tournaments and merged
@@ -27,6 +26,7 @@
 // weekly total_points across both competitions (GG exposes no cumulative
 // endpoint). Women's has no points race; no snapshot is fabricated.
 
+import { authoritativeScorecard } from "../competition/authoritative-scorecard.ts";
 import { createClient } from "@/lib/supabase/server";
 import { makeGolfGeniusRequest } from "@/lib/gg/client";
 // Pure helpers + HoleScore live in the alias-free helpers module so they can be
@@ -529,21 +529,17 @@ export async function fetchLeagueLiveResults(
   const net = ids.netTournamentId ? await fetchTournament(ids.netTournamentId, "net") : null;
   if (!gross && !net) return null;
 
-  // Round-wide scorecard map: deduped by player key across the two tournament
-  // parses (the card is identical in Gross and Net — one fact). Trimming here
-  // once, round-wide, renders only the holes that belong to the course
-  // (Interbay plays 9; GG returns 18-slot arrays with trailing nulls) and
-  // recomputes the in-progress flag against the real course length.
+  // Combine each source's authoritative mode before round-wide trimming.
   const allScorecards = new Map<string, WeeklyScorecard>();
-  for (const source of [net?.scorecards, gross?.scorecards]) {
-    if (!source) continue;
-    for (const [key, card] of source) if (!allScorecards.has(key)) allScorecards.set(key, card);
+  const playerKeys = new Set([...gross?.scorecards.keys() ?? [], ...net?.scorecards.keys() ?? []]);
+  for (const key of playerKeys) {
+    const card = authoritativeScorecard(gross?.scorecards.get(key), net?.scorecards.get(key));
+    if (card) allScorecards.set(key, card);
   }
   trimScorecardsToRoundHoles([...allScorecards.values()], true);
   const anyLive = [...allScorecards.values()].some((c) => c.isLive);
 
-  // Merge per flight. Scorecards are deduped across the two parses (identical
-  // data); we always emit competitions [net, gross].
+  // Merge per flight; preserve separate result memberships for [net, gross].
   const flightNames = new Set<string>([
     ...(net?.entriesByFlight.keys() ?? []),
     ...(gross?.entriesByFlight.keys() ?? []),

@@ -39,8 +39,8 @@ const coursesPayload = {
   courses: [{ tees: [{ hole_data: { par: [4, 4, 4] } }] }],
 }
 
-// Hans: identical scorecard facts across gross+net (same round); only the
-// finishing placement differs (gross "1" vs net "T2") to prove net-wins.
+// Hans: Gross payload exposes unadjusted net fields; Net payload owns the
+// authoritative Net score. Placements also differ independently.
 const hansAggregate = {
   name: 'Hans Olson',
   member_cards: [{ member_card_id_str: 'mc-1' }],
@@ -56,7 +56,7 @@ const hansAggregate = {
   },
   scorecard_statuses: [{ status: 'completed' }],
 }
-const hansGross = { ...hansAggregate, position: '1', points: '50', purse: '$55.00' }
+const hansGross = { ...hansAggregate, net_scores: [5, 7, 5], to_par_net: [1, 3, 1], totals: { ...hansAggregate.totals, net_scores: { out: 17 }, to_par_net: { out: 5 } }, position: '1', points: '50', purse: '$55.00' }
 const hansNet = { ...hansAggregate, position: 'T2', points: '30', purse: '$22.00' }
 
 // Greta: unplaced ("--") in both competitions. net [6,7,6] vs par [4,4,4] →
