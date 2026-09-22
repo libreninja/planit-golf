@@ -27,12 +27,26 @@ for (const width of [1440, 390]) {
         const scores = card.locator('[data-score-hole]')
         await expect(scores).toHaveText(fixture.gross.map(String))
         expect(await scores.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-score-mark')))).toEqual(fixture[`${mode}ToPar`].map(mark))
+        await expect(card.getByRole('columnheader', { name: 'Total', exact: true })).toBeVisible()
+        await expect(card.getByRole('columnheader', { name: /^(Out|In)$/ })).toHaveCount(0)
+        await expect(card.getByRole('row', { name: /^Par / }).locator('td').last()).toHaveText('28')
+        await expect(card.getByRole('cell', { name: 'Recorded stroke total', exact: true })).toHaveText(String(fixture.grossTotal))
+        expect(await card.locator('thead').textContent()).not.toContain('•')
         if (mode === 'net') {
           for (let index = 0; index < 9; index++) {
-            await expect(card.getByRole('columnheader', { name: `Hole ${index + 1}, ${fixture.handicapStrokes[index]} handicap strokes`, exact: true })).toBeVisible()
+            const score = card.locator(`[data-score-hole="${index + 1}"]`)
+            await expect(score).toHaveAttribute('aria-label', new RegExp(`${fixture.handicapStrokes[index]} handicap strokes$`))
+            const dots = score.locator('..').locator('[data-handicap-hole]')
+            if (fixture.handicapStrokes[index]) {
+              await expect(dots).toHaveText('•'.repeat(fixture.handicapStrokes[index]))
+              const shapeBox = await score.boundingBox()
+              const dotBox = await dots.boundingBox()
+              expect(dotBox!.x - (shapeBox!.x + shapeBox!.width)).toBeCloseTo(1, 0)
+              expect(Math.abs(dotBox!.y + dotBox!.height / 2 - (shapeBox!.y + shapeBox!.height / 2))).toBeLessThan(1)
+            } else await expect(dots).toHaveCount(0)
           }
         } else {
-          expect(await card.locator('thead').textContent()).not.toContain('•')
+          await expect(card.locator('[data-handicap-hole]')).toHaveCount(0)
         }
         await card.scrollIntoViewIfNeeded()
         await expect(card.locator('[data-score-hole="9"]')).toBeInViewport()
@@ -74,9 +88,14 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Show Jeff Morgan scorecard', exact: true }).click()
     const card = page.getByRole('group', { name: 'Net scorecard', exact: true })
     for (let hole = 1; hole <= 9; hole++) {
-      await expect(card.getByRole('columnheader', { name: `Hole ${hole}, ${[1,5,6,7].includes(hole) ? 1 : 0} handicap strokes`, exact: true })).toBeVisible()
+      const dots = card.locator(`[data-score-hole="${hole}"]`).locator('..').locator('[data-handicap-hole]')
+      if ([1,5,6,7].includes(hole)) await expect(dots).toHaveText('•')
+      else await expect(dots).toHaveCount(0)
     }
     await card.scrollIntoViewIfNeeded()
+    await expect(card.locator('[data-handicap-hole]')).toHaveCount(4)
+    expect(await card.locator('thead').textContent()).not.toContain('•')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.screenshot({ path: test.info().outputPath('jeff.png') })
   })
 }
