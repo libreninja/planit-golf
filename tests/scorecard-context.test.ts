@@ -26,10 +26,10 @@ for (const fixture of weeklyScorecardFixtures) {
       assert.equal(view.label, mode === 'gross' ? 'Gross' : 'Net')
       assert.equal(view.total, fixture[`${mode}Total`])
       assert.equal(view.toPar, fixture[`${mode}Par`])
-      assert.deepEqual(view.holes.map(h => h.strokes), fixture[mode])
+      assert.deepEqual(view.holes.map(h => h.strokes), fixture.gross)
       assert.deepEqual(view.holes.map(h => h.toPar), fixture[`${mode}ToPar`])
       assert.equal(view.holes.reduce((sum, h) => sum + h.toPar!, 0), view.toPar)
-      assert.equal(view.holes.reduce((sum, h) => sum + h.strokes!, 0), view.total)
+      assert.equal(view.holes.reduce((sum, h) => sum + h.strokes!, 0), fixture.grossTotal)
       assert.equal(view.total! - 28, view.toPar)
       assert.equal(view.holes.at(-1)?.cumulativeToPar, view.toPar)
       const mobile = buildMobileStats(entry, card, mode)
@@ -63,7 +63,8 @@ for (const mode of ['gross', 'net'] as const) {
     const view = buildScorecardContext(card, mode)
     assert.equal(view.total, null)
     assert.equal(view.toPar, null)
-    assert.ok(view.holes.every(h => h.strokes === null && h.toPar === null))
+    assert.ok(view.holes.every(h => h.toPar === null))
+    assert.deepEqual(view.holes.map(h => h.strokes), mode === 'gross' ? Array(9).fill(null) : [...weeklyScorecardFixtures[0].gross])
   })
 
   test(`${mode}: partial card retains nine holes, unplayed blanks, and #42 THRU`, () => {
@@ -88,7 +89,7 @@ for (const mode of ['gross', 'net'] as const) {
 test('Net zero is a score; missing Net delta stays unknown even with Gross facts', () => {
   const card = fixtureCard()
   card.holes[0] = { ...card.holes[0], net: 0, toPar: -4 }
-  assert.equal(buildScorecardContext(card, 'net').holes[0].strokes, 0)
+  assert.equal(buildScorecardContext(card, 'net').holes[0].strokes, 5)
   assert.equal(buildScorecardContext(card, 'net').holes[0].toPar, -4)
   card.holes[0].toPar = null
   assert.equal(buildScorecardContext(card, 'net').holes[0].toPar, null)

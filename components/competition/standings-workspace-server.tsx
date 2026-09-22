@@ -8,6 +8,7 @@
 // No CompetitionConfig object crosses the server/client boundary — only plain
 // serializable props. See task 26D/26E/26F + P1-1/P1-2.
 
+import { readHistoricalWeeklyScorecards } from '@/lib/competition/weekly-scorecard-data'
 import { getCompetitionConfig } from '@/lib/competition/registry'
 import { getLiveResults } from '@/lib/competition/live'
 import { isOccurrenceActive } from '@/lib/competition/active-window'
@@ -17,7 +18,6 @@ import { normalizeUrlState } from './url-state'
 import { StandingsShell } from './standings-shell'
 import { decideInitialRender } from './initial-render-decision'
 import {
-  buildHistoricalLiveResponse,
   resolveAvailableGroupings,
   resolveHasPostedGolf,
   resolveOccurrences,
@@ -171,11 +171,11 @@ export async function StandingsWorkspaceServer({
     liveScoredOccurrenceIds,
   )
 
-  // Start independent persisted/private reads together. Tee-sheet data shares
-  // the occurrence cache with live flight projection, so in the common live
-  // path this is a cache hit rather than another Golf Genius round trip.
+  // Start independent persisted/private reads together. Scorecard facts share
+  // a short round-scoped cache across display modes; logistical pairings keep
+  // their existing longer-lived cache.
   const historicalPromise = selected
-    ? buildHistoricalLiveResponse(competitionKey, selected, scoring)
+    ? readHistoricalWeeklyScorecards(competitionKey, selected, scoring)
     : Promise.resolve(null)
   const teeSheetPromise = competitionKey === 'mens-league' && selected
     ? getMensWeeklyTeeSheet(selected.id)
@@ -250,7 +250,7 @@ export async function StandingsWorkspaceServer({
   if (!useLivePath) {
     for (const m of scoringModes) {
       if (m === scoring) continue
-      initialByScoring[m] = selected ? await buildHistoricalLiveResponse(competitionKey, selected, m) : null
+      initialByScoring[m] = selected ? await readHistoricalWeeklyScorecards(competitionKey, selected, m) : null
     }
   } else {
     for (const m of scoringModes) {

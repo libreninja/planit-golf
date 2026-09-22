@@ -98,7 +98,7 @@ test('named official membership wins while scoring is live and skips projection'
   assert.equal(r.resultStatus, 'live')
   assert.equal(r.flightMembership.status, 'official')
   assert.equal(r.leaderboard!.entries[0].flight, 'Flight 2')
-  assert.equal(calls.some((endpoint) => endpoint.endsWith('/tee_sheet')), false)
+  assert.equal(calls.filter((endpoint) => endpoint.endsWith('/tee_sheet')).length, 1, 'supplemental scorecard facts are read without changing official flights')
 })
 
 test('Gross and Net share one occurrence-scoped projected membership snapshot', async () => {

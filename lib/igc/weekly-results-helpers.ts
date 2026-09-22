@@ -8,6 +8,8 @@
 
 // One hole on a player's scorecard.
 export interface HoleScore {
+  actualStrokes?: number | null;
+  handicapStrokes?: number | null;
   hole: number; // 1..18
   par: number | null;
   gross: number | null;

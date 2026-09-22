@@ -6,6 +6,7 @@
 // Discovery, result-status derivation, durable-current derivation, and
 // stale-while-error are all handled here. Auth is the route's responsibility.
 
+import { readWeeklyScorecardFacts, readScorecardTeeSheet } from './weekly-scorecard-facts.ts'
 import { discoverOccurrence, type GGClient } from './adapters/golfgenius/discovery.ts'
 import { buildLeagueActiveWindow, labelRuleSeparator, leagueOccurrenceLabel, mapLeagueEventToOccurrence, specialOccurrenceLabel } from './adapters/golfgenius/mapping.ts'
 import { deriveResultStatus, type UpstreamStatus } from './result-status.ts'
@@ -16,8 +17,6 @@ import {
   readCachedResult,
   readStaleResult,
   writeCachedDiscovery,
-  readCachedTeeSheet,
-  writeCachedTeeSheet,
   writeCachedResult,
   makeSingleFlight,
   type LiveCacheStore,
@@ -71,12 +70,7 @@ async function projectedFlightSnapshot(input: {
     const secondRead = await readCachedDiscovery(cacheArgs, input.cacheStore)
     if (isProjectedFlightSnapshot(secondRead, input.roundKey)) return secondRead
 
-    let raw = await readCachedTeeSheet(cacheArgs, input.cacheStore)
-    if (raw === null) {
-      raw = await input.ggClient(`/events/${input.ggEventId}/rounds/${input.ggRoundId}/tee_sheet`)
-      const hasParticipants = teeSheetProjectionParticipants(raw).length > 0
-      try { await writeCachedTeeSheet(cacheArgs, raw, hasParticipants ? 300 : 60, input.cacheStore) } catch { /* best-effort */ }
-    }
+    const raw = await readScorecardTeeSheet(input)
     const participants = teeSheetProjectionParticipants(raw)
     if (participants.length === 0) return null
     const snapshot: ProjectedFlightSnapshot = {
@@ -247,6 +241,13 @@ async function fetchFresh(
       label, window, resultStatus,
     )
     let leaderboard = r.leaderboard ? { ...r.leaderboard, occurrenceId: input.occurrenceId, resultStatus, durableCurrent } : null
+    if (leaderboard) {
+      leaderboard = { ...leaderboard, scorecards: await readWeeklyScorecardFacts({
+        cards: leaderboard.scorecards, tenantKey: adapterConfig.tenantKey,
+        competitionKey: input.competitionKey, occurrenceId: input.occurrenceId,
+        ggEventId: r.resolved.ggEventId, ggRoundId: r.resolved.ggRoundId, ggClient, cacheStore,
+      }) }
+    }
     let flights = officialFlightMembership(leaderboard)
 
     // Projection is a Men's League presentation concern for regular individual
