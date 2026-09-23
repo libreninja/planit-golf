@@ -204,13 +204,13 @@ export function ScorecardRow({
           )}
         </div>
         {(hasHoles || showPlayerPurse) && (
-          <div className={cn("mt-1 flex items-center justify-end gap-3 text-[11px] text-muted-foreground", !hasHoles && "sm:hidden")}>
-            {showPlayerPurse && <span className="tabular-nums sm:hidden">Purse {entry.purse}</span>}
+          <div className={cn("mt-1 flex items-center gap-3 text-[11px] text-muted-foreground", !hasHoles && "sm:hidden")}>
             {hasHoles ? (
               <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${displayName} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
                 Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
               </button>
             ) : null}
+            {showPlayerPurse && <span className="ml-auto tabular-nums sm:hidden">Purse {entry.purse}</span>}
           </div>
         )}
       </div>
