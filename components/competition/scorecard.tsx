@@ -130,11 +130,6 @@ export function ScorecardRow({
                   initialFollowing={playerInteraction.initialFollowing}
                 />
               ) : null}
-              {hasHoles ? (
-                <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${displayName} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
-                  Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
-                </button>
-              ) : null}
             </span>
             {showFlight &&
               (color ? (
@@ -153,11 +148,6 @@ export function ScorecardRow({
               <MobileStat key={s.label} label={s.label} value={s.value} valueClass={s.valueClass} />
             ))}
           </div>
-          {showPlayerPurse && (
-            <div className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">
-              Purse {entry.purse}
-            </div>
-          )}
         </div>
         {/* Desktop / landscape grid table (sm+). Identical cells to the
             previous single-grid row; the portrait block above is hidden at
@@ -182,11 +172,6 @@ export function ScorecardRow({
                 isSelf={playerInteraction.isSelf}
                 initialFollowing={playerInteraction.initialFollowing}
               />
-            ) : null}
-            {hasHoles ? (
-              <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${displayName} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
-                Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
-              </button>
             ) : null}
             </span>
             {participationLabel ? <span className="block truncate text-[10px] font-normal text-muted-foreground">{participationLabel}</span> : null}
@@ -218,6 +203,16 @@ export function ScorecardRow({
             <span className="text-right tabular-nums text-muted-foreground">{entry.purse}</span>
           )}
         </div>
+        {(hasHoles || showPlayerPurse) && (
+          <div className={cn("mt-1 flex items-center justify-end gap-3 text-[11px] text-muted-foreground", !hasHoles && "sm:hidden")}>
+            {showPlayerPurse && <span className="tabular-nums sm:hidden">Purse {entry.purse}</span>}
+            {hasHoles ? (
+              <button type="button" onClick={onToggle} aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${displayName} scorecard`} className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                Card <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
       {isOpen && hasHoles && card && <ExpandedScorecard card={buildScorecardContext(card, scoringMode)} />}
     </div>

@@ -17,7 +17,7 @@ export function ExpandedScorecard({ card }: { card: ScorecardContext; narrate?: 
     (requireAll ? values.every(value => value !== null) : values.some(value => value !== null))
       ? values.reduce<number>((total, value) => total + (value ?? 0), 0) : null
   return (
-    <div role="group" aria-label={`${card.label} scorecard`} className="border-t border-border bg-muted/20 px-2 py-3 sm:px-3">
+    <div role="group" aria-label={`${card.label} scorecard`} className="border-t border-border bg-muted/20 px-2 pb-1 pt-3 sm:px-3">
       <div className="mb-2 text-xs text-muted-foreground">
         {card.label} <span className="font-semibold text-foreground tabular-nums">{card.total ?? '—'}</span> ({formatToPar(card.toPar)})
       </div>
@@ -73,7 +73,6 @@ export function ExpandedScorecard({ card }: { card: ScorecardContext; narrate?: 
           </table>
         )
       })}
-      <p className="mt-1.5 text-[10px] text-muted-foreground">Actual strokes · Circles under par · Squares over par{card.showHandicap ? ' · Dots: handicap' : ''}</p>
     </div>
   )
 }
